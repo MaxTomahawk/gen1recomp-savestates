@@ -11,6 +11,17 @@ local LOAD_SUCCESSES = { state_loaded = true, load_undone = true }
 local INCOMPATIBLE = {
   bad_format = true,
   corrupt_identity = true,
+  corrupt_metadata = true,
+  invalid_checkpoint = true,
+  invalid_content = true,
+  invalid_map = true,
+  invalid_position = true,
+  migration_failed = true,
+  missing_checkpoint = true,
+  missing_migration = true,
+  missing_persistent_state = true,
+  not_data_only = true,
+  payload_missing = true,
   unsupported_format = true,
   unsupported_runtime_kind = true,
   wrong_game = true,
@@ -98,27 +109,71 @@ function Notification:current()
   return active
 end
 
+local function dropLastCharacter(text)
+  local first = #text
+  while first > 1 do
+    local byte = text:byte(first)
+    if not byte or byte < 0x80 or byte > 0xBF then break end
+    first = first - 1
+  end
+  return text:sub(1, first - 1)
+end
+
+local function fitLine(Font, value, maximum)
+  local text = tostring(value or "")
+  if Font.width(text) <= maximum then return text end
+  local suffix = "."
+  while text ~= "" and Font.width(text .. suffix) > maximum do
+    text = dropLastCharacter(text)
+  end
+  return text .. suffix
+end
+
+local function titleLines(Font, value, maximum)
+  local title = tostring(value or "")
+  if Font.width(title) <= maximum then return { title } end
+  local wrapped
+  local search = 1
+  while true do
+    local split = title:find(" ", search, true)
+    if not split then break end
+    local first, second = title:sub(1, split - 1), title:sub(split + 1)
+    if first ~= "" and second ~= ""
+        and Font.width(first) <= maximum and Font.width(second) <= maximum then
+      wrapped = { first, second }
+    end
+    search = split + 1
+  end
+  return wrapped or { fitLine(Font, title, maximum) }
+end
+
 function Notification:draw(viewport, Font)
   local active = self:current()
   if not active or not love or not love.graphics or not Font then return false end
   viewport = viewport or {}
   local scale = viewport.scale or ((viewport.gameHeight or 144) / 144)
   if type(scale) ~= "number" or scale <= 0 then scale = 1 end
-  local widest = math.max(Font.width(active.title),
-    active.detail and Font.width(active.detail) or 0)
+  local maximum = 18 * 8
+  local titles = titleLines(Font, active.title, maximum)
+  local detail = active.detail and fitLine(Font, active.detail, maximum) or nil
+  local widest = detail and Font.width(detail) or 0
+  for _, line in ipairs(titles) do widest = math.max(widest, Font.width(line)) end
   local tiles = math.max(12, math.min(20, math.ceil(widest / 8) + 2))
-  local tx, ty = 20 - tiles, 13
+  local height = #titles > 1 and 7 or 5
+  local tx, ty = 20 - tiles, 18 - height
 
   love.graphics.push("all")
   love.graphics.origin()
   love.graphics.translate(viewport.gameX or 0, viewport.gameY or 0)
   love.graphics.scale(scale, scale)
   love.graphics.setColor(1, 1, 1, 1)
-  Font.drawBox(tx, ty, tiles, 5)
+  Font.drawBox(tx, ty, tiles, height)
   love.graphics.setColor(0, 0, 0, 1)
-  Font.draw(active.title, (tx + 1) * 8, (ty + 1) * 8)
-  if active.detail then
-    Font.draw(active.detail, (tx + 1) * 8, (ty + 3) * 8)
+  for index, line in ipairs(titles) do
+    Font.draw(line, (tx + 1) * 8, (ty + index) * 8)
+  end
+  if detail then
+    Font.draw(detail, (tx + 1) * 8, (ty + (#titles > 1 and 4 or 3)) * 8)
   end
   love.graphics.pop()
   return true

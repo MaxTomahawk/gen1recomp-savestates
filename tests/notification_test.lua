@@ -56,6 +56,9 @@ T:eq(notice:current().title, "NO QUICK SAVE", "empty quickload has product messa
 notice:show("load_failed", { code = "wrong_playthrough" })
 T:eq(notice:current().title, "STATE INCOMPATIBLE",
   "identity mismatch has compatibility message")
+notice:show("load_failed", { code = "invalid_map" })
+T:eq(notice:current().title, "STATE INCOMPATIBLE",
+  "unavailable checkpoint content has compatibility message")
 notice:show("save_failed", { message = "disk unavailable" })
 T:eq(notice:current().title, "SAVE STATE FAILED", "save failure has required title")
 notice:show("state_deleted", {})
@@ -67,5 +70,36 @@ notice:show("auto_saved", { locationName = "ROUTE 24" })
 T:eq(notice:current().title, "AUTO SAVED", "autosave has required title")
 notice:show("state_deleted", {})
 T:eq(notice:current().title, "STATE DELETED", "deletion has required title")
+
+local drawn = {}
+love = { graphics = {
+  push = function() end,
+  origin = function() end,
+  translate = function() end,
+  scale = function() end,
+  setColor = function() end,
+  pop = function() end,
+} }
+local Font = {
+  width = function(text) return #text * 8 end,
+  drawBox = function() end,
+  draw = function(text) drawn[#drawn + 1] = text end,
+}
+notice:show("save_failed", { message = string.rep("X", 40) })
+T:eq(notice:draw({ gameX = 0, gameY = 0, scale = 1 }, Font), true,
+  "long failure notification draws through the native HUD path")
+T:eq(drawn[1], "SAVE STATE FAILED", "fitting preserves a short title")
+T:eq(drawn[2], string.rep("X", 17) .. ".",
+  "long detail is visibly truncated to the maximum box interior")
+
+drawn = {}
+notice:show("save_rejected", {
+  code = "script_busy", message = "Wait for the active script to finish.",
+})
+T:eq(notice:draw({ gameX = 0, gameY = 0, scale = 1 }, Font), true,
+  "long required refusal title draws through the native HUD path")
+T:eq(drawn[1], "CAN'T SAVE STATE", "long title wraps at a word boundary")
+T:eq(drawn[2], "NOW", "wrapped title retains its complete required wording")
+T:eq(drawn[3], "SCRIPT IS BUSY", "wrapped title leaves room for concise reason")
 
 T:finish()

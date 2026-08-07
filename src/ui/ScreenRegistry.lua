@@ -43,6 +43,22 @@ return function(deps)
   function Registry.install(mod, service, clock)
     clock = clock or os.time
 
+    local function refreshRoot(game, root)
+      if type(root) ~= "table" or type(root.items) ~= "table" then return false end
+      local summary = service:summary(game)
+      if not summary then return false end
+      for _, item in ipairs(root.items) do
+        if item.label == "QUICK SAVES" then
+          item.right = tostring(summary.quickCount)
+        elseif item.label == "AUTO SAVES" then
+          item.right = tostring(summary.autoCount)
+        elseif item.label == "SAVE SLOTS" then
+          item.right = ("%d/%d"):format(summary.slotCount, summary.slotCapacity)
+        end
+      end
+      return true
+    end
+
     mod.content.screens:register(IDS.root, {
       new = function(game)
         local summary, code = service:summary(game)
@@ -149,6 +165,7 @@ return function(deps)
             mod.ui.push(game, IDS.pinPicker, {
               sourceId = metadata.id,
               action = menu,
+              root = opts.parents and opts.parents[2],
             })
           end }
         end
@@ -158,6 +175,7 @@ return function(deps)
             id = metadata.id,
             action = menu,
             history = opts.parents and opts.parents[1],
+            root = opts.parents and opts.parents[2],
           })
         end }
         items[#items + 1] = { label = "CANCEL", onSelect = function()
@@ -187,6 +205,7 @@ return function(deps)
             onSelect = function()
               local pinned = service:pinToSlot(game, opts.sourceId, slot)
               if pinned then
+                refreshRoot(game, opts.root)
                 menu:close()
                 if opts.action and opts.action.close then opts.action:close() end
               end
@@ -271,6 +290,7 @@ return function(deps)
               slot = slot,
               action = menu,
               slotMenu = opts.slotMenu,
+              root = opts.parents and opts.parents[2],
             })
           end }
         end
@@ -336,6 +356,7 @@ return function(deps)
               elseif opts.history and opts.history.removeCurrent then
                 opts.history:removeCurrent()
               end
+              refreshRoot(game, opts.root)
             end,
           })
       end,

@@ -357,7 +357,9 @@ return function(deps)
     local _, capabilityCode, capabilityMessage = self:_capability(game, "capture")
     if capabilityCode then return nil, capabilityCode, capabilityMessage end
     local checkpoint, captureCode, captureMessage = self:_captureCheckpoint(game)
-    if not checkpoint then return nil, captureCode, captureMessage end
+    if not checkpoint then
+      return self:_failure("save_failed", captureCode, captureMessage)
+    end
     local runtime = checkpoint.runtime and checkpoint.runtime.overworld
     local mapId = runtime and runtime.map
     if (trigger == "location_enter" or trigger == "before_warp")
@@ -366,9 +368,11 @@ return function(deps)
         "Autosave event no longer matches the active source map."
     end
     local createdAt, clockCode, clockMessage = self:_now()
-    if not createdAt then return nil, clockCode, clockMessage end
+    if not createdAt then return self:_failure("save_failed", clockCode, clockMessage) end
     local fingerprint, fingerprintCode, fingerprintMessage = Fingerprint.of(checkpoint)
-    if not fingerprint then return nil, fingerprintCode, fingerprintMessage end
+    if not fingerprint then
+      return self:_failure("save_failed", fingerprintCode, fingerprintMessage)
+    end
     local store, storeCode, storeMessage = self:_store(game)
     if not store then return self:_failure("save_failed", storeCode, storeMessage) end
     local index, indexCode, indexMessage = invoke(store, "loadIndex")

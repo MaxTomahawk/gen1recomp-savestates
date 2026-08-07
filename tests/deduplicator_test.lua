@@ -47,6 +47,16 @@ local partyChanged = Fingerprint.of({ save = {
 } })
 T:check(partyChanged ~= first, "party state changes the persistent fingerprint")
 
+local presentationOnlyChanged = Fingerprint.of({ save = {
+  money = 3000,
+  flags = { GOT_STARTER = true, BEAT_BROCK = false },
+  party = { { species = "BULBASAUR", hp = 19 } },
+  playTime = 9123.75,
+  startMenuIndex = 7,
+} })
+T:eq(presentationOnlyChanged, first,
+  "play time and remembered START cursor do not defeat semantic deduplication")
+
 local invalid, invalidCode = Fingerprint.of({})
 T:eq(invalid, nil, "checkpoint without progress has no fingerprint")
 T:eq(invalidCode, "missing_persistent_state", "missing progress has a stable code")

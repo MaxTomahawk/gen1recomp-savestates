@@ -57,17 +57,27 @@ function service:listSlots() return self.slotRows end
 function service:quickSave() calls[#calls + 1] = "quickSave" return true end
 function service:undoLastLoad() calls[#calls + 1] = "undo" return true end
 function service:loadState(_, id) calls[#calls + 1] = "load:" .. id return true end
-function service:deleteState(_, id) calls[#calls + 1] = "delete:" .. id return true end
+function service:deleteState(_, id)
+  calls[#calls + 1] = "delete:" .. id
+  self.summaryValue.quickCount = self.summaryValue.quickCount - 1
+  return true
+end
 function service:saveSlot(_, slot) calls[#calls + 1] = "saveSlot:" .. slot return true end
 function service:loadSlot(_, slot) calls[#calls + 1] = "loadSlot:" .. slot return true end
-function service:deleteSlot(_, slot) calls[#calls + 1] = "deleteSlot:" .. slot return true end
+function service:deleteSlot(_, slot)
+  calls[#calls + 1] = "deleteSlot:" .. slot
+  self.summaryValue.slotCount = self.summaryValue.slotCount - 1
+  return true
+end
 function service:renameSlot(_, slot, name)
   calls[#calls + 1] = "rename:" .. slot .. ":" .. name
   return { metadata = { id = "s02_00000002", slot = slot, label = name,
     locationName = "CERULEAN GYM", createdAt = 1000 } }
 end
 function service:pinToSlot(_, id, slot)
-  calls[#calls + 1] = "pin:" .. id .. ":" .. slot return true
+  calls[#calls + 1] = "pin:" .. id .. ":" .. slot
+  self.summaryValue.slotCount = self.summaryValue.slotCount + 1
+  return true
 end
 
 local ids = ScreenFactory.install(mod, service, function() return 1000 end)
@@ -142,6 +152,16 @@ local warningAction = registered[ids.actions].new(game, {
 T:eq(warningAction.items[5].right, "WARN",
   "state detail marks soft engine compatibility warnings before load")
 
+local pinAction = registered[ids.actions].new(game, {
+  row = service.quickRows[1], parents = { history, root },
+})
+pinAction.items[7].onSelect()
+T:eq(pushes[#pushes].id, ids.pinPicker, "pin action opens the permanent-slot picker")
+local pinPicker = registered[ids.pinPicker].new(game, pushes[#pushes].opts)
+pinPicker.items[1].onSelect()
+T:eq(calls[#calls], "pin:q00000002:1", "pin picker copies into selected slot")
+T:eq(root.items[3].right, "2/10", "pinning refreshes occupied-slot root count")
+
 action.items[6].onSelect()
 T:eq(action.closeCount, 1, "load closes action menu")
 T:eq(history.closeCount, 1, "load closes history menu")
@@ -171,6 +191,7 @@ deleteConfirm.opts.choice(true)
 T:eq(calls[#calls], "delete:q00000001", "confirmed history delete invokes service")
 T:eq(unavailableAction.closeCount, 1, "confirmed history delete closes action menu")
 T:eq(#history.items, 1, "confirmed history delete removes the visible row")
+T:eq(root.items[1].right, "1", "history deletion refreshes root history count")
 
 local slotsScreen = registered[ids.slots].new(game, { parent = root })
 T:eq(#slotsScreen.items, 10, "slot screen always renders ten rows")
@@ -195,6 +216,7 @@ T:eq(occupiedLabels[1], "LOAD", "occupied slot can load")
 T:eq(occupiedLabels[2], "OVERWRITE", "occupied slot can overwrite")
 T:eq(occupiedLabels[3], "RENAME", "occupied slot can rename")
 T:eq(occupiedLabels[4], "DELETE", "occupied slot can delete")
+root.items[3].right = "STALE"
 local slotCallsBeforeDelete = #calls
 occupiedSlotAction.items[4].onSelect()
 T:eq(pushes[#pushes].id, ids.deleteConfirm,
@@ -207,6 +229,7 @@ deleteConfirm = registered[ids.deleteConfirm].new(game, pushes[#pushes].opts)
 deleteConfirm.opts.choice(true)
 T:eq(calls[#calls], "deleteSlot:2", "confirmed slot delete invokes service")
 T:eq(slotsScreen.items[2].right, "EMPTY", "confirmed slot delete refreshes slot row")
+T:eq(root.items[3].right, "1/10", "slot deletion refreshes occupied root count")
 occupiedSlotAction.items[3].onSelect()
 T:eq(pushes[#pushes].id, ids.rename, "rename action opens native naming screen")
 local rename = registered[ids.rename].new(game, pushes[#pushes].opts)

@@ -2,6 +2,10 @@ return function(Canonical)
   local Fingerprint = {}
   local bit = require("bit")
   local UINT32 = 4294967296
+  local VOLATILE_ROOT_FIELDS = {
+    playTime = true,
+    startMenuIndex = true,
+  }
 
   local function unsigned(value)
     return value < 0 and value + UINT32 or value
@@ -34,7 +38,11 @@ return function(Canonical)
       return nil, "missing_persistent_state",
         "Checkpoint has no persistent progress to fingerprint."
     end
-    local encoded, code, message = Canonical.encode(checkpoint.save)
+    local significant = {}
+    for key, value in pairs(checkpoint.save) do
+      if not VOLATILE_ROOT_FIELDS[key] then significant[key] = value end
+    end
+    local encoded, code, message = Canonical.encode(significant)
     if not encoded then return nil, code, message end
     local first, second = hashes(encoded)
     return ("%08x%08x"):format(first, second)

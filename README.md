@@ -49,6 +49,9 @@ mislabeled overworld state. Optional after-battle requests wait for stable retur
 Optional before-warp capture runs synchronously at the public `player.warped`
 pre-transition event and fails closed if that exact boundary is not checkpoint-safe.
 Cooldown, semantic duplicate replacement, and chronological retention are active.
+Play time and the remembered START-menu cursor are excluded from the semantic
+fingerprint; gameplay progress, party, inventory, flags, and position remain
+significant.
 
 ## Save Slots
 

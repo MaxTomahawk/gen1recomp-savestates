@@ -382,6 +382,20 @@ T:eq(failedSaveCode, "capture_failed", "capture failure preserves engine code")
 T:eq(captureFailure.storage.values.index, nil, "capture failure publishes no index")
 T:eq(captureFailure.notifications[1].kind, "save_failed", "capture failure is notified")
 
+local autoCaptureFailure = environment()
+autoCaptureFailure.checkpoints.captureFailure = "capture_failed"
+local failedAuto, failedAutoCode = autoCaptureFailure.service:autoSave(
+  autoCaptureFailure.game, "location_enter", {
+    mapId = "PALLET_TOWN", contextKey = "PALLET_TOWN",
+  })
+T:eq(failedAuto, nil, "capture failure aborts autosave")
+T:eq(failedAutoCode, "capture_failed", "autosave preserves capture error")
+T:eq(autoCaptureFailure.notifications[1]
+    and autoCaptureFailure.notifications[1].kind, "save_failed",
+  "real autosave capture failure is visible")
+T:eq(autoCaptureFailure.errors[1] and autoCaptureFailure.errors[1].code,
+  "capture_failed", "real autosave capture failure is error-grade")
+
 local autos = environment({ money = 100, now = 200, autoLimit = 2 })
 local autoOne, autoOneCode, autoOneMessage = autos.service:autoSave(
   autos.game, "location_enter", { mapId = "PALLET_TOWN", contextKey = "PALLET_TOWN" })

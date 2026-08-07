@@ -37,6 +37,11 @@ The manager closes its known native widget chain before a load or live slot save
 Manual requests made through exports while a phase is unsafe return a structured
 reason and leave runtime/storage untouched.
 
+There is no public rebindable mod action or battle-command decoration hook. Manual
+quicksave is therefore an overworld START-menu action. Default battle-start
+autosaves provide the native player path into supported battle restoration; the
+public export can also capture later decision points for cooperating mods.
+
 ## Autosave trigger support
 
 `location_enter` defers `map.entered` until a stable Level A boundary.

@@ -110,6 +110,14 @@ native confirmation and update their source list only after storage succeeds.
 Notifications are one replace-in-place model drawn through `render.hud`; they
 never become an updating screen or consume A/B input. Success types honor their
 save/load toggles, while safety and persistence failures remain visible.
+Text is measured with the active public font, long details are fitted to the
+18-tile interior, and the one required long title wraps at a word boundary.
+
+The autosave fingerprint hashes canonical progress but deliberately removes only
+`playTime` and `startMenuIndex`. Those presentation counters would otherwise make
+two gameplay-equivalent states different on every capture; coordinates, party,
+inventory, boxes, money, Pokédex, flags, object/trainer state, and other mod data
+remain significant.
 
 `map.entered`, ordinary `battle.started`, and optional `battle.ended` events
 enqueue semantic requests. An `input.step` wrapper retries at most one request per
