@@ -206,6 +206,81 @@ T:eq(migrated.format, 1, "stored older format runs explicit migration before val
 T:eq(storage.values["states/q00000004"].format, 0,
   "read migration does not rewrite stored input implicitly")
 
+local rollingStorage = fakeStorage()
+local rollingStore = StateStore.new({
+  storage = rollingStorage, game = game, validator = Validator,
+  migrations = migrations, supportedKinds = { overworld = true },
+})
+local rollingIndex = rollingStore:loadIndex()
+local rollingQ1 = snapshot("q00000001", "quick", 10)
+T:check(rollingStore:writeSnapshot(rollingQ1), "rolling fixture payload writes")
+T:check(rollingIndex:add("quick", rollingQ1.metadata), "rolling fixture metadata adds")
+T:check(rollingStore:publish(rollingIndex), "rolling fixture index publishes")
+
+local rollingQ2 = snapshot("q00000002", "quick", 11)
+local nextRolling = rollingStore:loadIndex()
+T:check(nextRolling:add("quick", rollingQ2.metadata), "new rolling metadata adds")
+T:check(nextRolling:remove("q00000001"), "trimmed rolling metadata is removed")
+rollingStorage.calls = {}
+local committed, commitCode, commitMessage = rollingStore:commitRolling(
+  nextRolling, rollingQ2, { "q00000001" })
+T:check(committed == true,
+  "rolling transaction commits: " .. tostring(commitCode or commitMessage))
+T:eq(rollingStorage.calls[1], "write:states/q00000002",
+  "rolling transaction stages new payload first")
+T:eq(rollingStorage.calls[2], "write:index",
+  "rolling transaction publishes final index second")
+T:eq(rollingStorage.calls[3], "delete:states/q00000001",
+  "rolling transaction cleans trimmed payload after publication")
+T:eq(rollingStore:loadIndex():list("quick")[1].id, "q00000002",
+  "rolling transaction publishes the new newest state")
+T:eq(rollingStorage.values["states/q00000001"], nil,
+  "successful rolling transaction removes trimmed payload")
+
+local rollingQ3 = snapshot("q00000003", "quick", 12)
+local failedRolling = rollingStore:loadIndex()
+T:check(failedRolling:add("quick", rollingQ3.metadata), "failed-publication metadata adds")
+T:check(failedRolling:remove("q00000002"), "failed-publication trim prepares")
+rollingStorage.failWrite.index = true
+local failedCommit, failedCommitCode = rollingStore:commitRolling(
+  failedRolling, rollingQ3, { "q00000002" })
+rollingStorage.failWrite.index = nil
+T:eq(failedCommit, nil, "failed rolling publication is reported")
+T:eq(failedCommitCode, "write_failed", "failed rolling publication preserves error")
+T:eq(rollingStore:loadIndex():list("quick")[1].id, "q00000002",
+  "failed rolling publication leaves old index authoritative")
+T:check(rollingStorage.values["states/q00000002"] ~= nil,
+  "failed rolling publication leaves old payload intact")
+T:check(rollingStorage.values["states/q00000003"] ~= nil,
+  "failed rolling publication leaves staged payload discoverable as orphan")
+
+local rollingQ4 = snapshot("q00000004", "quick", 13)
+local cleanupRolling = rollingStore:loadIndex()
+T:check(cleanupRolling:add("quick", rollingQ4.metadata), "cleanup-warning metadata adds")
+T:check(cleanupRolling:remove("q00000002"), "cleanup-warning trim prepares")
+rollingStorage.failDelete["states/q00000002"] = true
+local cleanupCommitted, cleanupCommitCode = rollingStore:commitRolling(
+  cleanupRolling, rollingQ4, { "q00000002" })
+rollingStorage.failDelete["states/q00000002"] = nil
+T:check(cleanupCommitted == true, "cleanup failure does not undo published history")
+T:eq(cleanupCommitCode, "orphaned_payload", "cleanup failure returns warning code")
+T:eq(rollingStore:loadIndex():list("quick")[1].id, "q00000004",
+  "cleanup failure keeps new index authoritative")
+T:check(rollingStorage.values["states/q00000002"] ~= nil,
+  "cleanup failure leaves old payload as recoverable orphan")
+
+local inconsistentIndex = rollingStore:loadIndex()
+local inconsistent = snapshot("q00000005", "quick", 14)
+local wrongMetadata = DataOnly.copy(inconsistent.metadata)
+wrongMetadata.createdAt = 99
+T:check(inconsistentIndex:add("quick", wrongMetadata), "inconsistent fixture metadata adds")
+local rejectedCommit, rejectedCommitCode = rollingStore:commitRolling(
+  inconsistentIndex, inconsistent, {})
+T:eq(rejectedCommit, nil, "index/payload metadata disagreement is rejected")
+T:eq(rejectedCommitCode, "bad_metadata", "metadata disagreement has stable code")
+T:eq(rollingStorage.values["states/q00000005"], nil,
+  "rejected rolling transaction writes no payload")
+
 storage.corruptKeys.index = { format = 99 }
 storage.values.index = nil
 local badIndex, badIndexCode = store:loadIndex()

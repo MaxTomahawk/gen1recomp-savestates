@@ -9,6 +9,34 @@ return function(deps)
     return type(id) == "string" and id ~= "" and id:match("^[%w_-]+$") ~= nil
   end
 
+  local function sameData(left, right, seen)
+    if type(left) ~= type(right) then return false end
+    if type(left) ~= "table" then return left == right end
+    seen = seen or {}
+    if seen[left] then return seen[left] == right end
+    seen[left] = right
+    for key, value in pairs(left) do
+      if not sameData(value, right[key], seen) then return false end
+    end
+    for key in pairs(right) do
+      if left[key] == nil then return false end
+    end
+    return true
+  end
+
+  local function denseIds(ids)
+    if type(ids) ~= "table" then return nil end
+    local count = 0
+    for key, id in pairs(ids) do
+      if type(key) ~= "number" or key < 1 or key % 1 ~= 0 or not validId(id) then
+        return nil
+      end
+      count = count + 1
+    end
+    if count ~= #ids then return nil end
+    return true
+  end
+
   function StateStore.new(args)
     assert(type(args) == "table" and type(args.storage) == "table",
       "StateStore.new needs public storage")
@@ -93,6 +121,59 @@ return function(deps)
     if not checked then return nil, "bad_index", "Savestate index is corrupt." end
     local ok, code, message = self.storage:write(self.game, "index", record)
     if not ok then return nil, code, message end
+    return true
+  end
+
+  -- Commit one newly allocated rolling payload and a final index view as a
+  -- cross-key transaction. A failed publication leaves the previous index and
+  -- payloads authoritative; the staged new payload is an enumerable orphan.
+  -- Cleanup is deliberately last, so a deletion failure is warning-grade.
+  function StateStore:commitRolling(index, snapshot, cleanupIds)
+    if type(index) ~= "table" or type(index.record) ~= "function" then
+      return nil, "bad_index", "StateStore.commitRolling needs a StateIndex."
+    end
+    if not denseIds(cleanupIds) then
+      return nil, "invalid_id", "Rolling cleanup ids are invalid."
+    end
+    local working, indexCode, indexMessage = StateIndex.new(index:record())
+    if not working then return nil, indexCode, indexMessage end
+
+    local validated, code, message = self:_validate(snapshot)
+    if not validated then return nil, code, message end
+    local metadata = validated.metadata
+    if metadata.stateClass ~= "quick" and metadata.stateClass ~= "auto" then
+      return nil, "invalid_class", "Only rolling states use this transaction."
+    end
+    if not sameData(working:get(metadata.id), metadata) then
+      return nil, "bad_metadata",
+        "Published metadata must exactly match the rolling snapshot."
+    end
+
+    local seen = {}
+    for _, id in ipairs(cleanupIds) do
+      if seen[id] or id == metadata.id or working:get(id) ~= nil then
+        return nil, "invalid_id",
+          "Cleanup ids must be unique states absent from the final index."
+      end
+      seen[id] = true
+    end
+
+    local wrote, writeCode, writeMessage = self.storage:write(
+      self.game, "states/" .. metadata.id, validated)
+    if not wrote then return nil, writeCode, writeMessage end
+    local published, publishCode, publishMessage = self:publish(working)
+    if not published then return nil, publishCode, publishMessage end
+
+    local failed = {}
+    for _, id in ipairs(cleanupIds) do
+      local deleted, deleteCode = self.storage:delete(self.game, "states/" .. id)
+      if not deleted and deleteCode ~= "not_found" then failed[#failed + 1] = id end
+    end
+    if #failed > 0 then
+      return true, "orphaned_payload",
+        "History was published, but payload cleanup failed for: "
+          .. table.concat(failed, ", ")
+    end
     return true
   end
 
