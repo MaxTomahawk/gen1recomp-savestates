@@ -180,5 +180,6 @@ API is unused.
 - mod integration tests proving recovery and compatibility behavior for battle
   checkpoints.
 
-These checks pass on the stacked Level B branch through `56db6b7`; the mod now
+These checks pass on the stacked Level B branch through `487e5ef`; the public
+facade suite includes a complete battle capture/restore/recapture roundtrip. The mod now
 advertises the supported `battle` kind while retaining every exclusion above.

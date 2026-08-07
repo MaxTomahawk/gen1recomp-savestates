@@ -155,7 +155,7 @@ test, documentation, or packaging task that remains valid.
 | `SAVESTATES-SP-02` Level A checkpoint | VERIFIED locally; upstream review required | `6e94625`, `49954ec`, `9d6ea84`, `05b43ca`; 34/34 public API checks and differential rollback/content-rejection proof green; checkpoint identity exposes engine version for warning-grade compatibility |
 | `SAVESTATES-SP-03` playthrough identity | VERIFIED locally; upstream review required | `726ed11` plus `49954ec`; 18/18 focused checks and 1,000 clean-process stress runs green |
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
-| `SAVESTATES-SP-05` battle/RNG | VERIFIED locally; stacked review required | `docs/battle-state-map.md`; branch `feat/mod-battle-checkpoints` through `56db6b7`, fork draft PR #1; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, legacy Level A compatibility |
+| `SAVESTATES-SP-05` battle/RNG | VERIFIED locally; stacked review required | `docs/battle-state-map.md`; branch `feat/mod-battle-checkpoints` through `487e5ef`, fork draft PR #1; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, legacy Level A compatibility |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
 
@@ -170,7 +170,7 @@ through `mod:read`, `mod.storage`, `mod.checkpoints`, registered screens, hooks,
 events, options, and HUD drawing. Gate D and its Level B implementation are
 complete locally in `docs/battle-state-map.md` and the separate stacked upstream
 branch `feat/mod-battle-checkpoints`, published as fork draft PR #1 through
-`56db6b7`. The next lane is release-grade hardening: broader failure/clean-install
+`487e5ef`. The next lane is release-grade hardening: broader failure/clean-install
 coverage, upstream review adaptation, and accurate
 release compatibility once both public seams have an upstream release.
 
@@ -191,7 +191,9 @@ Latest verification (2026-08-07):
   modkit validate/lint and reproducible 49-file package root verification pass.
 - Stacked Level B `./scripts/test.sh --quick` — 133/133 engine suites and 7/7
   modkit suites; battle boundary 13/13, capture 29/29, continuation 17/17,
-  restore/determinism/failure rollback 36/36, public checkpoints 38/38.
+  restore/determinism/failure rollback 36/36, public checkpoints 45/45 including
+  a real public-facade battle differential roundtrip.
 - Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-battle` —
-  634/634 Lua behavior checks; modkit validate/lint and reproducible 49-file
-  package root verification pass with battle support enabled.
+  667/667 Lua behavior checks; modkit validate/lint and reproducible 28-file
+  package root verification plus a clean extracted-install pass with battle
+  support enabled.
