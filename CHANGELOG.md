@@ -36,6 +36,8 @@ Version headings match `manifest.json`.
   pin/delete, and visible autosave capture failures.
 - A tested release gate that validates against the exact minimum released engine
   tag declared by the manifest rather than a moving development branch.
+- Source-date package verification that rejects wall-clock metadata and proves
+  byte-identical ZIP output across repeated builds.
 
 ### Changed
 

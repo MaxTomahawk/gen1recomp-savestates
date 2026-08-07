@@ -21,8 +21,15 @@ jobs:
           ref: 5b3eed8c066098df921007f07c6170c5e24021ba
           path: .upstream
 
+      - name: Checkout reproducible modkit tooling
+        uses: actions/checkout@v4
+        with:
+          repository: MaxTomahawk/gen1recomp
+          ref: 02fd21bcdb7bc46ac16565a76b3100c869ecd4ea
+          path: .modkit-tooling
+
       - name: Install ROM-free toolchain
         run: sudo apt-get update && sudo apt-get install -y luajit unzip
 
       - name: Test, validate, lint, and package
-        run: make check GEN1RECOMP=.upstream
+        run: make check GEN1RECOMP=.upstream MODKIT=.modkit-tooling/tools/modkit.py

@@ -16,6 +16,7 @@ tests/migrations_test.lua
 tests/module_loader_test.lua
 tests/notification_test.lua
 tests/options_test.lua
+tests/package_gate_test.py
 tests/save_state_service_test.lua
 tests/snapshot_test.lua
 tests/start_menu_test.lua
@@ -25,4 +26,5 @@ tests/testlib.lua
 tests/time_test.lua
 tests/ui_screens_test.lua
 tests/release_gate_test.py
+tools/package_gate.py
 tools/release_gate.py
