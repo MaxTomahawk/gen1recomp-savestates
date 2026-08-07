@@ -336,10 +336,13 @@ T:eq(overwritten.metadata.label, "BEFORE BROCK", "slot overwrite stores custom l
 T:eq(slots.storage.values["states/" .. firstSlotId], nil,
   "successful slot overwrite cleans previous generation")
 
+slots.setNow(2000)
 local renamed, renameCode, renameMessage = slots.service:renameSlot(
   slots.game, 3, "ROUTE ONE")
 T:check(renamed ~= nil, "slot rename succeeds: " .. tostring(renameCode or renameMessage))
 T:eq(renamed.metadata.label, "ROUTE ONE", "slot rename changes metadata label")
+T:eq(renamed.metadata.createdAt, overwritten.metadata.createdAt,
+  "slot rename preserves the checkpoint creation time")
 T:eq(renamed.checkpoint.save.money, 600, "slot rename preserves checkpoint progress")
 local renamedId = renamed.metadata.id
 local badName, badNameCode = slots.service:renameSlot(slots.game, 3, "BAD/NAME")

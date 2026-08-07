@@ -446,7 +446,7 @@ return function(deps)
     return snapshot, commitCode, commitMessage
   end
 
-  function Service:_writeSlot(store, index, checkpoint, slot, label)
+  function Service:_writeSlot(store, index, checkpoint, slot, label, sourceMetadata)
     if not validSlot(slot) then
       return nil, "invalid_slot", "Permanent slot must be an integer from 1 through 10."
     end
@@ -455,15 +455,22 @@ return function(deps)
     local previous = index:slot(slot)
     local id, idCode, idMessage = invoke(index, "allocate", "slot", slot)
     if not id then return nil, idCode, idMessage end
-    local createdAt, clockCode, clockMessage = self:_now()
-    if not createdAt then return nil, clockCode, clockMessage end
+    sourceMetadata = type(sourceMetadata) == "table" and sourceMetadata or nil
+    local createdAt = sourceMetadata and sourceMetadata.createdAt
+    if createdAt == nil then
+      local clockCode, clockMessage
+      createdAt, clockCode, clockMessage = self:_now()
+      if not createdAt then return nil, clockCode, clockMessage end
+    end
     local snapshot, snapshotCode, snapshotMessage = self:_snapshot(checkpoint, {
       id = id,
       stateClass = "slot",
       slot = slot,
-      trigger = "manual",
+      trigger = sourceMetadata and sourceMetadata.trigger or "manual",
       createdAt = createdAt,
       label = checkedLabel,
+      locationName = sourceMetadata and sourceMetadata.locationName,
+      contextKey = sourceMetadata and sourceMetadata.contextKey,
     })
     if not snapshot then return nil, snapshotCode, snapshotMessage end
     local assigned, assignCode, assignMessage = invoke(
@@ -543,7 +550,7 @@ return function(deps)
     local source, sourceCode, sourceMessage = invoke(store, "readSnapshot", current.id)
     if not source then return self:_failure("save_failed", sourceCode, sourceMessage) end
     local snapshot, code, message = self:_writeSlot(
-      store, index, source.checkpoint, slot, checkedLabel)
+      store, index, source.checkpoint, slot, checkedLabel, source.metadata)
     if not snapshot then return self:_failure("save_failed", code, message) end
     return snapshot, code, message
   end

@@ -37,6 +37,11 @@ Version headings match `manifest.json`.
 - A tested release gate that validates against the exact minimum released engine
   tag declared by the manifest rather than a moving development branch.
 
+### Changed
+
+- Renaming a permanent slot now preserves the original checkpoint creation time
+  and contextual metadata; only the label and transaction generation change.
+
 ## 0.1.0
 
 Reserved for the first verified technical MVP; not yet released.
