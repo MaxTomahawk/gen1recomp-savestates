@@ -55,11 +55,11 @@ significant.
 
 ## Save Slots
 
-Ten permanent, renameable slots are outside rolling retention. Each overwrite
-uses a new payload generation so failed index publication leaves the old slot
-loadable. Pinning preserves the source checkpoint's capture time and semantic
-trigger. Overwriting directly or pinning onto an occupied slot requires an
-explicit confirmation that defaults to NO.
+Ten permanent slots with native names up to 12 characters are outside rolling
+retention. Each overwrite uses a new payload generation so failed index
+publication leaves the old slot loadable. Pinning preserves the source
+checkpoint's capture time and semantic trigger. Overwriting directly or pinning
+onto an occupied slot requires an explicit confirmation that defaults to NO.
 
 ## Undo Last Load
 
