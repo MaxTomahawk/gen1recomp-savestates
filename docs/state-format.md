@@ -22,7 +22,7 @@ versioned Gen1Recomp checkpoint:
     label = nil,
     locationId = "PALLET_TOWN",
     locationName = "PALLET TOWN",
-    stateKind = "overworld",
+    stateKind = "overworld", -- overworld | battle
     fingerprint = "0123456789abcdef",
     contextKey = nil,
     slot = nil,
@@ -79,5 +79,5 @@ exactly one format and return data-only output. Stored bytes are not implicitly
 rewritten by a read migration.
 
 The nested checkpoint has its own engine format and runtime-kind validator. Format
-1 currently admits only `overworld`; battle and script checkpoint kinds require
-separate proven engine contracts and do not become valid through wrapper migration.
+1 admits `overworld` and the engine's proven `battle` safe-point kind. Script and
+unknown kinds remain rejected and do not become valid through wrapper migration.

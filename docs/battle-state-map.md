@@ -1,6 +1,6 @@
 # Battle State Map and Level B Contract
 
-Status: Gate D inventory complete; implementation not yet started
+Status: Gate D complete; supported Level B subset implemented and verified
 
 Evidence baseline: `bryanthaboi/gen1recomp` `dev` at `112120e`, plus the
 Level A checkpoint branch through `05b43ca`
@@ -148,7 +148,7 @@ Extend the existing generic `mod.checkpoints` facade rather than add a
 savestate-specific API:
 
 1. `inspect(game)` may report `kind = "battle"` only at the boundary above.
-2. `capture(game)` returns format-2 data with the canonical save, an overworld
+2. `capture(game)` returns the additive format-1 battle kind with the canonical save, an overworld
    return point, a semantic continuation descriptor, normalized battle model,
    and RNG state.
 3. `restore(game, checkpoint)` validates identity and content, reconstructs a
@@ -180,4 +180,5 @@ API is unused.
 - mod integration tests proving recovery and compatibility behavior for battle
   checkpoints.
 
-Until those checks pass, the product continues to advertise Level A only.
+These checks pass on the stacked Level B branch through `56db6b7`; the mod now
+advertises the supported `battle` kind while retaining every exclusion above.

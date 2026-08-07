@@ -9,12 +9,12 @@ save slots to Gen1Recomp without replacing the normal Pokémon save system.
 
 ## Features
 
-The current development package provides rolling overworld quicksaves, newest and
-selected-state loading, deferred location/after-battle autosaves, ten permanent
-renameable slots, pinning, durable undo-load recovery, native START and manager
-screens, configurable history/notification options, and non-modal notifications.
-Storage is isolated by game and opaque playthrough identity. Battle checkpoints
-remain a separately gated implementation phase.
+The current development package provides rolling overworld and supported battle
+safe-point quicksaves, newest and selected-state loading, deferred location,
+battle-start, and after-battle autosaves, ten permanent renameable slots, pinning,
+durable undo-load recovery, native START and manager screens, configurable
+history/notification options, and non-modal notifications. Storage is isolated
+by game and opaque playthrough identity.
 
 ## Installation
 
@@ -39,8 +39,10 @@ newest valid entry; the manager can inspect, load, pin, or delete older entries.
 
 ## Auto Saves
 
-Location entry requests are deferred until stable overworld control. Optional
-after-battle requests likewise wait for the battle and follow-up script to finish.
+Location entry requests are deferred until stable overworld control. Ordinary
+wild/trainer starts defer through the intro and capture at the first proven player
+decision menu; an unsupported/scripted battle expires rather than later saving a
+mislabeled overworld state. Optional after-battle requests wait for stable return.
 Cooldown, semantic duplicate replacement, and chronological retention are active.
 
 ## Save Slots
@@ -74,10 +76,11 @@ tracked in `docs/compatibility.md` as implementation lands.
 
 - Suspended scripts, transitions, menus, and partial animations are not safe
   overworld checkpoints.
-- Trainer/wild battle-start and before-warp triggers are visible as planned
-  settings but are not activated until a matching safe checkpoint kind exists.
-- Battle restoration is not claimed until a separate state inventory and
-  deterministic RNG contract pass differential tests.
+- Battle checkpoints support ordinary single-player wild/trainer player-decision
+  menus. Link, Safari, ghost, demo, fishing/static-origin, scripted, forced-action,
+  message, queue, and animation phases are rejected.
+- Before-warp is visible as a planned setting but remains inactive because there
+  is no matching public semantic event.
 - Arbitrary-frame emulator-style snapshots are not promised.
 
 ## State Safety

@@ -17,6 +17,9 @@ Version headings match `manifest.json`.
   decorators.
 - Deferred event-based location and optional after-battle autosaves with cooldown,
   semantic replacement, and retention.
+- Persistent ordinary wild/trainer battle safe-point states with deterministic
+  gameplay RNG, semantic continuation reconstruction, and deferred battle-start
+  autosaves.
 - Replace-in-place HUD notifications and native mod option schema.
 
 ## 0.1.0

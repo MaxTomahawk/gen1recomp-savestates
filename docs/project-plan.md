@@ -1,6 +1,6 @@
 # Save States Living Project Plan
 
-Status: active execution; Level A product slice implemented; Gate D battle contract complete
+Status: active execution; Level A and supported Level B product slices implemented
 
 Updated: 2026-08-07
 
@@ -31,6 +31,11 @@ commits named there. Key conclusions:
 - Battle state and gameplay RNG have no public serializable contract.
 - Rebindable custom mod actions do not exist; START-menu operation remains the
   complete baseline until that optional seam lands.
+
+The first battle/RNG statement above describes unmodified upstream. The stacked
+Level B branch now implements the generic contract selected by the Gate D audit:
+persistent ordinary wild/trainer decision-menu reconstruction plus exact LÖVE RNG,
+while preserving explicit refusal for scripts and unsupported variants.
 
 The approved design is recorded in
 `docs/superpowers/specs/2026-08-07-native-savestates-design.md`. Milestones are
@@ -121,8 +126,8 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | M3 — Level A prototype | Stable overworld capture/mutate/restore/re-capture | ENGINE CONTRACT VERIFIED: semantic differential recapture plus rejection/rollback tests; broader packaged fixture matrix remains before release |
 | M4 — Quicksaves and recovery | Rolling quick history, newest quickload, transactional recovery, undo | VERIFIED in injected public-API service tests: A -> load B -> undo -> A; corruption and persistence failure paths covered |
 | M5 — Native UX and slots | START rows, manager screens, ten permanent slots, rename/delete, HUD notifications, options | VERIFIED headlessly: second decorator coexistence, empty/unavailable states, generation-safe slot overwrite, disabled notifications, public widget close chain |
-| M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | PARTIAL: location and optional after-battle deferral, dedup/retention, corrupt visibility verified; timings and broader clean-runtime matrix remain |
-| M7 — Battle beta | GATE D COMPLETE: field/RNG/continuation map and supported subset fixed; checkpoint implementation next | differential wild/trainer matrix, process-independent reconstruction, and exact repeated action results after reload |
+| M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | PARTIAL: location, ordinary trainer/wild start, and optional after-battle deferral plus stale-event expiry, dedup/retention, and corrupt visibility verified; timings and broader clean-runtime matrix remain |
+| M7 — Battle beta | VERIFIED LOCALLY: field/RNG/continuation map plus persistent safe-point capture/restore | 133/133 engine suites; wild/trainer differential reconstruction; damage/crit/accuracy/AI/escape/encounter RNG replay; rollback and unsupported-phase tests green |
 | M8 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | clean ZIP install, validate/lint/tests, no private requires/ROM content, release asset resolves |
 
 Milestones are sequencing boundaries, not permission to claim incomplete features.
@@ -150,9 +155,9 @@ test, documentation, or packaging task that remains valid.
 | `SAVESTATES-SP-02` Level A checkpoint | VERIFIED locally; upstream review required | `6e94625`, `49954ec`, `9d6ea84`, `05b43ca`; 34/34 public API checks and differential rollback/content-rejection proof green; checkpoint identity exposes engine version for warning-grade compatibility |
 | `SAVESTATES-SP-03` playthrough identity | VERIFIED locally; upstream review required | `726ed11` plus `49954ec`; 18/18 focused checks and 1,000 clean-process stress runs green |
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
-| `SAVESTATES-SP-05` battle/RNG | DESIGNED, implementation required | `docs/battle-state-map.md` proves raw controller/closure serialization unsafe; extend opaque checkpoints for settled ordinary wild/trainer battles with semantic continuations and LÖVE RNG state |
+| `SAVESTATES-SP-05` battle/RNG | VERIFIED locally; stacked review required | `docs/battle-state-map.md`; branch `feat/mod-battle-checkpoints` through `56db6b7`, fork draft PR #1; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, legacy Level A compatibility |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
-| Core event triggers | PARTIAL PRODUCT SUPPORT | `map.entered` and optional `battle.ended` defer to Level A; trainer/wild start and before-warp remain gated rather than mislabeled |
+| Core event triggers | PARTIAL PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; before-warp remains gated rather than mislabeled |
 
 ## Current execution boundary
 
@@ -162,10 +167,12 @@ contracts are implemented in `/home/max/src/gen1recomp-savestates-engine` on
 published as draft PR #952 through `05b43ca`. Upstream merge/release remains the
 M1 external gate. The distributable mod now composes its Level A services entirely
 through `mod:read`, `mod.storage`, `mod.checkpoints`, registered screens, hooks,
-events, options, and HUD drawing. Gate D is complete in
-`docs/battle-state-map.md`: the next lane is a separate, stacked upstream branch
-implementing the smallest generic Level B checkpoint contract, beginning with
-red tests for safe-boundary refusals and process-independent reconstruction.
+events, options, and HUD drawing. Gate D and its Level B implementation are
+complete locally in `docs/battle-state-map.md` and the separate stacked upstream
+branch `feat/mod-battle-checkpoints`, published as fork draft PR #1 through
+`56db6b7`. The next lane is release-grade hardening: performance measurement,
+broader failure/clean-install coverage, upstream review adaptation, and accurate
+release compatibility once both public seams have an upstream release.
 
 Latest verification (2026-08-07):
 
@@ -182,3 +189,9 @@ Latest verification (2026-08-07):
   index/retention, quick/auto/slot/recovery services, native screens, notifications,
   event deferral, fingerprints/deduplication, and transaction failure recovery;
   modkit validate/lint and reproducible 49-file package root verification pass.
+- Stacked Level B `./scripts/test.sh --quick` — 133/133 engine suites and 7/7
+  modkit suites; battle boundary 13/13, capture 29/29, continuation 17/17,
+  restore/determinism/failure rollback 36/36, public checkpoints 38/38.
+- Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-battle` —
+  634/634 Lua behavior checks; modkit validate/lint and reproducible 49-file
+  package root verification pass with battle support enabled.

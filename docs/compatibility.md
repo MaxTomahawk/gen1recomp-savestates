@@ -2,16 +2,20 @@
 
 ## Required engine capability
 
-The development package currently targets the additive public APIs in upstream
-PR [`bryanthaboi/gen1recomp#952`](https://github.com/bryanthaboi/gen1recomp/pull/952).
+The development package currently targets the additive Level A APIs in upstream
+PR [`bryanthaboi/gen1recomp#952`](https://github.com/bryanthaboi/gen1recomp/pull/952)
+plus the stacked Level B draft
+[`MaxTomahawk/gen1recomp#1`](https://github.com/MaxTomahawk/gen1recomp/pull/1).
 It is not a supported player release until those contracts are merged into a
 released engine and `manifest.json` can name that release as its minimum.
 
 ## Supported now
 
 - Matching game version and opaque playthrough identity.
-- Snapshot wrapper format 1 and engine overworld checkpoint format 1.
+- Snapshot wrapper format 1 and engine checkpoint format 1.
 - Settled overworld control with the overworld as the top screen.
+- Settled ordinary wild/trainer player-decision menus with a reconstructable
+  engine-owned continuation.
 - Exact semantic progress plus map, tile coordinates, facing, and surfing state.
 - Reconstruction with engine validation, recapture comparison, rollback, and
   preservation of the current global options.
@@ -24,7 +28,9 @@ released engine and `manifest.json` can name that release as its minimum.
 - Movement between tiles.
 - Map transitions and partial field animations.
 - Active, queued, or parallel scripts and scripted movement.
-- Battles, until a separate battle checkpoint contract is implemented and proven.
+- Battle intro/messages/queues, HP tweens, animations, forced player actions,
+  faint processing, link/Safari/ghost/demo variants, fishing/static origins,
+  mod-defined completion closures, and battles suspending a script coroutine.
 - Title/new-game states without an identified active playthrough.
 
 The manager closes its known native widget chain before a load or live slot save.
@@ -33,17 +39,19 @@ reason and leave runtime/storage untouched.
 
 ## Autosave trigger support
 
-`location_enter` is implemented by deferring `map.entered` until a stable Level A
-boundary. `battle_end` is implemented when its option is enabled and likewise
-waits for stable overworld return. Trainer/wild battle-start and before-warp
-settings are not subscribed yet: capturing them after the fact would silently
-misrepresent the requested semantic point.
+`location_enter` defers `map.entered` until a stable Level A boundary.
+`trainer_battle_start` and `wild_battle_start` defer `battle.started` until the
+first Level B player-decision boundary; requests expire if the battle ends or
+proves unsupported. `battle_end` waits for stable overworld return when enabled.
+`before_warp` remains unsubscribed because no reliable public semantic event
+exists.
 
 ## Matrix
 
 | State | Result |
 | --- | --- |
 | Same game and playthrough, wrapper format 1, overworld kind | loadable |
+| Same game and playthrough, supported battle safe point | loadable with exact gameplay RNG |
 | Different Red/Blue/Yellow identity | rejected: `wrong_game` |
 | Different playthrough | rejected: `wrong_playthrough` |
 | Unknown future wrapper format | rejected: `unsupported_format` |
@@ -52,5 +60,4 @@ misrepresent the requested semantic point.
 | Missing/corrupt payload | retained and shown unavailable |
 | Unsupported runtime kind | rejected: `unsupported_runtime_kind` |
 
-Battle and script support will be added only by extending this matrix with
-differential and deterministic replay evidence.
+Suspended script and arbitrary-frame support require separate future contracts.
