@@ -46,7 +46,8 @@ return function(mod)
   local FingerprintFactory = CanonicalFactory and module("src/util/Fingerprint.lua")
   local Deduplicator = FingerprintFactory and module("src/autosave/Deduplicator.lua")
   local StoreFactory = Deduplicator and module("src/state/StateStore.lua")
-  if not StoreFactory then return end
+  local ServiceFactory = StoreFactory and module("src/service/SaveStateService.lua")
+  if not ServiceFactory then return end
 
   local ok, core = pcall(function()
     local Snapshot = SnapshotFactory(DataOnly)
@@ -56,6 +57,36 @@ return function(mod)
     local Canonical = CanonicalFactory(DataOnly)
     local Fingerprint = FingerprintFactory(Canonical)
     local StateStore = StoreFactory({ DataOnly = DataOnly, StateIndex = StateIndex })
+    local migrations = StateMigrations.new(Snapshot.FORMAT)
+    local Service = ServiceFactory({
+      Snapshot = Snapshot,
+      Retention = Retention,
+      Fingerprint = Fingerprint,
+    })
+    local service = Service.new({
+      checkpoints = mod.checkpoints,
+      storeFactory = function(game)
+        return StateStore.new({
+          storage = mod.storage,
+          game = game,
+          validator = Validator,
+          migrations = migrations,
+          supportedKinds = { overworld = true },
+        })
+      end,
+      clock = os.time,
+      quickLimit = function()
+        return mod.options:get("quick_history") or 5
+      end,
+      modVersion = mod.version,
+      modApi = 2,
+      warn = function(code, message, metadata)
+        if mod.log.warn then
+          mod.log:warn("Savestate %s (%s): %s",
+            metadata and metadata.id or "operation", tostring(code), tostring(message))
+        end
+      end,
+    })
     return {
       DataOnly = DataOnly,
       Snapshot = Snapshot,
@@ -67,6 +98,8 @@ return function(mod)
       Fingerprint = Fingerprint,
       Deduplicator = Deduplicator,
       StateStore = StateStore,
+      Service = Service,
+      service = service,
     }
   end)
   if not ok then
@@ -79,6 +112,9 @@ return function(mod)
   mod.exports.apiVersion = 1
   mod.exports.snapshotFormat = core.Snapshot.FORMAT
   mod.exports.supportedStateKinds = { "overworld" }
+  mod.exports.quickSave = function(game) return core.service:quickSave(game) end
+  mod.exports.quickLoad = function(game) return core.service:quickLoad(game) end
+  mod.exports.undoLastLoad = function(game) return core.service:undoLastLoad(game) end
 
   mod.log:info("Save States %s core ready", mod.version)
 end
