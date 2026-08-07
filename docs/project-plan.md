@@ -208,3 +208,19 @@ Latest verification (2026-08-07):
   notifications, live manager counts, default-NO destructive-action confirmation,
   structured diagnostics, pre-load engine-version warnings, and exact-minimum
   release-engine selection.
+- The same `make check` passed from a fresh clone of the published
+  `feat/initial-savestates` head `0f1f9c05a609999fdadc2627f13ac5a66ab54dc6`;
+  the resulting archive contains 28 distributable files plus
+  `.modkit/pack.json` and has SHA-256
+  `33fc80ce44282a74207cd9200cbb127f4195c618247f69299e7775f504d02eee`.
+- GitHub Actions `Test` run `31193896875` completed successfully for that exact
+  commit. The preview release gate was also exercised directly and correctly
+  refused publication because `experimental` remains `true`.
+- A source-boundary audit found no private `src.*` require, raw filesystem,
+  state-stack, process, package, or debug dependency in distributable Lua. The
+  only require is LuaJIT's standard `bit` module; sibling source loads use the
+  public `mod:read` facade and were exercised by the real modkit loader.
+- Mod-index metadata is staged but intentionally unpushed on
+  `prep/savestates-index` at `37321c5`; targeted validation passes with zero
+  warnings. It must be refreshed from the final release manifest and submitted
+  only after an installable release exists.

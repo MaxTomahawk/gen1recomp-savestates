@@ -29,12 +29,12 @@ Status vocabulary:
 | Deterministic supported battle restoration | Verified on upstream branch | Ordinary wild/trainer player-decision reconstruction, switched/fainted party fidelity, rollback, and exact damage/crit/accuracy/AI/escape/encounter RNG replay. |
 | Unsafe scripts/transitions/menus/animations/battle phases rejected | Verified | Public checkpoint capability and exclusion tests; compatibility docs name every supported boundary. |
 | Manual battle quicksave UX | Accurately limited | No public custom action or battle-menu decorator exists. Default battle-start autosaves are user-accessible; cooperating mods may call the public export at later safe decisions. |
-| No private engine dependency in distributed mod | Verified | Source boundary inspection and real modkit load/lint; engine work remains in separate branches/PRs. |
-| ROM-free CI, tests, lint, reproducible package | Verified | 739/739 Lua checks, 4/4 Python release-gate tests, modkit validate/lint, reproducible 28-file ZIP, fresh extracted-install check. |
+| No private engine dependency in distributed mod | Verified | Source boundary inspection found no private `src.*` require, raw filesystem, state-stack, process, package, or debug access; sibling source loads use public `mod:read`, and real modkit load/lint passes. |
+| ROM-free CI, tests, lint, reproducible package | Verified | 739/739 Lua checks, 4/4 Python release-gate tests, modkit validate/lint, reproducible 28-file ZIP plus pack manifest, and fresh-clone/fresh-extracted-install checks; GitHub Actions run `31193896875` is green at `0f1f9c0`. |
 | Exact released-engine compatibility | Prepared | Release gate derives/checks out the manifest's exact minimum official tag. Manifest intentionally remains experimental/dev until upstream APIs ship. |
 | Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
 | Installable GitHub Release | Blocked externally | Tag workflow intentionally refuses preview metadata; requires official upstream API release and final manifest range. |
-| Mod-index listing | Prepared, submission blocked | Current schema/process is documented and staging metadata can be validated, but policy requires an installable GitHub Release first. |
+| Mod-index listing | Prepared, submission blocked | Local staging branch `prep/savestates-index` at `37321c5` passes targeted validation with zero warnings and remains intentionally unpushed; policy requires an installable GitHub Release first. |
 
 ## External release gates
 

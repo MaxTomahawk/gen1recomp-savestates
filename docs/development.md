@@ -28,6 +28,12 @@ checkout that already has legally imported `data/generated/`, additionally run
 upstream `./scripts/test.sh` and modkit validation with the imported base. Never
 move that generated data into this repository or CI.
 
+For a release-candidate clean-checkout proof, clone the published branch into a
+new temporary directory and run the same `make check` command there. Record the
+tested commit, workflow run, archive file count, and SHA-256 in
+`docs/project-plan.md`; do not treat an uncommitted working-tree result as release
+evidence.
+
 ## Release gate
 
 A public tag remains prohibited until both checkpoint branches are merged and
