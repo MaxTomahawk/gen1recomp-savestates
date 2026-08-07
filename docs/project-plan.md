@@ -147,7 +147,7 @@ test, documentation, or packaging task that remains valid.
 | Item | State | Decision / next evidence |
 | --- | --- | --- |
 | `SAVESTATES-SP-01` scoped storage | VERIFIED locally; upstream review required | `0399ad0` plus lazy correction `49954ec`; 28/28 public API checks and full ROM-free suite green |
-| `SAVESTATES-SP-02` Level A checkpoint | VERIFIED locally; upstream review required | `6e94625` plus lazy correction `49954ec`; 32/32 public API checks and differential rollback proof green |
+| `SAVESTATES-SP-02` Level A checkpoint | VERIFIED locally; upstream review required | `6e94625`, `49954ec`, `9d6ea84`; 34/34 public API checks and differential rollback/content-rejection proof green |
 | `SAVESTATES-SP-03` playthrough identity | VERIFIED locally; upstream review required | `726ed11` plus `49954ec`; 18/18 focused checks and 1,000 clean-process stress runs green |
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
 | `SAVESTATES-SP-05` battle/RNG | CANDIDATE, post-Level-A | complete battle-state map before API or implementation |
@@ -169,7 +169,7 @@ Latest verification (2026-08-07):
 - `luajit tests/engine/playthrough_identity.lua` — 18/18.
 - identity test in 1,000 fresh LuaJIT processes — 1,000/1,000.
 - `luajit tests/modkit/cases/storage.lua` — 28/28.
-- `luajit tests/modkit/cases/checkpoints.lua` — 32/32.
+- `luajit tests/modkit/cases/checkpoints.lua` — 34/34, including invalid-content rejection before mutation.
 - `luajit tests/engine/save_slots.lua` — 78/78.
 - `luajit tests/mod_save_tests.lua` — 132/132.
 - `./scripts/test.sh --quick` — 129/129 engine suites and 7/7 modkit suites;
