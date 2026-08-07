@@ -9,7 +9,10 @@ local mod = {
   exports = {},
   storage = {},
   checkpoints = {},
-  options = { get = function() return nil end },
+  options = {
+    get = function() return nil end,
+    define = function(self, schema) self.schema = schema return schema end,
+  },
   log = {
     info = function(_, format, ...)
       logs[#logs + 1] = (format):format(...)
@@ -38,6 +41,7 @@ T:eq((mod.exports.supportedStateKinds or {})[1], "overworld",
 T:eq(type(mod.exports.quickSave), "function", "composition publishes quicksave command")
 T:eq(type(mod.exports.quickLoad), "function", "composition publishes quickload command")
 T:eq(type(mod.exports.undoLastLoad), "function", "composition publishes undo command")
+T:eq(#(mod.options.schema or {}), 9, "composition registers the full options schema")
 T:check(type(logs[#logs]) == "string" and logs[#logs]:find("core ready", 1, true),
   "successful composition logs one ready lifecycle message")
 for _, message in ipairs(logs) do

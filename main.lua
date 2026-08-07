@@ -46,7 +46,8 @@ return function(mod)
   local FingerprintFactory = CanonicalFactory and module("src/util/Fingerprint.lua")
   local Deduplicator = FingerprintFactory and module("src/autosave/Deduplicator.lua")
   local StoreFactory = Deduplicator and module("src/state/StateStore.lua")
-  local ServiceFactory = StoreFactory and module("src/service/SaveStateService.lua")
+  local Options = StoreFactory and module("src/config/Options.lua")
+  local ServiceFactory = Options and module("src/service/SaveStateService.lua")
   if not ServiceFactory then return end
 
   local ok, core = pcall(function()
@@ -98,6 +99,7 @@ return function(mod)
       Fingerprint = Fingerprint,
       Deduplicator = Deduplicator,
       StateStore = StateStore,
+      Options = Options,
       Service = Service,
       service = service,
     }
@@ -106,6 +108,8 @@ return function(mod)
     mod.log:error("Save States core failed (module_init_failed): %s", tostring(core))
     return
   end
+
+  mod.options:define(core.Options.schema())
 
   -- This deliberately small inter-mod surface is compatibility metadata, not a
   -- promise that every future internal module stays public.
