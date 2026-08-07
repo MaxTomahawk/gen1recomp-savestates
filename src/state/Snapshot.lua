@@ -35,6 +35,7 @@ return function(DataOnly)
         stateKind = checkpoint.kind,
         fingerprint = args.fingerprint,
         slot = args.slot,
+        contextKey = args.contextKey,
       },
       checkpoint = checkpoint,
     }

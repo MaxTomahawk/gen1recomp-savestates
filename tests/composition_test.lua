@@ -5,6 +5,8 @@ local logs = {}
 local registeredScreens = {}
 local startMenuWrapper
 local renderHudWrapper
+local inputStepWrapper
+local eventHandlers = {}
 local mod = {
   id = "savestates",
   version = "0.1.0",
@@ -20,8 +22,12 @@ local mod = {
     wrap = function(_, name, callback)
       if name == "ui.start_menu.items" then startMenuWrapper = callback end
       if name == "render.hud" then renderHudWrapper = callback end
+      if name == "input.step" then inputStepWrapper = callback end
       return function() end
     end,
+  },
+  events = {
+    on = function(_, name, callback) eventHandlers[name] = callback end,
   },
   ui = {
     insertBefore = function(items, anchor, item)
@@ -72,6 +78,11 @@ T:eq(type(mod.exports.undoLastLoad), "function", "composition publishes undo com
 T:eq(#(mod.options.schema or {}), 9, "composition registers the full options schema")
 T:eq(type(startMenuWrapper), "function", "composition installs START decoration")
 T:eq(type(renderHudWrapper), "function", "composition installs non-modal HUD overlay")
+T:eq(type(inputStepWrapper), "function", "composition installs deferred autosave boundary")
+T:eq(type(eventHandlers["map.entered"]), "function",
+  "composition subscribes to location autosaves")
+T:eq(type(eventHandlers["battle.ended"]), "function",
+  "composition subscribes to enabled-safe after-battle autosaves")
 local screenCount = 0
 for _ in pairs(registeredScreens) do screenCount = screenCount + 1 end
 T:eq(screenCount, 8, "composition registers every state manager screen")

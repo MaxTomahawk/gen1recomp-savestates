@@ -2,6 +2,7 @@ return function(deps)
   local Snapshot = assert(deps.Snapshot, "SaveStateService needs Snapshot")
   local Retention = assert(deps.Retention, "SaveStateService needs Retention")
   local Fingerprint = assert(deps.Fingerprint, "SaveStateService needs Fingerprint")
+  local Deduplicator = assert(deps.Deduplicator, "SaveStateService needs Deduplicator")
 
   local Service = {}
   Service.__index = Service
@@ -23,6 +24,14 @@ return function(deps)
     unsupported_runtime_kind = true,
     wrong_game = true,
     wrong_playthrough = true,
+  }
+  local AUTO_TRIGGERS = {
+    location_enter = true,
+    trainer_battle_start = true,
+    wild_battle_start = true,
+    battle_end = true,
+    before_warp = true,
+    script_checkpoint = true,
   }
 
   local function invoke(object, method, ...)
@@ -48,11 +57,14 @@ return function(deps)
     assert(type(args.storeFactory) == "function", "SaveStateService needs storeFactory")
     assert(type(args.clock) == "function", "SaveStateService needs clock")
     assert(type(args.quickLimit) == "function", "SaveStateService needs quickLimit")
+    assert(type(args.autoLimit) == "function", "SaveStateService needs autoLimit")
     return setmetatable({
       checkpoints = args.checkpoints,
       storeFactory = args.storeFactory,
       clock = args.clock,
       quickLimit = args.quickLimit,
+      autoLimit = args.autoLimit,
+      deduplicator = Deduplicator.new(5),
       modVersion = args.modVersion,
       modApi = args.modApi,
       notify = args.notify,
@@ -129,9 +141,10 @@ return function(deps)
       createdAt = metadata.createdAt,
       label = metadata.label,
       locationId = mapId,
-      locationName = self.locationLabel(mapId),
+      locationName = metadata.locationName or self.locationLabel(mapId),
       fingerprint = fingerprint,
       slot = metadata.slot,
+      contextKey = metadata.contextKey,
       checkpoint = checkpoint,
     })
   end
@@ -201,6 +214,105 @@ return function(deps)
     self:_notify("quick_saved", {
       id = id,
       count = #index:list("quick"),
+      limit = limit,
+      locationName = snapshot.metadata.locationName,
+      warning = commitCode,
+    })
+    return snapshot, commitCode, commitMessage
+  end
+
+  function Service:_autoLimit()
+    local ok, value = pcall(self.autoLimit)
+    if not ok or type(value) ~= "number" or value < 1 or value % 1 ~= 0 then
+      return nil, "invalid_limit", "Auto Save history limit is invalid."
+    end
+    return value
+  end
+
+  function Service:autoSave(game, trigger, context)
+    context = type(context) == "table" and context or {}
+    if not AUTO_TRIGGERS[trigger] then
+      return nil, "invalid_trigger", "Autosave trigger is not supported."
+    end
+    local _, capabilityCode, capabilityMessage = self:_capability(game, "capture")
+    if capabilityCode then return nil, capabilityCode, capabilityMessage end
+    local checkpoint, captureCode, captureMessage = invoke(
+      self.checkpoints, "capture", game)
+    if not checkpoint then return nil, captureCode, captureMessage end
+    local runtime = checkpoint.runtime and checkpoint.runtime.overworld
+    local mapId = runtime and runtime.map
+    if trigger == "location_enter" and context.mapId and context.mapId ~= mapId then
+      return nil, "stale_trigger", "Deferred location event no longer matches the active map."
+    end
+    local createdAt, clockCode, clockMessage = self:_now()
+    if not createdAt then return nil, clockCode, clockMessage end
+    local fingerprint, fingerprintCode, fingerprintMessage = Fingerprint.of(checkpoint)
+    if not fingerprint then return nil, fingerprintCode, fingerprintMessage end
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return self:_failure("save_failed", storeCode, storeMessage) end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return self:_failure("save_failed", indexCode, indexMessage) end
+    local newest = index:list("auto")[1]
+    local draft = {
+      trigger = trigger,
+      createdAt = createdAt,
+      locationId = mapId,
+      contextKey = context.contextKey or context.mapId or mapId,
+      fingerprint = fingerprint,
+    }
+    local decision = self.deduplicator:decide(draft, newest, createdAt)
+    if decision == "skip" then return false, "deduplicated", "Autosave cooldown active." end
+
+    local id, idCode, idMessage = invoke(index, "allocate", "auto")
+    if not id then return self:_failure("save_failed", idCode, idMessage) end
+    local snapshot, snapshotCode, snapshotMessage = self:_snapshot(checkpoint, {
+      id = id,
+      stateClass = "auto",
+      trigger = trigger,
+      createdAt = createdAt,
+      locationName = context.locationName,
+      contextKey = draft.contextKey,
+    })
+    if not snapshot then
+      return self:_failure("save_failed", snapshotCode, snapshotMessage)
+    end
+    local added, addCode, addMessage = invoke(index, "add", "auto", snapshot.metadata)
+    if not added then return self:_failure("save_failed", addCode, addMessage) end
+
+    local cleanup, cleanupSet = {}, {}
+    local function remove(idToRemove)
+      if not idToRemove or cleanupSet[idToRemove] then return true end
+      local removed, removeCode, removeMessage = invoke(index, "remove", idToRemove)
+      if not removed then return nil, removeCode, removeMessage end
+      cleanupSet[idToRemove] = true
+      cleanup[#cleanup + 1] = idToRemove
+      return true
+    end
+    if decision == "replace" and newest then
+      local removed, removeCode, removeMessage = remove(newest.id)
+      if not removed then return self:_failure("save_failed", removeCode, removeMessage) end
+    end
+    local limit, limitCode, limitMessage = self:_autoLimit()
+    if not limit then return self:_failure("save_failed", limitCode, limitMessage) end
+    local removals, retentionCode, retentionMessage = Retention.selectRemovals(
+      index:list("auto"), limit)
+    if not removals then
+      return self:_failure("save_failed", retentionCode, retentionMessage)
+    end
+    for _, removeId in ipairs(removals) do
+      local removed, removeCode, removeMessage = remove(removeId)
+      if not removed then return self:_failure("save_failed", removeCode, removeMessage) end
+    end
+    local committed, commitCode, commitMessage = invoke(
+      store, "commitRolling", index, snapshot, cleanup)
+    if not committed then
+      return self:_failure("save_failed", commitCode, commitMessage)
+    end
+    if commitCode then self:_warn(commitCode, commitMessage, snapshot.metadata) end
+    self:_notify("auto_saved", {
+      id = id,
+      trigger = trigger,
+      count = #index:list("auto"),
       limit = limit,
       locationName = snapshot.metadata.locationName,
       warning = commitCode,

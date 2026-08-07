@@ -54,7 +54,8 @@ return function(DataOnly)
         or not optionalString(metadata.label)
         or not optionalString(metadata.locationId)
         or not optionalString(metadata.locationName)
-        or not optionalString(metadata.fingerprint) or not slotOk then
+        or not optionalString(metadata.fingerprint)
+        or not optionalString(metadata.contextKey) or not slotOk then
       return failure("corrupt_metadata", "Snapshot metadata is missing or corrupt.")
     end
 

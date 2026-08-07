@@ -46,7 +46,8 @@ return function(mod)
   local FingerprintFactory = CanonicalFactory and module("src/util/Fingerprint.lua")
   local Time = FingerprintFactory and module("src/util/Time.lua")
   local Deduplicator = Time and module("src/autosave/Deduplicator.lua")
-  local StoreFactory = Deduplicator and module("src/state/StateStore.lua")
+  local AutoSaveController = Deduplicator and module("src/autosave/AutoSaveController.lua")
+  local StoreFactory = AutoSaveController and module("src/state/StateStore.lua")
   local Options = StoreFactory and module("src/config/Options.lua")
   local StartMenu = Options and module("src/ui/StartMenuIntegration.lua")
   local ScreenFactory = StartMenu and module("src/ui/ScreenRegistry.lua")
@@ -80,6 +81,7 @@ return function(mod)
       Snapshot = Snapshot,
       Retention = Retention,
       Fingerprint = Fingerprint,
+      Deduplicator = Deduplicator,
     })
     local service = Service.new({
       checkpoints = mod.checkpoints,
@@ -95,6 +97,9 @@ return function(mod)
       clock = os.time,
       quickLimit = function()
         return mod.options:get("quick_history") or 5
+      end,
+      autoLimit = function()
+        return mod.options:get("auto_history") or 20
       end,
       modVersion = mod.version,
       modApi = 2,
@@ -117,6 +122,7 @@ return function(mod)
       Fingerprint = Fingerprint,
       Time = Time,
       Deduplicator = Deduplicator,
+      AutoSaveController = AutoSaveController,
       StateStore = StateStore,
       Options = Options,
       StartMenu = StartMenu,
@@ -135,6 +141,11 @@ return function(mod)
   mod.options:define(core.Options.schema())
   core.screenIds = core.Screens.install(mod, core.service, os.time)
   core.StartMenu.install(mod, core.service, core.screenIds.root)
+  core.autosaves = core.AutoSaveController.new({
+    service = core.service,
+    checkpoints = mod.checkpoints,
+    option = function(key) return mod.options:get(key) end,
+  }):install(mod)
   mod.hooks:wrap("render.hud", function(next, game, viewport)
     local result = next(game, viewport)
     core.notification:draw(viewport, mod.ui.Font)
@@ -148,6 +159,9 @@ return function(mod)
   mod.exports.supportedStateKinds = { "overworld" }
   mod.exports.quickSave = function(game) return core.service:quickSave(game) end
   mod.exports.quickLoad = function(game) return core.service:quickLoad(game) end
+  mod.exports.autoSave = function(game, trigger, context)
+    return core.service:autoSave(game, trigger, context)
+  end
   mod.exports.undoLastLoad = function(game) return core.service:undoLastLoad(game) end
   mod.exports.loadState = function(game, id) return core.service:loadState(game, id) end
   mod.exports.listStates = function(game, class) return core.service:listStates(game, class) end

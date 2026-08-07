@@ -6,6 +6,7 @@ local Validator = dofile("src/state/SnapshotValidator.lua")(DataOnly)
 local StateMigrations = dofile("src/state/StateMigrations.lua")(DataOnly)
 local StateIndex = dofile("src/state/StateIndex.lua")(DataOnly)
 local Retention = dofile("src/state/Retention.lua")
+local Deduplicator = dofile("src/autosave/Deduplicator.lua")
 local Canonical = dofile("src/util/Canonical.lua")(DataOnly)
 local Fingerprint = dofile("src/util/Fingerprint.lua")(Canonical)
 local StateStore = dofile("src/state/StateStore.lua")({
@@ -114,16 +115,19 @@ local function environment(args)
   local notifications = {}
   local now = args.now or 1000
   local limit = args.limit or 5
+  local autoLimit = args.autoLimit or 20
   local Service = dofile("src/service/SaveStateService.lua")({
     Snapshot = Snapshot,
     Retention = Retention,
     Fingerprint = Fingerprint,
+    Deduplicator = Deduplicator,
   })
   local service = Service.new({
     checkpoints = checkpoints,
     storeFactory = storeFactory,
     clock = function() return now end,
     quickLimit = function() return limit end,
+    autoLimit = function() return autoLimit end,
     modVersion = "0.1.0",
     modApi = 2,
     notify = function(kind, detail)
@@ -140,6 +144,7 @@ local function environment(args)
     storeFactory = storeFactory,
     setNow = function(value) now = value end,
     setLimit = function(value) limit = value end,
+    setAutoLimit = function(value) autoLimit = value end,
   }
 end
 
@@ -276,6 +281,61 @@ T:eq(failedSave, nil, "capture failure aborts quicksave")
 T:eq(failedSaveCode, "capture_failed", "capture failure preserves engine code")
 T:eq(captureFailure.storage.values.index, nil, "capture failure publishes no index")
 T:eq(captureFailure.notifications[1].kind, "save_failed", "capture failure is notified")
+
+local autos = environment({ money = 100, now = 200, autoLimit = 2 })
+local autoOne, autoOneCode, autoOneMessage = autos.service:autoSave(
+  autos.game, "location_enter", { mapId = "PALLET_TOWN", contextKey = "PALLET_TOWN" })
+T:check(autoOne ~= nil,
+  "location autosave succeeds: " .. tostring(autoOneCode or autoOneMessage))
+T:eq(autoOne.metadata.stateClass, "auto", "autosave records auto class")
+T:eq(autoOne.metadata.trigger, "location_enter", "autosave records semantic trigger")
+T:eq(autoOne.metadata.contextKey, "PALLET_TOWN", "autosave records cooldown context")
+T:eq(autos.notifications[#autos.notifications].kind, "auto_saved",
+  "autosave emits notification")
+
+autos.setNow(202)
+autos.game.current = checkpoint(101)
+local cooled, cooledCode = autos.service:autoSave(
+  autos.game, "location_enter", { mapId = "PALLET_TOWN", contextKey = "PALLET_TOWN" })
+T:eq(cooled, false, "same autosave context inside cooldown is skipped")
+T:eq(cooledCode, "deduplicated", "cooldown skip has stable non-error code")
+T:eq(#autos.storeFactory(autos.game):loadIndex():list("auto"), 1,
+  "cooldown skip does not grow history")
+
+autos.setNow(206)
+autos.game.current = checkpoint(100)
+local replacedAuto = autos.service:autoSave(
+  autos.game, "location_enter", { mapId = "PALLET_TOWN", contextKey = "PALLET_TOWN" })
+T:check(replacedAuto ~= nil, "semantic duplicate after cooldown replaces")
+T:check(replacedAuto.metadata.id ~= autoOne.metadata.id,
+  "semantic replacement uses a new transactional generation")
+local autoIndex = autos.storeFactory(autos.game):loadIndex()
+T:eq(#autoIndex:list("auto"), 1, "semantic replacement does not grow history")
+T:eq(autos.storage.values["states/" .. autoOne.metadata.id], nil,
+  "semantic replacement cleans prior payload generation")
+
+autos.setNow(207)
+autos.game.current = checkpoint(102)
+T:check(autos.service:autoSave(autos.game, "trainer_battle_start", {
+  mapId = "PALLET_TOWN", contextKey = "TRAINER:1",
+}), "different autosave trigger appends")
+autos.setNow(213)
+autos.game.current = checkpoint(103, "ROUTE_1")
+T:check(autos.service:autoSave(autos.game, "location_enter", {
+  mapId = "ROUTE_1", contextKey = "ROUTE_1",
+}), "new location autosave appends")
+autoIndex = autos.storeFactory(autos.game):loadIndex()
+T:eq(#autoIndex:list("auto"), 2, "autosave retention honors configured limit")
+T:eq(autoIndex:list("auto")[1].locationId, "ROUTE_1",
+  "autosave history stays newest-first")
+
+local staleAuto = environment({ money = 100, now = 300 })
+local stale, staleCode = staleAuto.service:autoSave(staleAuto.game, "location_enter", {
+  mapId = "ROUTE_1", contextKey = "ROUTE_1",
+})
+T:eq(stale, nil, "stale deferred location event does not save another map")
+T:eq(staleCode, "stale_trigger", "stale location event has stable code")
+T:eq(staleAuto.storage.values.index, nil, "stale location event publishes nothing")
 
 local writeFailure = environment()
 writeFailure.storage.failWrite["states/q00000001"] = true
