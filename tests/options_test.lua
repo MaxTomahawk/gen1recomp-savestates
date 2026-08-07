@@ -33,6 +33,7 @@ local toggles = {
   auto_before_warp = false,
   save_notifications = true,
   load_notifications = true,
+  debug_logging = false,
 }
 for key, expected in pairs(toggles) do
   T:check(rows[key] ~= nil, key .. " option exists")

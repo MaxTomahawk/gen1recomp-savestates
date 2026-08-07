@@ -104,6 +104,19 @@ return function(mod)
       modVersion = mod.version,
       modApi = 2,
       notify = function(kind, detail) notification:show(kind, detail) end,
+      debugEnabled = function()
+        return mod.options:get("debug_logging") == true
+      end,
+      timer = uiClock,
+      measureSize = function(value)
+        local encoded = Canonical.encode(value)
+        return encoded and #encoded or 0
+      end,
+      debug = function(metric)
+        local size = metric.bytes and (", " .. tostring(metric.bytes) .. " bytes") or ""
+        mod.log:info("[debug] %s %.3f ms%s",
+          tostring(metric.operation), tonumber(metric.elapsedMs) or 0, size)
+      end,
       warn = function(code, message, metadata)
         if mod.log.warn then
           mod.log:warn("Savestate %s (%s): %s",

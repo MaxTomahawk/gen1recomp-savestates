@@ -23,6 +23,8 @@ local ROWS = {
     default = true },
   { key = "load_notifications", label = "LOAD NOTIFICATIONS", type = "toggle",
     default = true },
+  { key = "debug_logging", label = "DEBUG TIMINGS", type = "toggle",
+    default = false },
 }
 
 local function copy(value)

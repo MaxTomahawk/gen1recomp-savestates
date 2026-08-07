@@ -77,7 +77,7 @@ T:eq((mod.exports.supportedStateKinds or {})[2], "battle",
 T:eq(type(mod.exports.quickSave), "function", "composition publishes quicksave command")
 T:eq(type(mod.exports.quickLoad), "function", "composition publishes quickload command")
 T:eq(type(mod.exports.undoLastLoad), "function", "composition publishes undo command")
-T:eq(#(mod.options.schema or {}), 9, "composition registers the full options schema")
+T:eq(#(mod.options.schema or {}), 10, "composition registers the full options schema")
 T:eq(type(startMenuWrapper), "function", "composition installs START decoration")
 T:eq(type(renderHudWrapper), "function", "composition installs non-modal HUD overlay")
 T:eq(type(inputStepWrapper), "function", "composition installs deferred autosave boundary")
@@ -87,6 +87,8 @@ T:eq(type(eventHandlers["battle.ended"]), "function",
   "composition subscribes to enabled-safe after-battle autosaves")
 T:eq(type(eventHandlers["battle.started"]), "function",
   "composition subscribes to deferred battle-start autosaves")
+T:eq(type(eventHandlers["player.warped"]), "function",
+  "composition subscribes to immediate before-warp autosaves")
 local screenCount = 0
 for _ in pairs(registeredScreens) do screenCount = screenCount + 1 end
 T:eq(screenCount, 8, "composition registers every state manager screen")

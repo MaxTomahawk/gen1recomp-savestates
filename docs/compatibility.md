@@ -43,8 +43,10 @@ reason and leave runtime/storage untouched.
 `trainer_battle_start` and `wild_battle_start` defer `battle.started` until the
 first Level B player-decision boundary; requests expire if the battle ends or
 proves unsupported. `battle_end` waits for stable overworld return when enabled.
-`before_warp` remains unsubscribed because no reliable public semantic event
-exists.
+`before_warp` captures synchronously inside the public `player.warped` event,
+which is emitted after destination resolution but before transition mutation.
+It is discarded rather than deferred when capability inspection rejects that
+exact source-map boundary.
 
 ## Matrix
 

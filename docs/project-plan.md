@@ -126,7 +126,7 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | M3 — Level A prototype | Stable overworld capture/mutate/restore/re-capture | ENGINE CONTRACT VERIFIED: semantic differential recapture plus rejection/rollback tests; broader packaged fixture matrix remains before release |
 | M4 — Quicksaves and recovery | Rolling quick history, newest quickload, transactional recovery, undo | VERIFIED in injected public-API service tests: A -> load B -> undo -> A; corruption and persistence failure paths covered |
 | M5 — Native UX and slots | START rows, manager screens, ten permanent slots, rename/delete, HUD notifications, options | VERIFIED headlessly: second decorator coexistence, empty/unavailable states, generation-safe slot overwrite, disabled notifications, public widget close chain |
-| M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | PARTIAL: location, ordinary trainer/wild start, and optional after-battle deferral plus stale-event expiry, dedup/retention, and corrupt visibility verified; timings and broader clean-runtime matrix remain |
+| M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | IMPLEMENTED: location, ordinary trainer/wild start, optional after-battle deferral, synchronous capability-gated before-warp, stale-event expiry, dedup/retention, corrupt visibility, and opt-in phase timings; broader clean-runtime matrix remains |
 | M7 — Battle beta | VERIFIED LOCALLY: field/RNG/continuation map plus persistent safe-point capture/restore | 133/133 engine suites; wild/trainer differential reconstruction; damage/crit/accuracy/AI/escape/encounter RNG replay; rollback and unsupported-phase tests green |
 | M8 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | clean ZIP install, validate/lint/tests, no private requires/ROM content, release asset resolves |
 
@@ -157,7 +157,7 @@ test, documentation, or packaging task that remains valid.
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
 | `SAVESTATES-SP-05` battle/RNG | VERIFIED locally; stacked review required | `docs/battle-state-map.md`; branch `feat/mod-battle-checkpoints` through `56db6b7`, fork draft PR #1; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, legacy Level A compatibility |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
-| Core event triggers | PARTIAL PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; before-warp remains gated rather than mislabeled |
+| Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
 
 ## Current execution boundary
 
@@ -170,8 +170,8 @@ through `mod:read`, `mod.storage`, `mod.checkpoints`, registered screens, hooks,
 events, options, and HUD drawing. Gate D and its Level B implementation are
 complete locally in `docs/battle-state-map.md` and the separate stacked upstream
 branch `feat/mod-battle-checkpoints`, published as fork draft PR #1 through
-`56db6b7`. The next lane is release-grade hardening: performance measurement,
-broader failure/clean-install coverage, upstream review adaptation, and accurate
+`56db6b7`. The next lane is release-grade hardening: broader failure/clean-install
+coverage, upstream review adaptation, and accurate
 release compatibility once both public seams have an upstream release.
 
 Latest verification (2026-08-07):

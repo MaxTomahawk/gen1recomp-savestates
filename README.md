@@ -43,6 +43,8 @@ Location entry requests are deferred until stable overworld control. Ordinary
 wild/trainer starts defer through the intro and capture at the first proven player
 decision menu; an unsupported/scripted battle expires rather than later saving a
 mislabeled overworld state. Optional after-battle requests wait for stable return.
+Optional before-warp capture runs synchronously at the public `player.warped`
+pre-transition event and fails closed if that exact boundary is not checkpoint-safe.
 Cooldown, semantic duplicate replacement, and chronological retention are active.
 
 ## Save Slots
@@ -58,9 +60,11 @@ checkpoint. Undo restores it without overwriting it.
 
 ## Settings
 
-History limits, autosave triggers, and save/load notification toggles use the
-native MODS manager. The STATES settings screen reports current values and points
-to that public edit path.
+History limits, autosave triggers, save/load notification toggles, and opt-in
+debug timings use the native MODS manager. The STATES settings screen reports
+current values and points to that public edit path. Debug timing logs report
+capture, deterministic serialization/size, persistence, recovery-write, and
+restore costs without doing the extra size serialization while disabled.
 
 ## Hotkeys
 
@@ -79,8 +83,6 @@ tracked in `docs/compatibility.md` as implementation lands.
 - Battle checkpoints support ordinary single-player wild/trainer player-decision
   menus. Link, Safari, ghost, demo, fishing/static-origin, scripted, forced-action,
   message, queue, and animation phases are rejected.
-- Before-warp is visible as a planned setting but remains inactive because there
-  is no matching public semantic event.
 - Arbitrary-frame emulator-style snapshots are not promised.
 
 ## State Safety

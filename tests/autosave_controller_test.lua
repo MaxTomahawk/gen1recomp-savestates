@@ -18,6 +18,7 @@ function checkpoints:inspect() return self.capability end
 local options = {
   auto_location = true,
   auto_after_battle = false,
+  auto_before_warp = false,
   auto_trainer_battle = true,
   auto_wild_battle = true,
 }
@@ -97,6 +98,14 @@ T:eq(type(hookHandlers["input.step"]), "function",
   "installation uses fixed-step safe retry hook")
 T:eq(type(eventHandlers["battle.started"]), "function",
   "installation subscribes to semantic battle start")
+T:eq(type(eventHandlers["player.warped"]), "function",
+  "installation subscribes to the public pre-transition warp event")
+
+local noGameWarp, noGameWarpCode = eventHandlers["player.warped"]({
+  fromMap = "PALLET_TOWN", toMap = "REDS_HOUSE_1F",
+})
+T:eq(noGameWarp, false, "disabled before-warp capture is ignored")
+T:eq(noGameWarpCode, "disabled", "disabled before-warp status is explicit")
 
 eventHandlers["map.entered"]({ mapId = "CERULEAN_CITY", via = "warp" })
 local downstream = 0
@@ -109,6 +118,37 @@ T:eq(downstream, 1, "autosave hook always calls downstream input step")
 T:eq(calls[#calls].trigger, "location_enter", "installed event reaches service when safe")
 T:eq(calls[#calls].context.contextKey, "CERULEAN_CITY",
   "installed location event derives semantic context")
+
+options.auto_before_warp = true
+local beforeWarpCalls = #calls
+local beforeWarp, beforeWarpCode = eventHandlers["player.warped"]({
+  fromMap = "CERULEAN_CITY", toMap = "CERULEAN_GYM",
+})
+T:check(beforeWarp ~= nil,
+  "before-warp event captures synchronously: " .. tostring(beforeWarpCode))
+T:eq(#calls, beforeWarpCalls + 1,
+  "before-warp event cannot be deferred beyond the transition boundary")
+T:eq(calls[#calls].game, game, "before-warp capture uses the live fixed-step game")
+T:eq(calls[#calls].trigger, "before_warp", "before-warp trigger is canonical")
+T:eq(calls[#calls].context.contextKey, "CERULEAN_CITY>CERULEAN_GYM",
+  "before-warp dedupe context contains both sides of the warp")
+T:eq(calls[#calls].context.mapId, "CERULEAN_CITY",
+  "before-warp state remains labeled with its source map")
+
+checkpoints.capability = {
+  canCapture = false, kind = "overworld", reason = "movement_busy",
+  message = "Wait for movement.",
+}
+beforeWarpCalls = #calls
+local unsafeWarp, unsafeWarpCode = eventHandlers["player.warped"]({
+  fromMap = "CERULEAN_GYM", toMap = "CERULEAN_CITY",
+})
+T:eq(unsafeWarp, false, "unsafe pre-transition boundary fails closed")
+T:eq(unsafeWarpCode, "movement_busy", "warp rejection preserves capability reason")
+T:eq(#calls, beforeWarpCalls, "unsafe warp never invokes the save service")
+T:eq(installed:pendingCount(), 0,
+  "unsafe before-warp event is never deferred into the destination map")
+checkpoints.capability = { canCapture = true, canRestore = true, kind = "overworld" }
 
 options.auto_after_battle = true
 eventHandlers["battle.ended"]({ result = "win" })

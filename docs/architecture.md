@@ -110,4 +110,11 @@ enqueue semantic requests. An `input.step` wrapper retries at most one request p
 fixed tick and calls the service only after `mod.checkpoints:inspect` proves the
 matching overworld or battle boundary. A battle-start request expires when the
 runtime leaves battle, preventing a later overworld save from carrying the wrong
-trigger. Before-warp remains gated on a future reliable public event.
+trigger. `player.warped` is different: it fires synchronously before transition
+mutation, so enabled before-warp capture runs immediately with the live game
+cached at the current `input.step`. It is never deferred into the destination.
+
+Opt-in debug timings use the monotonic LÖVE clock. The service measures checkpoint
+capture, deterministic wrapper serialization and byte size, state/recovery writes,
+and checkpoint restore. Size serialization and timing logs are bypassed entirely
+unless `DEBUG TIMINGS` is enabled.

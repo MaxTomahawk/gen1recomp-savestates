@@ -126,6 +126,7 @@ local function environment(args)
     })
   end
   local notifications = {}
+  local debugMetrics = {}
   local now = args.now or 1000
   local limit = args.limit or 5
   local autoLimit = args.autoLimit or 20
@@ -146,6 +147,10 @@ local function environment(args)
     notify = function(kind, detail)
       notifications[#notifications + 1] = { kind = kind, detail = detail }
     end,
+    debugEnabled = args.debugEnabled,
+    timer = args.timer,
+    measureSize = args.measureSize,
+    debug = function(metric) debugMetrics[#debugMetrics + 1] = metric end,
   })
   return {
     game = game,
@@ -153,6 +158,7 @@ local function environment(args)
     checkpoints = checkpoints,
     service = service,
     notifications = notifications,
+    debugMetrics = debugMetrics,
     events = events,
     storeFactory = storeFactory,
     setNow = function(value) now = value end,
@@ -195,6 +201,38 @@ T:eq(happySummary.autoCount, 0, "summary reports empty auto history")
 T:eq(happySummary.slotCount, 0, "summary reports no occupied slots")
 T:eq(happySummary.slotCapacity, 10, "summary reports permanent slot capacity")
 T:eq(happySummary.undoAvailable, false, "summary reports no recovery before a load")
+T:eq(#happy.debugMetrics, 0, "performance logging is silent by default")
+
+local performanceNow = 10
+local performance = environment({
+  money = 321,
+  debugEnabled = function() return true end,
+  timer = function()
+    performanceNow = performanceNow + 0.002
+    return performanceNow
+  end,
+  measureSize = function() return 4321 end,
+})
+T:check(performance.service:quickSave(performance.game) ~= nil,
+  "instrumented quicksave succeeds")
+performance.game.current = checkpoint(999, "ROUTE_1")
+T:check(performance.service:quickLoad(performance.game) ~= nil,
+  "instrumented quickload succeeds")
+local metricNames = {}
+for _, metric in ipairs(performance.debugMetrics) do
+  metricNames[metric.operation] = metric
+  T:check(type(metric.elapsedMs) == "number" and metric.elapsedMs >= 0,
+    "performance metric has a nonnegative duration")
+end
+for _, operation in ipairs({
+  "checkpoint_capture", "snapshot_serialize", "state_write",
+  "recovery_write", "checkpoint_restore",
+}) do
+  T:check(metricNames[operation] ~= nil,
+    "debug logging measures " .. operation)
+end
+T:eq(metricNames.snapshot_serialize.bytes, 4321,
+  "debug serialization metric reports snapshot size")
 
 local battleStates = environment({ money = 400 })
 battleStates.game.current = battleCheckpoint(400, "wild")

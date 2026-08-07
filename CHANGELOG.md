@@ -21,6 +21,10 @@ Version headings match `manifest.json`.
   gameplay RNG, semantic continuation reconstruction, and deferred battle-start
   autosaves.
 - Replace-in-place HUD notifications and native mod option schema.
+- Capability-gated, synchronous before-warp autosaves through the public
+  pre-transition event.
+- Opt-in capture, serialization/size, persistence, recovery, and restore timing
+  diagnostics.
 
 ## 0.1.0
 

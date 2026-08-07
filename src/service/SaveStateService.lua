@@ -69,6 +69,10 @@ return function(deps)
       modApi = args.modApi,
       notify = args.notify,
       warn = args.warn,
+      debugEnabled = args.debugEnabled,
+      timer = args.timer,
+      measureSize = args.measureSize,
+      debug = args.debug,
       locationLabel = args.locationLabel or defaultLabel,
     }, Service)
   end
@@ -79,6 +83,66 @@ return function(deps)
 
   function Service:_warn(code, message, metadata)
     if type(self.warn) == "function" then pcall(self.warn, code, message, metadata) end
+  end
+
+  function Service:_debugActive()
+    if type(self.debugEnabled) ~= "function" then return false end
+    local ok, enabled = pcall(self.debugEnabled)
+    return ok and enabled == true
+  end
+
+  function Service:_emitMetric(metric)
+    if type(self.debug) == "function" then pcall(self.debug, metric) end
+  end
+
+  function Service:_measure(operation, callback)
+    if not self:_debugActive() or type(self.timer) ~= "function" then
+      return callback()
+    end
+    local startOk, started = pcall(self.timer)
+    local results
+    local function collect(...)
+      results = { n = select("#", ...), ... }
+    end
+    collect(callback())
+    local finishOk, finished = pcall(self.timer)
+    if startOk and finishOk and type(started) == "number"
+        and type(finished) == "number" and finished >= started then
+      self:_emitMetric({
+        operation = operation,
+        elapsedMs = (finished - started) * 1000,
+      })
+    end
+    return unpack(results, 1, results.n)
+  end
+
+  function Service:_measureSnapshot(snapshot)
+    if not self:_debugActive() or type(self.timer) ~= "function"
+        or type(self.measureSize) ~= "function" then return end
+    local startOk, started = pcall(self.timer)
+    local sizeOk, bytes = pcall(self.measureSize, snapshot)
+    local finishOk, finished = pcall(self.timer)
+    if startOk and finishOk and sizeOk and type(bytes) == "number"
+        and type(started) == "number" and type(finished) == "number"
+        and finished >= started then
+      self:_emitMetric({
+        operation = "snapshot_serialize",
+        elapsedMs = (finished - started) * 1000,
+        bytes = bytes,
+      })
+    end
+  end
+
+  function Service:_captureCheckpoint(game)
+    return self:_measure("checkpoint_capture", function()
+      return invoke(self.checkpoints, "capture", game)
+    end)
+  end
+
+  function Service:_restoreCheckpoint(game, checkpoint)
+    return self:_measure("checkpoint_restore", function()
+      return invoke(self.checkpoints, "restore", game, checkpoint)
+    end)
   end
 
   function Service:_failure(kind, code, message, detail)
@@ -132,7 +196,7 @@ return function(deps)
     local mapId = runtime and runtime.map
     local fingerprint, fingerprintCode, fingerprintMessage = Fingerprint.of(checkpoint)
     if not fingerprint then return nil, fingerprintCode, fingerprintMessage end
-    return Snapshot.new({
+    local snapshot, code, message = Snapshot.new({
       id = metadata.id,
       modVersion = self.modVersion,
       modApi = self.modApi,
@@ -147,6 +211,8 @@ return function(deps)
       contextKey = metadata.contextKey,
       checkpoint = checkpoint,
     })
+    if snapshot then self:_measureSnapshot(snapshot) end
+    return snapshot, code, message
   end
 
   local function validSlot(slot)
@@ -169,8 +235,7 @@ return function(deps)
       return self:_failure("save_rejected", capabilityCode, capabilityMessage)
     end
 
-    local checkpoint, captureCode, captureMessage = invoke(
-      self.checkpoints, "capture", game)
+    local checkpoint, captureCode, captureMessage = self:_captureCheckpoint(game)
     if not checkpoint then
       return self:_failure("save_failed", captureCode, captureMessage)
     end
@@ -205,8 +270,9 @@ return function(deps)
       if not removed then return self:_failure("save_failed", removeCode, removeMessage) end
     end
 
-    local committed, commitCode, commitMessage = invoke(
-      store, "commitRolling", index, snapshot, removals)
+    local committed, commitCode, commitMessage = self:_measure("state_write", function()
+      return invoke(store, "commitRolling", index, snapshot, removals)
+    end)
     if not committed then
       return self:_failure("save_failed", commitCode, commitMessage)
     end
@@ -236,8 +302,7 @@ return function(deps)
     end
     local _, capabilityCode, capabilityMessage = self:_capability(game, "capture")
     if capabilityCode then return nil, capabilityCode, capabilityMessage end
-    local checkpoint, captureCode, captureMessage = invoke(
-      self.checkpoints, "capture", game)
+    local checkpoint, captureCode, captureMessage = self:_captureCheckpoint(game)
     if not checkpoint then return nil, captureCode, captureMessage end
     local runtime = checkpoint.runtime and checkpoint.runtime.overworld
     local mapId = runtime and runtime.map
@@ -303,8 +368,9 @@ return function(deps)
       local removed, removeCode, removeMessage = remove(removeId)
       if not removed then return self:_failure("save_failed", removeCode, removeMessage) end
     end
-    local committed, commitCode, commitMessage = invoke(
-      store, "commitRolling", index, snapshot, cleanup)
+    local committed, commitCode, commitMessage = self:_measure("state_write", function()
+      return invoke(store, "commitRolling", index, snapshot, cleanup)
+    end)
     if not committed then
       return self:_failure("save_failed", commitCode, commitMessage)
     end
@@ -344,8 +410,9 @@ return function(deps)
       index, "setSlot", slot, snapshot.metadata)
     if not assigned then return nil, assignCode, assignMessage end
     local cleanup = previous and { previous.id } or {}
-    local committed, commitCode, commitMessage = invoke(
-      store, "commitSlot", index, snapshot, cleanup)
+    local committed, commitCode, commitMessage = self:_measure("state_write", function()
+      return invoke(store, "commitSlot", index, snapshot, cleanup)
+    end)
     if not committed then return nil, commitCode, commitMessage end
     if commitCode then self:_warn(commitCode, commitMessage, snapshot.metadata) end
     self:_notify("slot_saved", {
@@ -367,8 +434,7 @@ return function(deps)
     if capabilityCode then
       return self:_failure("save_rejected", capabilityCode, capabilityMessage)
     end
-    local checkpoint, captureCode, captureMessage = invoke(
-      self.checkpoints, "capture", game)
+    local checkpoint, captureCode, captureMessage = self:_captureCheckpoint(game)
     if not checkpoint then return self:_failure("save_failed", captureCode, captureMessage) end
     local store, storeCode, storeMessage = self:_store(game)
     if not store then return self:_failure("save_failed", storeCode, storeMessage) end
@@ -534,8 +600,7 @@ return function(deps)
   end
 
   function Service:_captureRecovery(game, store)
-    local checkpoint, captureCode, captureMessage = invoke(
-      self.checkpoints, "capture", game)
+    local checkpoint, captureCode, captureMessage = self:_captureCheckpoint(game)
     if not checkpoint then return nil, captureCode, captureMessage end
     local createdAt, clockCode, clockMessage = self:_now()
     if not createdAt then return nil, clockCode, clockMessage end
@@ -546,7 +611,9 @@ return function(deps)
       createdAt = createdAt,
     })
     if not recovery then return nil, snapshotCode, snapshotMessage end
-    local saved, saveCode, saveMessage = invoke(store, "saveRecovery", recovery)
+    local saved, saveCode, saveMessage = self:_measure("recovery_write", function()
+      return invoke(store, "saveRecovery", recovery)
+    end)
     if not saved then return nil, saveCode, saveMessage end
     local verified, verifyCode, verifyMessage = invoke(
       store, "loadRecovery", { engineVersion = checkpoint.identity.engineVersion })
@@ -571,8 +638,8 @@ return function(deps)
       { engineVersion = recovery.identity.engineVersion })
     if not current then return self:_failure("load_failed", targetCode, targetMessage) end
     warnings = currentWarnings or warnings
-    local restored, restoreCode, restoreMessage = invoke(
-      self.checkpoints, "restore", game, current.checkpoint)
+    local restored, restoreCode, restoreMessage = self:_restoreCheckpoint(
+      game, current.checkpoint)
     if not restored then
       return self:_failure("load_failed", restoreCode, restoreMessage,
         { id = current.metadata.id })
@@ -636,7 +703,7 @@ return function(deps)
     if capabilityCode then
       return self:_failure("load_failed", capabilityCode, capabilityMessage)
     end
-    local current, captureCode, captureMessage = invoke(self.checkpoints, "capture", game)
+    local current, captureCode, captureMessage = self:_captureCheckpoint(game)
     if not current then return self:_failure("load_failed", captureCode, captureMessage) end
     local store, storeCode, storeMessage = self:_store(game)
     if not store then return self:_failure("load_failed", storeCode, storeMessage) end
@@ -645,8 +712,8 @@ return function(deps)
     if not recovery then
       return self:_failure("load_failed", recoveryCode, recoveryMessage)
     end
-    local restored, restoreCode, restoreMessage = invoke(
-      self.checkpoints, "restore", game, recovery.checkpoint)
+    local restored, restoreCode, restoreMessage = self:_restoreCheckpoint(
+      game, recovery.checkpoint)
     if not restored then
       return self:_failure("load_failed", restoreCode, restoreMessage)
     end
