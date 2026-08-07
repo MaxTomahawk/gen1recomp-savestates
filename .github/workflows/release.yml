@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Save States
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Verify release identity
         id: release
@@ -30,7 +30,7 @@ jobs:
       # stay red until that released tag contains mod.storage and both
       # overworld and battle forms of mod.checkpoints.
       - name: Checkout official Gen1Recomp
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: bryanthaboi/gen1recomp
           ref: ${{ steps.release.outputs.engine_ref }}

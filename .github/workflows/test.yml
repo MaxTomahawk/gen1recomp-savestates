@@ -12,17 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Save States
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Checkout verified Gen1Recomp API branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: MaxTomahawk/gen1recomp
           ref: 5b3eed8c066098df921007f07c6170c5e24021ba
           path: .upstream
 
       - name: Checkout reproducible modkit tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: MaxTomahawk/gen1recomp
           ref: 02fd21bcdb7bc46ac16565a76b3100c869ecd4ea
