@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: MaxTomahawk/gen1recomp
-          ref: 9d6ea845d7c462ebab0f72a2ac0c951557e21260
+          ref: 05b43ca258f808f7206c228e04c02bcb339a3768
           path: .upstream
 
       - name: Install ROM-free toolchain
