@@ -1,6 +1,6 @@
 # Save States Living Project Plan
 
-Status: active execution; M2 pure data/storage core implemented, M3 overworld service proof next
+Status: active execution; Level A quick/slot/UI/autosave product slice implemented, battle contract next
 
 Updated: 2026-08-07
 
@@ -117,11 +117,11 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | --- | --- | --- |
 | M0 — Project baseline | Governance, audit, living plan, remote, feature branch | pinned sources, clean diff review, planning commit pushed |
 | M1 — Upstream proof/RFCs | Implement and specify scoped storage plus Level A checkpoint seams; keep candidates separate | local contracts and RFCs complete; focused suites, 1,000-run GC regression, and `./scripts/test.sh --quick` green; upstream review/release still required |
-| M2 — Mod shell and pure core | Current modkit shell; injected adapters; snapshot schema/validation/index/retention/migrations | VERIFIED locally: 243 pure behavior checks, real modkit load/lint, strict reproducible package and root listing |
-| M3 — Level A prototype | Stable overworld capture/mutate/restore/re-capture | normalized A equals A2 across outdoor, indoor, route, party, inventory, flags, objects, trainer state |
-| M4 — Quicksaves and recovery | Rolling quick history, newest quickload, transactional recovery, undo | failure-injection tests; A -> load B -> undo -> A; restart persistence |
-| M5 — Native UX and slots | START rows, manager screens, ten permanent slots, rename/delete, HUD notifications, options | second decorator coexistence, empty states, disabled notifications, menu recovery |
-| M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | unsafe phases never capture; corrupt/missing payloads remain recoverable; measured timings/sizes |
+| M2 — Mod shell and pure core | Current modkit shell; injected adapters; snapshot schema/validation/index/retention/migrations | VERIFIED locally: pure behavior suite, real modkit load/lint, strict reproducible package and root listing |
+| M3 — Level A prototype | Stable overworld capture/mutate/restore/re-capture | ENGINE CONTRACT VERIFIED: semantic differential recapture plus rejection/rollback tests; broader packaged fixture matrix remains before release |
+| M4 — Quicksaves and recovery | Rolling quick history, newest quickload, transactional recovery, undo | VERIFIED in injected public-API service tests: A -> load B -> undo -> A; corruption and persistence failure paths covered |
+| M5 — Native UX and slots | START rows, manager screens, ten permanent slots, rename/delete, HUD notifications, options | VERIFIED headlessly: second decorator coexistence, empty/unavailable states, generation-safe slot overwrite, disabled notifications, public widget close chain |
+| M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | PARTIAL: location and optional after-battle deferral, dedup/retention, corrupt visibility verified; timings and broader clean-runtime matrix remain |
 | M7 — Battle beta | Complete battle map, safe-point capture/restore, deterministic gameplay RNG | differential wild/trainer matrix and exact repeated action results after reload |
 | M8 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | clean ZIP install, validate/lint/tests, no private requires/ROM content, release asset resolves |
 
@@ -152,18 +152,18 @@ test, documentation, or packaging task that remains valid.
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
 | `SAVESTATES-SP-05` battle/RNG | CANDIDATE, post-Level-A | complete battle-state map before API or implementation |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
-| Core event triggers | VERIFIED capability | defer requested autosaves until confirmed safe point |
+| Core event triggers | PARTIAL PRODUCT SUPPORT | `map.entered` and optional `battle.ended` defer to Level A; trainer/wild start and before-warp remain gated rather than mislabeled |
 
 ## Current execution boundary
 
 The active product goal authorizes autonomous implementation. The Level A public
 contracts are implemented in `/home/max/src/gen1recomp-savestates-engine` on
-`feat/mod-state-checkpoints`, based on upstream `112120e`, with four coherent
-commits. RFC/reference work and upstream publication are the remaining M1 review
-gate. Pure distributable-mod work may now proceed against injected public
-adapters; it will not import private engine modules while the upstream seam awaits
-merge/release. M2 now composes the data-only core through `mod:read`/`load`; M3
-will add the first end-to-end service over the public checkpoint/storage facades.
+`feat/mod-state-checkpoints`, based on upstream `112120e`; the focused branch is
+published as draft PR #952 through `05b43ca`. Upstream merge/release remains the
+M1 external gate. The distributable mod now composes its Level A services entirely
+through `mod:read`, `mod.storage`, `mod.checkpoints`, registered screens, hooks,
+events, options, and HUD drawing. The next architectural lane is the required
+battle field/RNG inventory and the smallest generic Level B checkpoint contract.
 
 Latest verification (2026-08-07):
 
@@ -176,6 +176,7 @@ Latest verification (2026-08-07):
 - `./scripts/test.sh --quick` — 129/129 engine suites and 7/7 modkit suites;
   ROM-derived T3 correctly skipped because no imported data is present.
 - Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-engine` —
-  243/243 Lua behavior checks across composition, modules, snapshots, migrations,
-  index/retention, fingerprints/deduplication, and transaction failure recovery;
-  modkit validate/lint and reproducible package root verification pass.
+  616/616 Lua behavior checks across composition, modules, snapshots, migrations,
+  index/retention, quick/auto/slot/recovery services, native screens, notifications,
+  event deferral, fingerprints/deduplication, and transaction failure recovery;
+  modkit validate/lint and reproducible 47-file package root verification pass.

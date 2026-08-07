@@ -24,6 +24,8 @@ versioned Gen1Recomp checkpoint:
     locationName = "PALLET TOWN",
     stateKind = "overworld",
     fingerprint = "0123456789abcdef",
+    contextKey = nil,
+    slot = nil,
   },
   checkpoint = {
     -- Opaque engine-owned data-only checkpoint.
@@ -45,9 +47,12 @@ matches.
 
 ## Metadata
 
-Rolling ids are `q`/`a` plus an eight-digit monotonic sequence. Permanent ids are
-`slot01` through `slot10`; recovery is `recovery`. `createdAt` is a nonnegative
-timestamp supplied by the service clock. Custom slot labels are metadata only.
+Rolling ids are `q`/`a` plus an eight-digit monotonic sequence. Permanent payload
+generations are `sNN_` plus the same monotonic sequence; `metadata.slot` binds a
+generation to logical slot 1 through 10. A stable slot number therefore survives
+while each overwrite remains cross-key transactional. Recovery is `recovery`.
+`createdAt` is a nonnegative timestamp supplied by the service clock. Custom slot
+labels are metadata only.
 
 Canonical autosave triggers are `location_enter`, `trainer_battle_start`,
 `wild_battle_start`, `battle_end`, and `before_warp`; `manual` is used for user
@@ -56,7 +61,8 @@ capture boundary have been proven.
 
 `fingerprint` is optional outside autosaves. It summarizes canonical dynamic
 progress for semantic duplicate detection and is never trusted for compatibility
-or corruption validation.
+or corruption validation. `contextKey` distinguishes cooldown contexts that share
+a map.
 
 ## Data rules
 

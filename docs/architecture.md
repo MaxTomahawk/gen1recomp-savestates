@@ -35,7 +35,7 @@ package uses the public filesystem facade.
 
 ## Capture pipeline
 
-The later gameplay service uses this ordered boundary:
+The gameplay service uses this ordered boundary:
 
 `inspect -> capture -> fingerprint -> Snapshot.new -> validate -> write payload -> publish index`
 
@@ -53,9 +53,11 @@ security checksum or a substitute for full validation.
 ## Index and retention
 
 The index contains metadata and logical payload ids only. Quick and auto histories
-are newest-first; their ids are monotonic. Ten permanent slots use fixed ids
-`slot01` through `slot10`, and recovery uses `recovery`. Slots/recovery never enter
-rolling retention.
+are newest-first; their ids are monotonic. Ten permanent slot numbers point at
+unique `sNN_sequence` payload generations. Overwrite publishes a new generation
+before cleaning the previous one, so a failed publication cannot destroy the
+indexed slot. Recovery uses its own fixed key. Slots/recovery never enter rolling
+retention.
 
 Retention returns oldest rolling ids to remove. Autosave deduplication applies the
 same trigger/context cooldown first, then replaces the newest same-trigger/map/
@@ -80,7 +82,7 @@ corrupt indexed payloads remain unavailable and untouched for diagnosis/recovery
 
 ## Restore and recovery
 
-The product service will validate and migrate the selected snapshot, confirm the
+The product service validates and migrates the selected snapshot, confirms the
 current capability, capture and durably verify `recovery`, then call
 `mod.checkpoints:restore`. Engine reconstruction performs its own complete
 validation, recapture comparison, and in-memory rollback. Undo loads the fixed
@@ -88,3 +90,21 @@ recovery key without overwriting it.
 
 No UI callback throws for expected user-data or I/O failures. Structured error
 codes flow to logging and native notifications/screens.
+
+## Native UX and events
+
+The existing START descriptor list is decorated after downstream mods return.
+Registered `ListMenu`/`NamingScreen` factories provide histories, state actions,
+ten slots, pinning, rename/delete, undo, and settings visibility. Load/save-slot
+actions close their known public widget chain before checkpoint inspection; no
+private state-stack operation is used.
+
+Notifications are one replace-in-place model drawn through `render.hud`; they
+never become an updating screen or consume A/B input. Success types honor their
+save/load toggles, while safety and persistence failures remain visible.
+
+`map.entered` and optional `battle.ended` events enqueue semantic requests. An
+`input.step` wrapper retries at most one request per fixed tick and calls the
+service only after `mod.checkpoints:inspect` proves stable overworld control.
+Trainer/wild-start and before-warp events are not mislabeled as Level A snapshots;
+they remain gated on later runtime kinds.

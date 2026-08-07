@@ -9,11 +9,12 @@ save slots to Gen1Recomp without replacing the normal Pokémon save system.
 
 ## Features
 
-The finished product will provide rolling quicksaves, event-driven autosaves, ten
-permanent slots, recovery/undo-load, native menus, configurable notifications,
-strict playthrough isolation, and deterministic restoration at supported runtime
-boundaries. Features are documented as available only after their tests and
-package verification are recorded in `docs/project-plan.md`.
+The current development package provides rolling overworld quicksaves, newest and
+selected-state loading, deferred location/after-battle autosaves, ten permanent
+renameable slots, pinning, durable undo-load recovery, native START and manager
+screens, configurable history/notification options, and non-modal notifications.
+Storage is isolated by game and opaque playthrough identity. Battle checkpoints
+remain a separately gated implementation phase.
 
 ## Installation
 
@@ -22,34 +23,42 @@ focused Gen1Recomp public-API branch linked from the project plan.
 
 ## Quick Start
 
-Player instructions will be added when the first complete packaged build is
-verified. Vanilla SAVE remains unchanged throughout development.
+Open START after overworld movement has settled. `QUICKSAVE` captures immediately;
+`STATES` opens histories, slots, undo, and current settings. Vanilla `SAVE` is
+unchanged.
 
 ## START Menu
 
-The final mod decorates the existing menu through the public hook; it does not
-rebuild or replace vanilla rows.
+The mod decorates the existing menu through the public hook; it does not rebuild
+or replace vanilla or other-mod rows.
 
 ## Quick Saves
 
-Planned: rolling manual history with newest-state quickload.
+`QUICKSAVE` writes a rolling history. The exported quickload command selects the
+newest valid entry; the manager can inspect, load, pin, or delete older entries.
 
 ## Auto Saves
 
-Planned: semantic event triggers followed by capture only at a proven-safe
-runtime boundary.
+Location entry requests are deferred until stable overworld control. Optional
+after-battle requests likewise wait for the battle and follow-up script to finish.
+Cooldown, semantic duplicate replacement, and chronological retention are active.
 
 ## Save Slots
 
-Planned: ten permanent, renameable slots outside rolling retention.
+Ten permanent, renameable slots are outside rolling retention. Each overwrite
+uses a new payload generation so failed index publication leaves the old slot
+loadable.
 
 ## Undo Last Load
 
-Planned: one durable recovery checkpoint captured before every load.
+Every supported load first captures, writes, and re-reads one durable recovery
+checkpoint. Undo restores it without overwriting it.
 
 ## Settings
 
-Planned: history limits, autosave triggers, and save/load notification toggles.
+History limits, autosave triggers, and save/load notification toggles use the
+native MODS manager. The STATES settings screen reports current values and points
+to that public edit path.
 
 ## Hotkeys
 
@@ -65,6 +74,8 @@ tracked in `docs/compatibility.md` as implementation lands.
 
 - Suspended scripts, transitions, menus, and partial animations are not safe
   overworld checkpoints.
+- Trainer/wild battle-start and before-warp triggers are visible as planned
+  settings but are not activated until a matching safe checkpoint kind exists.
 - Battle restoration is not claimed until a separate state inventory and
   deterministic RNG contract pass differential tests.
 - Arbitrary-frame emulator-style snapshots are not promised.

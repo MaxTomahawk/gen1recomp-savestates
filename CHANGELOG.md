@@ -9,6 +9,15 @@ Version headings match `manifest.json`.
 
 - Current modkit API-2 technical shell and public-API-only architecture.
 - Upstream audit, living project plan, and verified Level A integration design.
+- Versioned data-only snapshots, migrations, strict identity validation, and
+  transaction-ordered persistent histories.
+- Rolling quicksave/quickload, durable recovery and undo, corrupt-newest fallback,
+  and failure-safe ten-slot management with pin/rename/delete.
+- Native START decoration and state manager screens that coexist with other menu
+  decorators.
+- Deferred event-based location and optional after-battle autosaves with cooldown,
+  semantic replacement, and retention.
+- Replace-in-place HUD notifications and native mod option schema.
 
 ## 0.1.0
 
