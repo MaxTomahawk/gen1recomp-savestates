@@ -4,6 +4,7 @@ local T = Test.new("core composition")
 local logs = {}
 local registeredScreens = {}
 local startMenuWrapper
+local renderHudWrapper
 local mod = {
   id = "savestates",
   version = "0.1.0",
@@ -18,6 +19,7 @@ local mod = {
   hooks = {
     wrap = function(_, name, callback)
       if name == "ui.start_menu.items" then startMenuWrapper = callback end
+      if name == "render.hud" then renderHudWrapper = callback end
       return function() end
     end,
   },
@@ -69,6 +71,7 @@ T:eq(type(mod.exports.quickLoad), "function", "composition publishes quickload c
 T:eq(type(mod.exports.undoLastLoad), "function", "composition publishes undo command")
 T:eq(#(mod.options.schema or {}), 9, "composition registers the full options schema")
 T:eq(type(startMenuWrapper), "function", "composition installs START decoration")
+T:eq(type(renderHudWrapper), "function", "composition installs non-modal HUD overlay")
 local screenCount = 0
 for _ in pairs(registeredScreens) do screenCount = screenCount + 1 end
 T:eq(screenCount, 8, "composition registers every state manager screen")

@@ -50,7 +50,8 @@ return function(mod)
   local Options = StoreFactory and module("src/config/Options.lua")
   local StartMenu = Options and module("src/ui/StartMenuIntegration.lua")
   local ScreenFactory = StartMenu and module("src/ui/ScreenRegistry.lua")
-  local ServiceFactory = ScreenFactory and module("src/service/SaveStateService.lua")
+  local Notification = ScreenFactory and module("src/ui/Notification.lua")
+  local ServiceFactory = Notification and module("src/service/SaveStateService.lua")
   if not ServiceFactory then return end
 
   local ok, core = pcall(function()
@@ -62,6 +63,18 @@ return function(mod)
     local Fingerprint = FingerprintFactory(Canonical)
     local StateStore = StoreFactory({ DataOnly = DataOnly, StateIndex = StateIndex })
     local Screens = ScreenFactory({ Time = Time })
+    local function uiClock()
+      if love and love.timer and love.timer.getTime then return love.timer.getTime() end
+      return os.clock()
+    end
+    local notification = Notification.new({
+      clock = uiClock,
+      duration = 1.5,
+      isEnabled = function(group)
+        return mod.options:get(group == "load"
+          and "load_notifications" or "save_notifications") ~= false
+      end,
+    })
     local migrations = StateMigrations.new(Snapshot.FORMAT)
     local Service = ServiceFactory({
       Snapshot = Snapshot,
@@ -85,6 +98,7 @@ return function(mod)
       end,
       modVersion = mod.version,
       modApi = 2,
+      notify = function(kind, detail) notification:show(kind, detail) end,
       warn = function(code, message, metadata)
         if mod.log.warn then
           mod.log:warn("Savestate %s (%s): %s",
@@ -107,6 +121,8 @@ return function(mod)
       Options = Options,
       StartMenu = StartMenu,
       Screens = Screens,
+      Notification = Notification,
+      notification = notification,
       Service = Service,
       service = service,
     }
@@ -119,6 +135,11 @@ return function(mod)
   mod.options:define(core.Options.schema())
   core.screenIds = core.Screens.install(mod, core.service, os.time)
   core.StartMenu.install(mod, core.service, core.screenIds.root)
+  mod.hooks:wrap("render.hud", function(next, game, viewport)
+    local result = next(game, viewport)
+    core.notification:draw(viewport, mod.ui.Font)
+    return result
+  end)
 
   -- This deliberately small inter-mod surface is compatibility metadata, not a
   -- promise that every future internal module stays public.
