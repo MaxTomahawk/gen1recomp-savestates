@@ -30,7 +30,7 @@ Status vocabulary:
 | Unsafe scripts/transitions/menus/animations/battle phases rejected | Verified | Public checkpoint capability and exclusion tests; compatibility docs name every supported boundary. |
 | Manual battle quicksave UX | Accurately limited | No public custom action or battle-menu decorator exists. Default battle-start autosaves are user-accessible; cooperating mods may call the public export at later safe decisions. |
 | No private engine dependency in distributed mod | Verified | Source boundary inspection found no private `src.*` require, raw filesystem, state-stack, process, package, or debug access; sibling source loads use public `mod:read`, and real modkit load/lint passes. |
-| ROM-free CI, tests, lint, reproducible package | Verified | 739/739 Lua checks, 4/4 Python release-gate tests, modkit validate/lint, reproducible 28-file ZIP plus pack manifest, and fresh-clone/fresh-extracted-install checks; GitHub Actions run `31193896875` is green at `0f1f9c0`. |
+| ROM-free CI, tests, lint, reproducible package | Verified | 740/740 Lua checks, 7/7 Python release/package-gate tests, modkit validate/lint, two byte-identical 28-file ZIP builds plus pack manifest, and fresh-clone/fresh-extracted-install checks at `e3bacb0`. |
 | Exact released-engine compatibility | Prepared | Release gate derives/checks out the manifest's exact minimum official tag. Manifest intentionally remains experimental/dev until upstream APIs ship. |
 | Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
 | Installable GitHub Release | Blocked externally | Tag workflow intentionally refuses preview metadata; requires official upstream API release and final manifest range. |
@@ -38,8 +38,9 @@ Status vocabulary:
 
 ## External release gates
 
-1. Official acceptance/release of the Level A storage/overworld API and stacked
-   Level B battle/RNG API (or equivalent upstream APIs requiring adaptation).
+1. Official acceptance/release of the Level A storage/overworld API, stacked
+   Level B battle/RNG API, and source-date modkit fix (or equivalent upstream
+   capabilities requiring adaptation).
 2. Private clean-runtime acceptance using legally imported game data.
 3. Final non-experimental manifest/version range, reviewed merge, tag, release
    asset verification, then index PR.

@@ -23,6 +23,12 @@ make clean-install-check GEN1RECOMP=/path/to/gen1recomp
 make check GEN1RECOMP=/path/to/gen1recomp
 ```
 
+`MODKIT=/path/to/modkit.py` may point at a separate tooling checkout while the
+runtime API and source-date packaging changes are under independent review. The
+package gate sets `SOURCE_DATE_EPOCH` from the newest commit affecting shipped
+content, verifies `.modkit/pack.json`, and compares two complete archive builds.
+An official modkit that ignores that contract fails closed.
+
 The ROM-free fixture proves loader/API behavior and packaging. In a private local
 checkout that already has legally imported `data/generated/`, additionally run
 upstream `./scripts/test.sh` and modkit validation with the imported base. Never
@@ -36,8 +42,9 @@ evidence.
 
 ## Release gate
 
-A public tag remains prohibited until both checkpoint branches are merged and
-included in an official Gen1Recomp release. Then:
+A public tag remains prohibited until both checkpoint branches and the
+source-date modkit fix (or an equivalent reproducible pack implementation) are
+merged and included in an official Gen1Recomp release. Then:
 
 1. Rebase/adapt against current official upstream and rerun its complete relevant
    test tiers.

@@ -68,6 +68,10 @@ executed through focused plans under `docs/superpowers/plans/`; the current plan
 - The public storage context now includes the current engine version. This makes
   the specified warning-grade engine compatibility status available while
   browsing histories, before recovery capture or live restore begins.
+- Current `modkit pack` normalizes ZIP entries but embeds wall-clock
+  `packed_at`, so its archive is not byte-reproducible despite the status text.
+  A separate generic tooling fix now honors `SOURCE_DATE_EPOCH`; this repository
+  independently rejects nonconforming metadata and compares two package builds.
 
 ## Chosen architecture
 
@@ -131,7 +135,7 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | M5 — Native UX and slots | START rows, manager screens, ten permanent slots, rename/delete, HUD notifications, options | VERIFIED headlessly: second decorator coexistence, empty/unavailable states, generation-safe slot overwrite, disabled notifications, public widget close chain |
 | M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | IMPLEMENTED: location, ordinary trainer/wild start, optional after-battle deferral, synchronous capability-gated before-warp, stale-event expiry, dedup/retention, corrupt visibility, and opt-in phase timings; broader clean-runtime matrix remains |
 | M7 — Battle beta | VERIFIED LOCALLY: field/RNG/continuation map plus persistent safe-point capture/restore | 133/133 engine suites; wild/trainer differential reconstruction; damage/crit/accuracy/AI/escape/encounter RNG replay; rollback and unsupported-phase tests green |
-| M8 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | clean ZIP install, validate/lint/tests, no private requires/ROM content, release asset resolves |
+| M8 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | byte-identical source-date ZIP builds, clean install, validate/lint/tests, no private requires/ROM content, release asset resolves |
 
 Milestones are sequencing boundaries, not permission to claim incomplete features.
 If an upstream dependency blocks one lane, continue every independent pure-mod,
@@ -159,6 +163,7 @@ test, documentation, or packaging task that remains valid.
 | `SAVESTATES-SP-03` playthrough identity | VERIFIED locally; upstream review required | `726ed11` plus `49954ec`; 18/18 focused checks and 1,000 clean-process stress runs green |
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
 | `SAVESTATES-SP-05` battle/RNG | VERIFIED locally; stacked review required | `docs/battle-state-map.md`; branch `feat/mod-battle-checkpoints` through `5b3eed8`, fork draft PR #1; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, legacy Level A compatibility |
+| `SAVESTATES-SP-06` reproducible modkit package | VERIFIED locally; tooling review required | branch `feat/reproducible-mod-packages` at `02fd21b`, fork draft PR #2; `SOURCE_DATE_EPOCH`, invalid-input refusal, and byte-identity tests; cross-repository PR creation is integration-blocked |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
 
@@ -180,6 +185,13 @@ the active lane is requirement traceability plus prepared (unsubmitted) index
 metadata, followed by upstream review adaptation and exact release compatibility
 once both public seams have an official release.
 
+Packaging reconnaissance also found and corrected a separate upstream modkit
+reproducibility defect. The focused branch `feat/reproducible-mod-packages` is
+published through `02fd21b` and staged as fork draft PR #2 because the connected
+GitHub app cannot create a PR in the official repository. The mod's test workflow
+pins that reviewed tooling separately from the runtime API branch; the release
+workflow remains fail-closed against the exact official engine tag.
+
 Latest verification (2026-08-07):
 
 - `luajit tests/engine/playthrough_identity.lua` — 18/18.
@@ -200,22 +212,26 @@ Latest verification (2026-08-07):
   restore/determinism/failure rollback 43/43, public checkpoints 53/53 including
   real public-facade battle differential roundtrip, switched/fainted-party
   fidelity, and complete overworld-progress fidelity.
-- Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-battle` —
-  739/739 Lua behavior checks plus 4/4 Python release-gate tests; modkit
+- Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-battle
+  MODKIT=/home/max/src/gen1recomp-modkit-reproducible/tools/modkit.py` —
+  740/740 Lua behavior checks plus 7/7 Python release/package-gate tests; modkit
   validate/lint and reproducible 28-file
   package root verification plus a clean extracted-install pass with battle
   support enabled. This includes semantic autosave fingerprinting, fitted native
   notifications, live manager counts, default-NO destructive-action confirmation,
   structured diagnostics, pre-load engine-version warnings, and exact-minimum
-  release-engine selection.
-- The same `make check` passed from a fresh clone of the published
-  `feat/initial-savestates` head `0f1f9c05a609999fdadc2627f13ac5a66ab54dc6`;
+  release-engine selection. Permanent-slot rename also preserves the original
+  checkpoint time and contextual metadata.
+- The same `make check` passed from a fresh clone of published head
+  `e3bacb050ec5da02fd52e7532819c854ce16dca4`; two consecutive package
+  builds were byte-identical. The archive SHA-256 was
+  `bfa916d3c3efefb13084998650f73ca8226e2b0f2b5c8a76f42cd18b73ac25a8`,
   the resulting archive contains 28 distributable files plus
-  `.modkit/pack.json` and has SHA-256
-  `33fc80ce44282a74207cd9200cbb127f4195c618247f69299e7775f504d02eee`.
-- GitHub Actions `Test` run `31193896875` completed successfully for that exact
-  commit. The preview release gate was also exercised directly and correctly
-  refused publication because `experimental` remains `true`.
+  `.modkit/pack.json`, and a clean extracted install validates and lints.
+- GitHub Actions `Test` run `31194290488` completed successfully for the prior
+  documentation-only head; the new reproducibility workflow is pending its
+  pushed-head run. The preview release gate was also exercised directly and
+  correctly refused publication because `experimental` remains `true`.
 - A source-boundary audit found no private `src.*` require, raw filesystem,
   state-stack, process, package, or debug dependency in distributable Lua. The
   only require is LuaJIT's standard `bit` module; sibling source loads use the

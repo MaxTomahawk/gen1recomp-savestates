@@ -101,7 +101,16 @@ partially mutate a live game.
 ## Development
 
 Read `AGENTS.md`, `docs/project-plan.md`, and `docs/upstream-audit.md` first.
-Canonical commands are documented in `Makefile` as they become available.
+Run the complete ROM-free behavior, validation, lint, reproducibility, package,
+and clean-install gate with:
+
+```sh
+make check GEN1RECOMP=/path/to/gen1recomp
+```
+
+Until the source-date modkit fix is available in that checkout, pass its
+review branch explicitly with `MODKIT=/path/to/modkit.py`. Repository-only
+release and upstream handoff details live in `docs/development.md`.
 
 No ROM, imported cache, user save, credential, generated secret, or extracted
 game asset belongs in this repository.
