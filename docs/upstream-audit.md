@@ -24,7 +24,9 @@ upstream update.
   `">=0.0.0-0 <2.0.0"`. It does not create tests, `mod.card`, or a changelog.
 - `modkit validate` drives the real loader with ROM-free fixture data when imported
   data is absent. `lint` enforces the ROM-content rules. `pack` runs strict
-  validation and lint and adds `.modkit/pack.json`.
+  validation and lint and adds `.modkit/pack.json`. At `112120e`, that metadata
+  embeds wall-clock `packed_at`, so repeated packages are not byte-identical even
+  though ZIP entry timestamps are normalized.
 - The generated release workflow creates `<id>-<version>.zip` with `manifest.json`
   at the archive root. Mod code is expected in its own repository.
 - Mod tests use LuaJIT and the public SDK harness under `tests/modkit/`, normally
@@ -202,7 +204,7 @@ engine worktrees now contain the smallest proven public additions:
 - `feat/mod-state-checkpoints` through `af00d6a` implements
   `mod.storage` plus settled-overworld `mod.checkpoints`. Storage context is
   `{ engineVersion, gameVersion, playthroughId }`; the engine version is advisory,
-  while game/playthrough remain hard isolation boundaries. Draft upstream PR #952
+  while game/playthrough remain hard isolation boundaries. Review-ready upstream PR #952
   is open and the ROM-free quick suite passes 129/129 engine and 7/7 modkit suites.
 - stacked `feat/mod-battle-checkpoints` through `5b3eed8` extends the same opaque
   checkpoint facade at settled ordinary wild/trainer decision menus, including
@@ -212,6 +214,9 @@ engine worktrees now contain the smallest proven public additions:
 - `SAVESTATES-SP-04` custom actions remains unimplemented and non-blocking. The
   complete product remains operable through native START-menu rows; no global key
   is intercepted.
+- `feat/reproducible-mod-packages` through `02fd21b` makes `modkit pack` honor
+  standard `SOURCE_DATE_EPOCH`, rejects invalid epochs before writing, and proves
+  byte-identical archives. It is submitted as review-ready upstream PR #959.
 
 These branches are development evidence, not a released compatibility target.
 The manifest remains experimental until the necessary public APIs ship in an

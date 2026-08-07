@@ -158,12 +158,12 @@ test, documentation, or packaging task that remains valid.
 
 | Item | State | Decision / next evidence |
 | --- | --- | --- |
-| `SAVESTATES-SP-01` scoped storage | VERIFIED locally; upstream review required | `0399ad0`, lazy correction `49954ec`, compatibility context `af00d6a`; 28/28 public API checks and full ROM-free suite green |
-| `SAVESTATES-SP-02` Level A checkpoint | VERIFIED locally; upstream review required | `6e94625`, `49954ec`, `9d6ea84`, `05b43ca`; 34/34 public API checks and differential rollback/content-rejection proof green; checkpoint identity exposes engine version for warning-grade compatibility |
+| `SAVESTATES-SP-01` scoped storage | VERIFIED locally; upstream review required | review-ready upstream PR #952 through `af00d6a`; 28/28 public API checks and full ROM-free suite green |
+| `SAVESTATES-SP-02` Level A checkpoint | VERIFIED locally; upstream review required | review-ready upstream PR #952; 34/34 public API checks and differential rollback/content-rejection proof green; checkpoint identity exposes engine version for warning-grade compatibility |
 | `SAVESTATES-SP-03` playthrough identity | VERIFIED locally; upstream review required | `726ed11` plus `49954ec`; 18/18 focused checks and 1,000 clean-process stress runs green |
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
-| `SAVESTATES-SP-05` battle/RNG | VERIFIED locally; stacked review required | `docs/battle-state-map.md`; branch `feat/mod-battle-checkpoints` through `5b3eed8`, fork draft PR #1; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, legacy Level A compatibility |
-| `SAVESTATES-SP-06` reproducible modkit package | VERIFIED locally; tooling review required | branch `feat/reproducible-mod-packages` at `02fd21b`, fork draft PR #2; `SOURCE_DATE_EPOCH`, invalid-input refusal, and byte-identity tests; cross-repository PR creation is integration-blocked |
+| `SAVESTATES-SP-05` battle/RNG | VERIFIED locally; stacked review required | `docs/battle-state-map.md`; branch `feat/mod-battle-checkpoints` through `5b3eed8`, review-ready stacked fork PR #1; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, legacy Level A compatibility |
+| `SAVESTATES-SP-06` reproducible modkit package | VERIFIED locally; upstream review required | review-ready upstream PR #959 at `02fd21b`; `SOURCE_DATE_EPOCH`, invalid-input refusal, and byte-identity tests |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
 
@@ -174,7 +174,7 @@ upstream/index refs were refreshed on 2026-08-07 and remain `112120e`/`17314bf`.
 The Level A public
 contracts are implemented in `/home/max/src/gen1recomp-savestates-engine` on
 `feat/mod-state-checkpoints`, based on upstream `112120e`; the focused branch is
-published as draft PR #952 through `af00d6a`. Upstream merge/release remains the
+published as review-ready PR #952 through `af00d6a`. Upstream merge/release remains the
 M1 external gate. The distributable mod now composes its Level A services entirely
 through `mod:read`, `mod.storage`, `mod.checkpoints`, registered screens, hooks,
 events, options, and HUD drawing. Gate D and its Level B implementation are
@@ -187,10 +187,11 @@ once both public seams have an official release.
 
 Packaging reconnaissance also found and corrected a separate upstream modkit
 reproducibility defect. The focused branch `feat/reproducible-mod-packages` is
-published through `02fd21b` and staged as fork draft PR #2 because the connected
-GitHub app cannot create a PR in the official repository. The mod's test workflow
-pins that reviewed tooling separately from the runtime API branch; the release
-workflow remains fail-closed against the exact official engine tag.
+published through `02fd21b` as review-ready upstream PR #959. Level A PR #952 is
+also review-ready, with its body reconciled to the final engine-version context;
+the Level B dependent change remains review-ready in stacked fork PR #1 until its
+base lands. The mod test workflow pins tooling separately from the runtime API
+branch; the release workflow remains fail-closed against the exact official tag.
 
 Latest verification (2026-08-07):
 
@@ -214,21 +215,21 @@ Latest verification (2026-08-07):
   fidelity, and complete overworld-progress fidelity.
 - Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-battle
   MODKIT=/home/max/src/gen1recomp-modkit-reproducible/tools/modkit.py` —
-  740/740 Lua behavior checks plus 7/7 Python release/package-gate tests; modkit
+  749/749 Lua behavior checks plus 7/7 Python release/package-gate tests; modkit
   validate/lint and reproducible 28-file
   package root verification plus a clean extracted-install pass with battle
   support enabled. This includes semantic autosave fingerprinting, fitted native
   notifications, live manager counts, default-NO destructive-action confirmation,
   structured diagnostics, pre-load engine-version warnings, and exact-minimum
-  release-engine selection. Permanent-slot rename also preserves the original
-  checkpoint time and contextual metadata.
+  release-engine selection. Permanent-slot rename preserves the original
+  checkpoint time/context, and every occupied-slot replacement defaults to NO.
 - The same `make check` passed from a fresh clone of published head
-  `4c56732be12f41b30802bace261480d1fa63b40e`; two consecutive package
+  `4e86238851a90132ddda3e8a0c2f0c70d5225dc0`; two consecutive package
   builds were byte-identical. The archive SHA-256 was
-  `7124ab490d534015c91ffa95df010719ff3b5689d7e05ad8e15437996e2c9bd5`,
+  `73fbf8baedc5bd0c16d22b9c7b1fa1142a4eebffdb16e7f9bd37664964ffd739`,
   the resulting archive contains 28 distributable files plus
   `.modkit/pack.json`, and a clean extracted install validates and lints.
-- GitHub Actions `Test` run `31195358731` completed successfully for that exact
+- GitHub Actions `Test` run `31195868937` completed successfully for that exact
   source-date packaging head. The preview release gate was also exercised
   directly and
   correctly refused publication because `experimental` remains `true`.
