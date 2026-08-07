@@ -7,7 +7,7 @@ VERSION := $(shell $(PYTHON) -c 'import json; print(json.load(open("manifest.jso
 PACKAGE := .artifacts/savestates-$(VERSION).zip
 TEST_FILES := $(sort $(wildcard tests/*_test.lua))
 
-.PHONY: test validate lint pack package-check check clean
+.PHONY: test validate lint pack package-check clean-install-check check clean
 
 test:
 	@if [ -z "$(TEST_FILES)" ]; then \
@@ -30,9 +30,22 @@ pack:
 package-check: pack
 	@test "$$(unzip -Z1 $(PACKAGE) | grep -c '^manifest.json$$')" -eq 1
 	@test "$$(unzip -Z1 $(PACKAGE) | grep -c '/manifest.json$$')" -eq 0
+	@test "$$(unzip -Z1 $(PACKAGE) | grep -c '^tests/')" -eq 0
+	@test "$$(unzip -Z1 $(PACKAGE) | grep -Ec '^(AGENTS.md|Makefile|docs/project-plan.md)$$')" -eq 0
 	@echo "Verified installable archive root: $(PACKAGE)"
 
-check: test validate lint package-check
+clean-install-check: package-check
+	@install_dir="$$(mktemp -d)"; \
+	trap 'rm -rf "$$install_dir"' EXIT; \
+	unzip -q $(PACKAGE) -d "$$install_dir"; \
+	$(PYTHON) $(GEN1RECOMP)/tools/modkit.py validate \
+		--repo $(GEN1RECOMP) --base fixture "$$install_dir"; \
+	$(PYTHON) $(GEN1RECOMP)/tools/modkit.py lint \
+		--repo $(GEN1RECOMP) "$$install_dir"; \
+	test -f "$$install_dir/.modkit/pack.json"; \
+	echo "Verified clean extracted install: $(PACKAGE)"
+
+check: test validate lint clean-install-check
 
 clean:
 	rm -f $(PACKAGE)
