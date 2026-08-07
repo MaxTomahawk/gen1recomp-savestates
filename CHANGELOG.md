@@ -25,6 +25,8 @@ Version headings match `manifest.json`.
   pre-transition event.
 - Opt-in capture, serialization/size, persistence, recovery, and restore timing
   diagnostics.
+- State detail rows for trigger, age, runtime kind, and compatibility, plus a
+  complete native settings summary.
 
 ## 0.1.0
 

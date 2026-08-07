@@ -35,6 +35,10 @@ return function(deps)
       or metadata.locationId or metadata.id, 14)
   end
 
+  local function upperValue(value, maximum)
+    return truncate(tostring(value or "----"):upper(), maximum or 12)
+  end
+
   function Registry.install(mod, service, clock)
     clock = clock or os.time
 
@@ -122,7 +126,19 @@ return function(deps)
         local row = opts.row or { metadata = {} }
         local metadata = row.metadata or {}
         local menu
-        local items = {}
+        local status = row.available and
+          ((type(row.warnings) == "table" and next(row.warnings)) and "WARN" or "OK")
+          or upperValue(row.status, 10)
+        local items = {
+          { label = "LOCATION", right = truncate(
+              metadata.locationName or metadata.locationId, 12) },
+          { label = "TRIGGER", right = upperValue(
+              metadata.trigger and metadata.trigger:gsub("_", " "), 12) },
+          { label = "CREATED", right = Time.relative(metadata.createdAt, clock()) },
+          { label = "KIND", right = upperValue(metadata.stateKind, 12) },
+          { label = "STATUS", right = status },
+        }
+        local firstAction = #items + 1
         if row.available then
           items[#items + 1] = { label = "LOAD", onSelect = function()
             closeMenus(menu, opts.parents)
@@ -146,7 +162,9 @@ return function(deps)
         end }
         menu = mod.ui.ListMenu.new(game, stateLabel(metadata), items, {
           onChoose = dispatch,
+          pageJump = true,
         })
+        menu.index = firstAction
         return menu
       end,
     })
@@ -295,12 +313,22 @@ return function(deps)
         local items = {
           { label = "QUICK HISTORY", right = tostring(mod.options:get("quick_history")) },
           { label = "AUTO HISTORY", right = tostring(mod.options:get("auto_history")) },
+          { label = "LOCATION ENTRY", right = onOff(mod.options:get("auto_location")) },
+          { label = "TRAINER BATTLE", right = onOff(
+              mod.options:get("auto_trainer_battle")) },
+          { label = "WILD BATTLE", right = onOff(
+              mod.options:get("auto_wild_battle")) },
+          { label = "AFTER BATTLE", right = onOff(mod.options:get("auto_after_battle")) },
+          { label = "BEFORE WARP", right = onOff(mod.options:get("auto_before_warp")) },
           { label = "SAVE POPUPS", right = onOff(mod.options:get("save_notifications")) },
           { label = "LOAD POPUPS", right = onOff(mod.options:get("load_notifications")) },
+          { label = "DEBUG TIMINGS", right = onOff(mod.options:get("debug_logging")) },
         }
         return mod.ui.ListMenu.new(game, "STATE SETTINGS", items, {
           onChoose = function(_, menu) menu:close() end,
           footer = "CHANGE IN MODS > SAVE STATES",
+          pageJump = true,
+          keyRepeat = true,
         })
       end,
     })

@@ -9,7 +9,11 @@ local mod = {
   ui = { ListMenu = {}, NamingScreen = {} },
   options = { values = {
     quick_history = 5, auto_history = 20,
+    auto_location = true, auto_trainer_battle = true,
+    auto_wild_battle = true, auto_after_battle = false,
+    auto_before_warp = false,
     save_notifications = true, load_notifications = false,
+    debug_logging = false,
   } },
 }
 function mod.content.screens:register(id, factory) registered[id] = factory end
@@ -96,6 +100,7 @@ T:eq(emptyQuick.items[1].label, "NO QUICK SAVES YET.",
 service.quickRows = {
   { available = true, status = "compatible", metadata = {
       id = "q00000002", locationName = "CERULEAN GYM", createdAt = 1000,
+      trigger = "manual", stateKind = "battle",
     } },
   { available = false, status = "corrupt_metadata", metadata = {
       id = "q00000001", locationName = "PALLET TOWN", createdAt = 900,
@@ -111,9 +116,18 @@ T:eq(pushes[#pushes].id, ids.actions, "state row opens action menu")
 local action = registered[ids.actions].new(game, {
   row = service.quickRows[1], parents = { history, root },
 })
-T:eq(action.items[1].label, "LOAD", "available state action begins with load")
-T:eq(action.items[2].label, "PIN TO SLOT", "available state can pin permanently")
-action.items[1].onSelect()
+T:eq(action.items[1].label, "LOCATION", "state detail shows location")
+T:eq(action.items[1].right, "CERULEAN GYM", "state detail keeps location value")
+T:eq(action.items[2].label, "TRIGGER", "state detail shows semantic trigger")
+T:eq(action.items[2].right, "MANUAL", "state detail formats trigger")
+T:eq(action.items[3].label, "CREATED", "state detail shows creation time")
+T:eq(action.items[3].right, "NOW", "state detail uses relative creation time")
+T:eq(action.items[4].right, "BATTLE", "state detail shows runtime kind")
+T:eq(action.items[5].right, "OK", "state detail shows compatibility")
+T:eq(action.items[6].label, "LOAD", "available state offers load after details")
+T:eq(action.items[7].label, "PIN TO SLOT", "available state can pin permanently")
+T:eq(action.index, 6, "state detail cursor starts on the first action")
+action.items[6].onSelect()
 T:eq(action.closeCount, 1, "load closes action menu")
 T:eq(history.closeCount, 1, "load closes history menu")
 T:eq(root.closeCount, 2, "load closes root menu after history")
@@ -122,7 +136,9 @@ T:eq(calls[#calls], "load:q00000002", "load action invokes selected state id")
 local unavailableAction = registered[ids.actions].new(game, {
   row = service.quickRows[2], parents = { history, root },
 })
-T:eq(unavailableAction.items[1].label, "DELETE",
+T:eq(unavailableAction.items[5].right, "CORRUPT_M.",
+  "unavailable state detail exposes a conservative compatibility code")
+T:eq(unavailableAction.items[6].label, "DELETE",
   "unavailable state offers safe cleanup instead of load")
 
 local slotsScreen = registered[ids.slots].new(game, { parent = root })
@@ -158,7 +174,13 @@ T:eq(calls[#calls], "rename:2:MISTY", "naming result updates selected slot")
 local settings = registered[ids.settings].new(game, { parent = root })
 T:eq(settings.title, "STATE SETTINGS", "settings screen is native")
 T:eq(settings.items[1].right, "5", "settings shows current quick limit")
-T:eq(settings.items[4].right, "OFF", "settings shows notification toggle")
+T:eq(#settings.items, 10, "settings reports every product option")
+T:eq(settings.items[3].label, "LOCATION ENTRY", "settings shows location autosaves")
+T:eq(settings.items[3].right, "ON", "settings shows trigger value")
+T:eq(settings.items[7].label, "BEFORE WARP", "settings shows warp autosaves")
+T:eq(settings.items[7].right, "OFF", "settings shows disabled trigger value")
+T:eq(settings.items[9].right, "OFF", "settings shows load notification toggle")
+T:eq(settings.items[10].label, "DEBUG TIMINGS", "settings shows diagnostics option")
 T:check(settings.opts.footer:find("MODS", 1, true) ~= nil,
   "settings explains the public manager edit path")
 

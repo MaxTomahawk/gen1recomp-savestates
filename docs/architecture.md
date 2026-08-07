@@ -99,7 +99,9 @@ The existing START descriptor list is decorated after downstream mods return.
 Registered `ListMenu`/`NamingScreen` factories provide histories, state actions,
 ten slots, pinning, rename/delete, undo, and settings visibility. Load/save-slot
 actions close their known public widget chain before checkpoint inspection; no
-private state-stack operation is used.
+private state-stack operation is used. State action screens expose location,
+semantic trigger, age, runtime kind, and compatibility/warning status; the
+settings summary mirrors every public product option and links to the MODS editor.
 
 Notifications are one replace-in-place model drawn through `render.hud`; they
 never become an updating screen or consume A/B input. Success types honor their
