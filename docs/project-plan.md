@@ -38,9 +38,9 @@ persistent ordinary wild/trainer decision-menu reconstruction plus exact LÖVE R
 while preserving explicit refusal for scripts and unsupported variants.
 
 The approved design is recorded in
-`docs/superpowers/specs/2026-08-07-native-savestates-design.md`. Milestones are
-executed through focused plans under `docs/superpowers/plans/`; the current plan is
-`2026-08-07-level-a-upstream-seams.md`.
+`docs/superpowers/specs/2026-08-07-native-savestates-design.md`. Completed focused
+execution plans remain under `docs/superpowers/plans/` as durable design and test
+history; current work is governed by this living plan and acceptance matrix.
 
 ## Corrected specification assumptions
 
@@ -179,7 +179,7 @@ M1 external gate. The distributable mod now composes its Level A services entire
 through `mod:read`, `mod.storage`, `mod.checkpoints`, registered screens, hooks,
 events, options, and HUD drawing. Gate D and its Level B implementation are
 complete locally in `docs/battle-state-map.md` and the separate stacked upstream
-branch `feat/mod-battle-checkpoints`, published as fork draft PR #1 through
+branch `feat/mod-battle-checkpoints`, published as review-ready fork PR #1 through
 `5b3eed8`. Independent release hardening and clean-package coverage are complete;
 the active lane is requirement traceability plus prepared (unsubmitted) index
 metadata, followed by upstream review adaptation and exact release compatibility

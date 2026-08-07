@@ -4,7 +4,7 @@
 
 The development package currently targets the additive Level A APIs in upstream
 PR [`bryanthaboi/gen1recomp#952`](https://github.com/bryanthaboi/gen1recomp/pull/952)
-plus the stacked Level B draft
+plus the stacked Level B review branch
 [`MaxTomahawk/gen1recomp#1`](https://github.com/MaxTomahawk/gen1recomp/pull/1).
 It is not a supported player release until those contracts are merged into a
 released engine and `manifest.json` can name that release as its minimum.
