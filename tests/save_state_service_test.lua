@@ -57,7 +57,11 @@ local function environment(args)
     values = {}, failWrite = {}, failRead = {}, failDelete = {}, events = events,
   }
   function storage:context()
-    return { gameVersion = "red", playthroughId = "play-a" }
+    return {
+      engineVersion = "0.9.0-dev",
+      gameVersion = "red",
+      playthroughId = "play-a",
+    }
   end
   function storage:write(_, key, value)
     events[#events + 1] = "write:" .. key
@@ -127,6 +131,7 @@ local function environment(args)
   end
   local notifications = {}
   local debugMetrics = {}
+  local warnings, errors = {}, {}
   local now = args.now or 1000
   local limit = args.limit or 5
   local autoLimit = args.autoLimit or 20
@@ -151,6 +156,12 @@ local function environment(args)
     timer = args.timer,
     measureSize = args.measureSize,
     debug = function(metric) debugMetrics[#debugMetrics + 1] = metric end,
+    warn = function(code, message, metadata)
+      warnings[#warnings + 1] = { code = code, message = message, metadata = metadata }
+    end,
+    error = function(code, message, metadata)
+      errors[#errors + 1] = { code = code, message = message, metadata = metadata }
+    end,
   })
   return {
     game = game,
@@ -159,6 +170,8 @@ local function environment(args)
     service = service,
     notifications = notifications,
     debugMetrics = debugMetrics,
+    warnings = warnings,
+    errors = errors,
     events = events,
     storeFactory = storeFactory,
     setNow = function(value) now = value end,
@@ -178,6 +191,8 @@ T:eq(unsafeCode, "script_busy", "unsafe quicksave preserves capability reason")
 T:eq(unsafe.events[1], "inspect", "unsafe quicksave only inspects capability")
 T:eq(#unsafe.events, 1, "unsafe quicksave does not capture or persist")
 T:eq(unsafe.notifications[1].kind, "save_rejected", "unsafe save emits refusal notice")
+T:eq(unsafe.warnings[1].code, "script_busy", "unsafe save logs a warning reason")
+T:eq(#unsafe.errors, 0, "ordinary capability rejection is not an error log")
 
 local happy = environment({ money = 3000, now = 1234 })
 local saved, saveCode, saveMessage = happy.service:quickSave(happy.game)
@@ -202,6 +217,14 @@ T:eq(happySummary.slotCount, 0, "summary reports no occupied slots")
 T:eq(happySummary.slotCapacity, 10, "summary reports permanent slot capacity")
 T:eq(happySummary.undoAvailable, false, "summary reports no recovery before a load")
 T:eq(#happy.debugMetrics, 0, "performance logging is silent by default")
+
+happy.storage.values["states/q00000001"].identity.engineVersion = "0.8.0"
+happy.storage.values["states/q00000001"].checkpoint.identity.engineVersion = "0.8.0"
+local versionRows = happy.service:listStates(happy.game, "quick")
+T:eq(versionRows[1].available, true,
+  "engine-version mismatch remains available as a soft compatibility warning")
+T:eq(versionRows[1].warnings[1], "engine_version_mismatch",
+  "history exposes engine-version mismatch before a load")
 
 local performanceNow = 10
 local performance = environment({
@@ -413,6 +436,12 @@ local stale, staleCode = staleAuto.service:autoSave(staleAuto.game, "location_en
 T:eq(stale, nil, "stale deferred location event does not save another map")
 T:eq(staleCode, "stale_trigger", "stale location event has stable code")
 T:eq(staleAuto.storage.values.index, nil, "stale location event publishes nothing")
+local staleWarp, staleWarpCode = staleAuto.service:autoSave(staleAuto.game, "before_warp", {
+  mapId = "ROUTE_1", contextKey = "ROUTE_1>VIRIDIAN_CITY",
+})
+T:eq(staleWarp, nil, "mismatched before-warp source never saves another map")
+T:eq(staleWarpCode, "stale_trigger", "mismatched warp source has stable code")
+T:eq(staleAuto.storage.values.index, nil, "mismatched warp publishes nothing")
 
 local writeFailure = environment()
 writeFailure.storage.failWrite["states/q00000001"] = true
@@ -420,12 +449,16 @@ local unwritten, unwrittenCode = writeFailure.service:quickSave(writeFailure.gam
 T:eq(unwritten, nil, "payload write failure aborts quicksave")
 T:eq(unwrittenCode, "write_failed", "payload write failure preserves storage code")
 T:eq(writeFailure.storage.values.index, nil, "payload failure publishes no index")
+T:eq(writeFailure.errors[1].code, "write_failed",
+  "persistence failure emits an error-level diagnostic")
 
 local empty = environment()
 local noQuick, noQuickCode = empty.service:quickLoad(empty.game)
 T:eq(noQuick, nil, "quickload with empty history is rejected")
 T:eq(noQuickCode, "no_quick_save", "empty history has product-level error code")
 T:eq(empty.notifications[1].kind, "load_failed", "empty quickload is notified")
+T:eq(empty.warnings[1].code, "no_quick_save", "empty quickload is warning-grade")
+T:eq(#empty.errors, 0, "empty quickload is not an engine error")
 
 local load = environment({ money = 100 })
 local target = load.service:quickSave(load.game)
@@ -505,6 +538,20 @@ T:eq(blockedLoadCode, "capture_failed", "recovery capture error is preserved")
 T:eq(recoveryCaptureFailure.game.current.save.money, 200,
   "failed recovery capture leaves runtime untouched")
 
+local busyLoad = environment({ money = 100 })
+T:check(busyLoad.service:quickSave(busyLoad.game), "busy-load target saves")
+busyLoad.checkpoints.capability = {
+  canCapture = false, canRestore = false, kind = "overworld",
+  reason = "script_busy", message = "Wait for the active script to finish.",
+}
+local refusedLoad, refusedLoadCode = busyLoad.service:quickLoad(busyLoad.game)
+T:eq(refusedLoad, nil, "unsafe recovery boundary blocks quickload")
+T:eq(refusedLoadCode, "script_busy", "quickload preserves capability refusal")
+T:eq(busyLoad.warnings[#busyLoad.warnings]
+    and busyLoad.warnings[#busyLoad.warnings].code, "script_busy",
+  "load-time capability refusal is warning-grade")
+T:eq(#busyLoad.errors, 0, "load-time capability refusal is not an engine error")
+
 local recoveryWriteFailure = environment({ money = 100 })
 T:check(recoveryWriteFailure.service:quickSave(recoveryWriteFailure.game),
   "recovery-write target saves")
@@ -524,6 +571,8 @@ restoreFailure.checkpoints.restoreFailure = "restore_failed"
 local unrestored, unrestoredCode = restoreFailure.service:quickLoad(restoreFailure.game)
 T:eq(unrestored, nil, "engine restore failure is reported")
 T:eq(unrestoredCode, "restore_failed", "engine restore error is preserved")
+T:eq(restoreFailure.errors[#restoreFailure.errors].code, "restore_failed",
+  "restore failure emits an error-level diagnostic")
 T:eq(restoreFailure.game.current.save.money, 200,
   "engine restore failure leaves fake runtime unchanged")
 T:eq(restoreFailure.storeFactory(restoreFailure.game):loadRecovery().checkpoint.save.money,

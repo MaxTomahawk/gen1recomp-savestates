@@ -123,6 +123,10 @@ return function(mod)
             metadata and metadata.id or "operation", tostring(code), tostring(message))
         end
       end,
+      error = function(code, message, metadata)
+        mod.log:error("Savestate %s (%s): %s",
+          metadata and metadata.id or "operation", tostring(code), tostring(message))
+      end,
     })
     return {
       DataOnly = DataOnly,
@@ -158,6 +162,10 @@ return function(mod)
     service = core.service,
     checkpoints = mod.checkpoints,
     option = function(key) return mod.options:get(key) end,
+    report = function(code, message)
+      mod.log:error("Autosave controller (%s): %s", tostring(code), tostring(message))
+      core.notification:show("save_failed", { code = code, message = message })
+    end,
   }):install(mod)
   mod.hooks:wrap("render.hud", function(next, game, viewport)
     local result = next(game, viewport)

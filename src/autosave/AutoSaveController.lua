@@ -2,10 +2,10 @@ local AutoSaveController = {}
 AutoSaveController.__index = AutoSaveController
 
 local TRIGGERS = {
-  location_enter = { option = "auto_location" },
+  location_enter = { option = "auto_location", runtime = "overworld" },
   trainer_battle_start = { option = "auto_trainer_battle", runtime = "battle" },
   wild_battle_start = { option = "auto_wild_battle", runtime = "battle" },
-  battle_end = { option = "auto_after_battle" },
+  battle_end = { option = "auto_after_battle", runtime = "overworld" },
   before_warp = { option = "auto_before_warp", runtime = "overworld" },
 }
 
@@ -33,9 +33,18 @@ function AutoSaveController.new(args)
     service = args.service,
     checkpoints = args.checkpoints,
     option = args.option,
+    report = args.report,
     pending = {},
     pendingByKey = {},
   }, AutoSaveController)
+end
+
+function AutoSaveController:_unexpected(message)
+  message = tostring(message)
+  if type(self.report) == "function" then
+    pcall(self.report, "unexpected_error", message)
+  end
+  return false, "unexpected_error", message
 end
 
 function AutoSaveController:onTrigger(trigger, context)
@@ -74,7 +83,7 @@ function AutoSaveController:onImmediateTrigger(trigger, game, context)
   end
 
   local ok, capability = pcall(self.checkpoints.inspect, self.checkpoints, game)
-  if not ok then return false, "unexpected_error", tostring(capability) end
+  if not ok then return self:_unexpected(capability) end
   if definition.runtime and type(capability) == "table"
       and capability.kind ~= definition.runtime then
     return false, "runtime_mismatch",
@@ -89,7 +98,7 @@ function AutoSaveController:onImmediateTrigger(trigger, game, context)
 
   local called, result, code, message = pcall(
     self.service.autoSave, self.service, game, trigger, detachedContext(context))
-  if not called then return nil, "unexpected_error", tostring(result) end
+  if not called then return self:_unexpected(result) end
   return result, code, message
 end
 
@@ -102,7 +111,7 @@ function AutoSaveController:tick(game)
   if #self.pending == 0 then return false, "empty" end
   local entry = self.pending[1]
   local ok, capability = pcall(self.checkpoints.inspect, self.checkpoints, game)
-  if not ok then return false, "unexpected_error", tostring(capability) end
+  if not ok then return self:_unexpected(capability) end
   local definition = TRIGGERS[entry.trigger]
   if definition and definition.runtime
       and type(capability) == "table" and capability.kind ~= definition.runtime then
@@ -122,7 +131,7 @@ function AutoSaveController:tick(game)
   reindex(self)
   local called, result, code, message = pcall(
     self.service.autoSave, self.service, game, entry.trigger, entry.context)
-  if not called then return nil, "unexpected_error", tostring(result) end
+  if not called then return self:_unexpected(result) end
   return result, code, message
 end
 

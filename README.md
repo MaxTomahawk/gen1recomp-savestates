@@ -37,7 +37,8 @@ or replace vanilla or other-mod rows.
 `QUICKSAVE` writes a rolling history. The exported quickload command selects the
 newest valid entry; the manager can inspect, load, pin, or delete older entries.
 Each state detail shows location, trigger, relative creation time, runtime kind,
-and current compatibility before presenting mutating actions.
+and current compatibility before presenting mutating actions. State and slot
+deletes use a native confirmation that defaults to NO.
 
 ## Auto Saves
 

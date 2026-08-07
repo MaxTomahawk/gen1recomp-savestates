@@ -27,6 +27,9 @@ Version headings match `manifest.json`.
   diagnostics.
 - State detail rows for trigger, age, runtime kind, and compatibility, plus a
   complete native settings summary.
+- Default-NO native confirmation for history and permanent-slot deletion.
+- Structured warning/error diagnostics for capability refusal, persistence,
+  restoration, and unexpected autosave-controller failures.
 
 ## 0.1.0
 

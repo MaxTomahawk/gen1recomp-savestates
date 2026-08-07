@@ -24,6 +24,13 @@ local REASONS = {
   transition_busy = "TRANSITION IS BUSY",
 }
 
+local function hasWarning(detail, expected)
+  for _, warning in ipairs(type(detail.warnings) == "table" and detail.warnings or {}) do
+    if warning == expected then return true end
+  end
+  return false
+end
+
 local function text(kind, detail)
   detail = detail or {}
   if kind == "quick_saved" then
@@ -35,9 +42,11 @@ local function text(kind, detail)
   elseif kind == "slot_saved" then
     return "SLOT SAVED", detail.label or detail.locationName
   elseif kind == "state_loaded" then
-    return "STATE LOADED", detail.locationName
+    return "STATE LOADED", hasWarning(detail, "engine_version_mismatch")
+      and "ENGINE VERSION WARN" or detail.locationName
   elseif kind == "load_undone" then
-    return "LOAD UNDONE", detail.locationName
+    return "LOAD UNDONE", hasWarning(detail, "engine_version_mismatch")
+      and "ENGINE VERSION WARN" or detail.locationName
   elseif kind == "state_deleted" then
     return "STATE DELETED"
   elseif kind == "save_rejected" then

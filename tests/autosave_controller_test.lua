@@ -175,4 +175,37 @@ T:eq(staleResult, false, "battle request is discarded after battle has ended")
 T:eq(staleCode, "stale_trigger", "expired battle request is explicit")
 T:eq(stale:pendingCount(), 0, "expired battle request cannot save later overworld state")
 
+local staleLocation = AutoSaveController.new({
+  service = service, checkpoints = checkpoints,
+  option = function(key) return options[key] end,
+})
+staleLocation:onTrigger("location_enter", {
+  mapId = "ROUTE_1", contextKey = "ROUTE_1",
+})
+checkpoints.capability = { canCapture = true, canRestore = true, kind = "battle" }
+local locationResult, locationCode = staleLocation:tick(game)
+T:eq(locationResult, false,
+  "location request is discarded if battle starts before stable overworld control")
+T:eq(locationCode, "stale_trigger", "expired location request is explicit")
+T:eq(staleLocation:pendingCount(), 0,
+  "expired location request cannot create a mislabeled battle state")
+
+local reported = {}
+local brokenCheckpoints = { inspect = function() error("injected inspect crash") end }
+local broken = AutoSaveController.new({
+  service = service,
+  checkpoints = brokenCheckpoints,
+  option = function(key) return options[key] end,
+  report = function(code, message)
+    reported[#reported + 1] = { code = code, message = message }
+  end,
+})
+broken:onTrigger("location_enter", { mapId = "ROUTE_1" })
+local brokenResult, brokenCode = broken:tick(game)
+T:eq(brokenResult, false, "unexpected capability exception fails closed")
+T:eq(brokenCode, "unexpected_error", "capability exception has stable code")
+T:eq(reported[1].code, "unexpected_error", "unexpected autosave exception is reported")
+T:check(reported[1].message:find("injected inspect crash", 1, true) ~= nil,
+  "unexpected autosave report retains diagnostic cause")
+
 T:finish()

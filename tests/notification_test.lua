@@ -23,6 +23,13 @@ notice:show("state_loaded", { locationName = "PALLET TOWN" })
 current = notice:current()
 T:eq(current.title, "STATE LOADED", "new notification replaces visible one")
 T:eq(current.detail, "PALLET TOWN", "replacement carries new detail")
+notice:show("state_loaded", {
+  locationName = "PALLET TOWN", warnings = { "engine_version_mismatch" },
+})
+current = notice:current()
+T:eq(current.title, "STATE LOADED", "warning-grade load still succeeds")
+T:eq(current.detail, "ENGINE VERSION WARN",
+  "engine mismatch is visible instead of silently swallowed")
 now = 11.9
 T:check(notice:current() ~= nil, "replacement owns a fresh lifetime")
 now = 12.01

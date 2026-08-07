@@ -91,7 +91,9 @@ validation, recapture comparison, and in-memory rollback. Undo loads the fixed
 recovery key without overwriting it.
 
 No UI callback throws for expected user-data or I/O failures. Structured error
-codes flow to logging and native notifications/screens.
+codes flow to logging and native notifications/screens. Capability refusals and
+incompatible user data are warning-grade; persistence, restore, and unexpected
+public-API failures are error-grade with the original remediation message.
 
 ## Native UX and events
 
@@ -102,6 +104,8 @@ actions close their known public widget chain before checkpoint inspection; no
 private state-stack operation is used. State action screens expose location,
 semantic trigger, age, runtime kind, and compatibility/warning status; the
 settings summary mirrors every public product option and links to the MODS editor.
+Destructive history and slot actions route through a registered, default-NO
+native confirmation and update their source list only after storage succeeds.
 
 Notifications are one replace-in-place model drawn through `render.hud`; they
 never become an updating screen or consume A/B input. Success types honor their

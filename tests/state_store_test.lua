@@ -15,7 +15,11 @@ local function fakeStorage()
     values = {}, calls = {}, failWrite = {}, failDelete = {}, corruptKeys = {},
   }
   function storage:context()
-    return { gameVersion = "red", playthroughId = "play-a" }
+    return {
+      engineVersion = "0.9.0-dev",
+      gameVersion = "red",
+      playthroughId = "play-a",
+    }
   end
   function storage:write(_, key, value)
     self.calls[#self.calls + 1] = "write:" .. key

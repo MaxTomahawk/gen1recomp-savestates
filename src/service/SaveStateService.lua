@@ -33,6 +33,50 @@ return function(deps)
     before_warp = true,
     script_checkpoint = true,
   }
+  local WARNING_FAILURES = {
+    animation_busy = true,
+    bad_format = true,
+    bad_index = true,
+    bad_metadata = true,
+    battle_origin_unsupported = true,
+    battle_phase_busy = true,
+    battle_variant_unsupported = true,
+    corrupt_identity = true,
+    corrupt_metadata = true,
+    empty_slot = true,
+    invalid_checkpoint = true,
+    invalid_class = true,
+    invalid_content = true,
+    invalid_id = true,
+    invalid_label = true,
+    invalid_limit = true,
+    invalid_map = true,
+    invalid_migration = true,
+    invalid_position = true,
+    invalid_slot = true,
+    invalid_trigger = true,
+    link_battle_unsupported = true,
+    migration_failed = true,
+    missing_checkpoint = true,
+    missing_migration = true,
+    missing_persistent_state = true,
+    movement_busy = true,
+    no_quick_save = true,
+    no_recovery = true,
+    no_valid_quick_save = true,
+    not_data_only = true,
+    not_found = true,
+    not_in_playthrough = true,
+    not_overworld = true,
+    payload_missing = true,
+    screen_busy = true,
+    script_busy = true,
+    transition_busy = true,
+    unsupported_format = true,
+    unsupported_runtime_kind = true,
+    wrong_game = true,
+    wrong_playthrough = true,
+  }
 
   local function invoke(object, method, ...)
     if type(object) ~= "table" or type(object[method]) ~= "function" then
@@ -69,6 +113,7 @@ return function(deps)
       modApi = args.modApi,
       notify = args.notify,
       warn = args.warn,
+      error = args.error,
       debugEnabled = args.debugEnabled,
       timer = args.timer,
       measureSize = args.measureSize,
@@ -83,6 +128,10 @@ return function(deps)
 
   function Service:_warn(code, message, metadata)
     if type(self.warn) == "function" then pcall(self.warn, code, message, metadata) end
+  end
+
+  function Service:_error(code, message, metadata)
+    if type(self.error) == "function" then pcall(self.error, code, message, metadata) end
   end
 
   function Service:_debugActive()
@@ -149,6 +198,11 @@ return function(deps)
     detail = detail or {}
     detail.code = code
     detail.message = message
+    if kind == "save_rejected" or WARNING_FAILURES[code] then
+      self:_warn(code, message, detail)
+    else
+      self:_error(code, message, detail)
+    end
     self:_notify(kind, detail)
     return nil, code, message
   end
@@ -306,8 +360,10 @@ return function(deps)
     if not checkpoint then return nil, captureCode, captureMessage end
     local runtime = checkpoint.runtime and checkpoint.runtime.overworld
     local mapId = runtime and runtime.map
-    if trigger == "location_enter" and context.mapId and context.mapId ~= mapId then
-      return nil, "stale_trigger", "Deferred location event no longer matches the active map."
+    if (trigger == "location_enter" or trigger == "before_warp")
+        and context.mapId and context.mapId ~= mapId then
+      return nil, "stale_trigger",
+        "Autosave event no longer matches the active source map."
     end
     local createdAt, clockCode, clockMessage = self:_now()
     if not createdAt then return nil, clockCode, clockMessage end

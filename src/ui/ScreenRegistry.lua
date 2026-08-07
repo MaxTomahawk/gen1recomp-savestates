@@ -10,6 +10,7 @@ return function(deps)
     slotActions = "SavestatesSlotActions",
     pinPicker = "SavestatesPinPicker",
     rename = "SavestatesRename",
+    deleteConfirm = "SavestatesDeleteConfirm",
     settings = "SavestatesSettings",
   }
 
@@ -152,10 +153,12 @@ return function(deps)
           end }
         end
         items[#items + 1] = { label = "DELETE", onSelect = function()
-          menu:close()
-          local deleted = service:deleteState(game, metadata.id)
-          local history = opts.parents and opts.parents[1]
-          if deleted and history and history.removeCurrent then history:removeCurrent() end
+          mod.ui.push(game, IDS.deleteConfirm, {
+            target = "state",
+            id = metadata.id,
+            action = menu,
+            history = opts.parents and opts.parents[1],
+          })
         end }
         items[#items + 1] = { label = "CANCEL", onSelect = function()
           menu:close()
@@ -263,12 +266,12 @@ return function(deps)
             })
           end }
           items[#items + 1] = { label = "DELETE", onSelect = function()
-            menu:close()
-            local deleted = service:deleteSlot(game, slot)
-            if deleted and opts.slotMenu and opts.slotMenu.items[slot] then
-              opts.slotMenu.items[slot].right = "EMPTY"
-              opts.slotMenu.items[slot].value = { slot = slot, occupied = false }
-            end
+            mod.ui.push(game, IDS.deleteConfirm, {
+              target = "slot",
+              slot = slot,
+              action = menu,
+              slotMenu = opts.slotMenu,
+            })
           end }
         end
         items[#items + 1] = { label = "CANCEL", onSelect = function()
@@ -304,6 +307,37 @@ return function(deps)
             if renamed and opts.action and opts.action.close then opts.action:close() end
           end,
         })
+      end,
+    })
+
+    mod.content.screens:register(IDS.deleteConfirm, {
+      new = function(game, opts)
+        opts = opts or {}
+        local isSlot = opts.target == "slot"
+        return mod.ui.TextBox.new(game,
+          isSlot and "DELETE THIS SLOT?" or "DELETE THIS STATE?", nil, {
+            defaultNo = true,
+            choice = function(yes)
+              if not yes then return end
+              local deleted
+              if isSlot then
+                deleted = service:deleteSlot(game, opts.slot)
+              else
+                deleted = service:deleteState(game, opts.id)
+              end
+              if not deleted then return end
+              if opts.action and opts.action.close then opts.action:close() end
+              if isSlot then
+                local item = opts.slotMenu and opts.slotMenu.items[opts.slot]
+                if item then
+                  item.right = "EMPTY"
+                  item.value = { slot = opts.slot, occupied = false }
+                end
+              elseif opts.history and opts.history.removeCurrent then
+                opts.history:removeCurrent()
+              end
+            end,
+          })
       end,
     })
 
