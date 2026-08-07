@@ -18,7 +18,7 @@ Status vocabulary:
 | Event-based location/trainer/wild autosaves | Verified | Public event composition plus runtime-kind deferral/stale-request tests; no timer autosave. |
 | Optional after-battle and synchronous before-warp saves | Verified | Controller/service tests; `player.warped` timing is documented from the public emit site. |
 | Cooldown, semantic duplicate replacement, retention | Verified | Fingerprint/deduplicator/service tests; presentation-only counters are excluded. |
-| Ten permanent slots with load/overwrite/rename/delete | Verified | Service/UI tests; generation-safe overwrite, failed-publication preservation, metadata-only rename, and default-NO confirmation for direct or pin-driven replacement. |
+| Ten permanent slots with load/overwrite/rename/delete | Verified | Service/UI tests; generation-safe overwrite, failed-publication preservation, metadata-only rename, source-provenance-preserving pin, and default-NO confirmation for direct or pin-driven replacement. |
 | Durable one-level recovery and undo-load | Verified | A -> load B -> undo -> A tests; recovery is written/re-read before restore and not overwritten by undo. |
 | Native non-modal replace-in-place notifications | Verified | HUD model/draw tests cover toggles, replacement, expiry, fitting/wrapping, failures, and compatibility warnings. |
 | Configurable histories, autosave triggers, notifications | Verified | Public option schema and settings-summary tests cover all product options. |
@@ -30,7 +30,7 @@ Status vocabulary:
 | Unsafe scripts/transitions/menus/animations/battle phases rejected | Verified | Public checkpoint capability and exclusion tests; compatibility docs name every supported boundary. |
 | Manual battle quicksave UX | Accurately limited | No public custom action or battle-menu decorator exists. Default battle-start autosaves are user-accessible; cooperating mods may call the public export at later safe decisions. |
 | No private engine dependency in distributed mod | Verified | Source boundary inspection found no private `src.*` require, raw filesystem, state-stack, process, package, or debug access; sibling source loads use public `mod:read`, and real modkit load/lint passes. |
-| ROM-free CI, tests, lint, reproducible package | Verified | 749/749 Lua checks, 7/7 Python release/package-gate tests, modkit validate/lint, two byte-identical 28-file ZIP builds plus pack manifest, and fresh-clone/fresh-extracted-install checks at `4e86238`; Actions run `31195868937` passed. |
+| ROM-free CI, tests, lint, reproducible package | Verified | 754/754 Lua checks, 7/7 Python release/package-gate tests, modkit validate/lint, two byte-identical 28-file ZIP builds plus pack manifest, and fresh-clone/fresh-extracted-install checks at `6e8e016`; Actions runs `31196658088` and `31196661547` passed. |
 | Exact released-engine compatibility | Prepared | Release gate derives/checks out the manifest's exact minimum official tag. Manifest intentionally remains experimental/dev until upstream APIs ship. |
 | Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
 | Installable GitHub Release | Blocked externally | Tag workflow intentionally refuses preview metadata; requires official upstream API release and final manifest range. |

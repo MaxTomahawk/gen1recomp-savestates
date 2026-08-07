@@ -215,21 +215,23 @@ Latest verification (2026-08-07):
   fidelity, and complete overworld-progress fidelity.
 - Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-battle
   MODKIT=/home/max/src/gen1recomp-modkit-reproducible/tools/modkit.py` —
-  749/749 Lua behavior checks plus 7/7 Python release/package-gate tests; modkit
+  754/754 Lua behavior checks plus 7/7 Python release/package-gate tests; modkit
   validate/lint and reproducible 28-file
   package root verification plus a clean extracted-install pass with battle
   support enabled. This includes semantic autosave fingerprinting, fitted native
   notifications, live manager counts, default-NO destructive-action confirmation,
   structured diagnostics, pre-load engine-version warnings, and exact-minimum
   release-engine selection. Permanent-slot rename preserves the original
-  checkpoint time/context, and every occupied-slot replacement defaults to NO.
-- The same `make check` passed from a fresh clone of published head
-  `4e86238851a90132ddda3e8a0c2f0c70d5225dc0`; two consecutive package
+  checkpoint time/context; pinning preserves source capture provenance; and every
+  occupied-slot replacement defaults to NO.
+- The same `make check` passed from a fresh clone of published product head
+  `6e8e0164073c8dab22227c7854bca3eaa838d8e6`; two consecutive package
   builds were byte-identical. The archive SHA-256 was
-  `73fbf8baedc5bd0c16d22b9c7b1fa1142a4eebffdb16e7f9bd37664964ffd739`,
+  `850d9e2207eb0728f166012b3253be4a99217757f49122fe01586c5341608e72`,
   the resulting archive contains 28 distributable files plus
   `.modkit/pack.json`, and a clean extracted install validates and lints.
-- GitHub Actions `Test` run `31195868937` completed successfully for that exact
+- GitHub Actions `Test` runs `31196658088` and `31196661547` completed
+  successfully for that exact
   source-date packaging head. The preview release gate was also exercised
   directly and
   correctly refused publication because `experimental` remains `true`.
