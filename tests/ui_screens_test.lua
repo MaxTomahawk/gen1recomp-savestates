@@ -272,6 +272,8 @@ occupiedSlotAction.items[3].onSelect()
 T:eq(pushes[#pushes].id, ids.rename, "rename action opens native naming screen")
 local rename = registered[ids.rename].new(game, pushes[#pushes].opts)
 T:eq(rename.naming, true, "rename screen uses public native NamingScreen")
+T:eq(rename.opts.maxLen, 12,
+  "slot names fit the native screen and the documented BEFORE MISTY label")
 rename.opts.onDone("MISTY")
 T:eq(calls[#calls], "rename:2:MISTY", "naming result updates selected slot")
 

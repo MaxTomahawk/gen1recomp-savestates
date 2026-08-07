@@ -47,6 +47,8 @@ Version headings match `manifest.json`.
 - Pinning a Quick Save or Auto Save now preserves the source capture time,
   trigger, and semantic context instead of describing the pin operation as a new
   manual capture.
+- The native slot naming screen now accepts 12-character labels such as
+  `BEFORE MISTY` without overflowing its 160-pixel canvas.
 
 ## 0.1.0
 

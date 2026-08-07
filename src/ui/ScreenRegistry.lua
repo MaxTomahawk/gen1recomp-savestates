@@ -319,7 +319,7 @@ return function(deps)
         opts = opts or {}
         return mod.ui.NamingScreen.new(game, {
           title = "SLOT NAME?",
-          maxLen = 10,
+          maxLen = 12,
           onDone = function(name)
             if name == "" then return end
             local renamed = service:renameSlot(game, opts.slot, name)
