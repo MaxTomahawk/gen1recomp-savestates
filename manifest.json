@@ -1,0 +1,18 @@
+{
+  "id": "savestates",
+  "name": "Save States",
+  "version": "0.1.0",
+  "api": 2,
+  "entry": "main.lua",
+  "profile": "content",
+  "game_version": ">=0.0.0-dev <1.0.0",
+  "category": "TOOL",
+  "priority": 100,
+  "dependencies": [],
+  "optional_dependencies": [],
+  "conflicts": [],
+  "incompatible": [],
+  "experimental": true,
+  "github": "MaxTomahawk/gen1recomp-savestates",
+  "description": "Native rolling quicksaves, autosaves, permanent slots, and recovery checkpoints."
+}

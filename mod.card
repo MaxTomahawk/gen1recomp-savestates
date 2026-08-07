@@ -1,0 +1,22 @@
+return {
+  summary = "Native rolling quicksaves, autosaves, permanent slots, and recovery checkpoints.",
+  author = "MaxTomahawk",
+  contact = "https://github.com/MaxTomahawk/gen1recomp-savestates",
+  tags = { "quality-of-life", "ui", "tool" },
+  differences = {
+    changed = {},
+    added = {
+      "rolling quick and automatic checkpoints",
+      "ten permanent state slots",
+      "one-level undo-load recovery",
+    },
+    known = {
+      "the current technical preview is not an installable product release",
+      "only runtime boundaries proven safe by the engine are supported",
+    },
+  },
+  credits = {
+    { who = "Gen1Recomp contributors", for_ = "the native runtime and public mod API" },
+  },
+  compat = { engine = ">=0.0.0-dev <1.0.0", modApi = 2 },
+}

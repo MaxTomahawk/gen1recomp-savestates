@@ -1,0 +1,4 @@
+dist/
+*.zip
+*.luac
+.DS_Store

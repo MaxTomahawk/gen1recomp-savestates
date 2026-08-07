@@ -1,0 +1,3 @@
+# Repository-only files excluded from the installable package.
+AGENTS.md
+Makefile
