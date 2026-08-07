@@ -1,0 +1,28 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rom-free:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Save States
+        uses: actions/checkout@v4
+
+      - name: Checkout verified Gen1Recomp API branch
+        uses: actions/checkout@v4
+        with:
+          repository: MaxTomahawk/gen1recomp
+          ref: 9d6ea845d7c462ebab0f72a2ac0c951557e21260
+          path: .upstream
+
+      - name: Install ROM-free toolchain
+        run: sudo apt-get update && sudo apt-get install -y luajit unzip
+
+      - name: Test, validate, lint, and package
+        run: make check GEN1RECOMP=.upstream
