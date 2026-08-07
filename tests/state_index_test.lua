@@ -4,7 +4,7 @@ local DataOnly = dofile("src/util/DataOnly.lua")
 local StateIndex = dofile("src/state/StateIndex.lua")(DataOnly)
 local Retention = dofile("src/state/Retention.lua")
 
-local function metadata(id, class, createdAt, label)
+local function metadata(id, class, createdAt, label, slot)
   return {
     id = id,
     stateClass = class,
@@ -13,6 +13,7 @@ local function metadata(id, class, createdAt, label)
     trigger = class == "auto" and "location_enter" or "manual",
     locationId = "PALLET_TOWN",
     locationName = label or "PALLET TOWN",
+    slot = slot,
   }
 end
 
@@ -59,15 +60,26 @@ T:eq(#auto, 21, "duplicate replacement does not grow history")
 T:eq(auto[1].createdAt, 999, "replacement becomes the newest metadata")
 T:eq(auto[1].locationName, "UPDATED", "replacement content is visible")
 
+local slotIds = {}
 for slot = 1, 10 do
+  local id = index:allocate("slot", slot)
+  slotIds[slot] = id
   local saved, slotCode = index:setSlot(slot,
-    metadata(("slot%02d"):format(slot), "slot", 200 + slot))
+    metadata(id, "slot", 200 + slot, nil, slot))
   T:eq(saved, true, "permanent slot " .. slot .. " saves")
   T:eq(slotCode, nil, "valid slot has no error")
 end
-T:eq(index:slot(1).id, "slot01", "slot one has a fixed id")
-T:eq(index:slot(10).id, "slot10", "slot ten has a fixed id")
-local invalidSlot, invalidSlotCode = index:setSlot(11, metadata("slot11", "slot", 1))
+T:check(slotIds[1]:match("^s01_%d%d%d%d%d%d%d%d$") ~= nil,
+  "slot one uses a unique generation id")
+T:check(slotIds[10]:match("^s10_%d%d%d%d%d%d%d%d$") ~= nil,
+  "slot ten uses a unique generation id")
+T:eq(index:slot(1).id, slotIds[1], "slot one points at its payload generation")
+T:eq(index:slot(10).id, slotIds[10], "slot ten points at its payload generation")
+local invalidAllocation, invalidAllocationCode = index:allocate("slot", 11)
+T:eq(invalidAllocation, nil, "slot eleven cannot allocate a generation")
+T:eq(invalidAllocationCode, "invalid_slot", "bad slot allocation has a stable code")
+local invalidSlot, invalidSlotCode = index:setSlot(
+  11, metadata("s11_00000001", "slot", 1, nil, 11))
 T:eq(invalidSlot, nil, "slot eleven is refused")
 T:eq(invalidSlotCode, "invalid_slot", "out-of-range slot has a stable code")
 T:eq(#index:list("quick"), 5, "slot writes do not affect rolling quick history")
@@ -75,7 +87,15 @@ T:eq(#index:list("auto"), 21, "slot writes do not affect rolling auto history")
 
 T:check(index:setSlot(3, nil), "clearing a slot succeeds")
 T:eq(index:slot(3), nil, "cleared slot is empty")
-T:eq(index:get("slot03"), nil, "clearing a slot removes its metadata")
+T:eq(index:get(slotIds[3]), nil, "clearing a slot removes its payload metadata")
+
+local previousSlotOne = index:slot(1).id
+local replacementSlotOne = index:allocate("slot", 1)
+T:check(index:setSlot(1,
+  metadata(replacementSlotOne, "slot", 400, "BEFORE BROCK", 1)),
+  "overwriting a slot changes its generation")
+T:eq(index:slot(1).id, replacementSlotOne, "slot points at replacement generation")
+T:eq(index:get(previousSlotOne), nil, "replaced generation is unpublished")
 
 T:check(index:setRecovery(metadata("recovery", "recovery", 500)),
   "recovery metadata saves")
@@ -93,7 +113,8 @@ T:eq(index:list("quick")[1].id, quickIds[6], "record output cannot mutate live o
 local restored, restoredCode = StateIndex.new(index:record())
 T:check(restored ~= nil, "a persisted index record reloads: " .. tostring(restoredCode))
 T:eq(restored:list("quick")[1].id, quickIds[6], "reloaded index preserves ordering")
-T:eq(restored:slot(1).id, "slot01", "reloaded index preserves permanent slots")
+T:eq(restored:slot(1).id, replacementSlotOne,
+  "reloaded index preserves permanent slot generation")
 T:eq(restored:recovery().id, "recovery", "reloaded index preserves recovery")
 
 local malformedCases = {
@@ -111,7 +132,7 @@ end
 
 local protected = {
   metadata("q2", "quick", 2),
-  metadata("slot01", "slot", 1),
+  metadata("s01_00000001", "slot", 1, nil, 1),
   metadata("q1", "quick", 1),
   metadata("recovery", "recovery", 0),
 }

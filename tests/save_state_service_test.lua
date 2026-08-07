@@ -171,6 +171,12 @@ T:check(happy.storage.values["states/q00000001"] ~= nil,
   "quicksave payload persists independently")
 T:eq(happy.notifications[1].kind, "quick_saved", "successful save emits notification")
 T:eq(happy.notifications[1].detail.count, 1, "save notification reports history count")
+local happySummary = happy.service:summary(happy.game)
+T:eq(happySummary.quickCount, 1, "summary reports quick history count")
+T:eq(happySummary.autoCount, 0, "summary reports empty auto history")
+T:eq(happySummary.slotCount, 0, "summary reports no occupied slots")
+T:eq(happySummary.slotCapacity, 10, "summary reports permanent slot capacity")
+T:eq(happySummary.undoAvailable, false, "summary reports no recovery before a load")
 
 happy.setLimit(2)
 happy.setNow(1235)
@@ -184,6 +190,84 @@ T:eq(#happyIndex:list("quick"), 2, "rolling quick history honors current limit")
 T:eq(happyIndex:list("quick")[1].id, "q00000003", "rolling history stays newest-first")
 T:eq(happyIndex:list("quick")[2].id, "q00000002", "second newest state is retained")
 T:eq(happy.storage.values["states/q00000001"], nil, "oldest trimmed payload is removed")
+
+local slots = environment({ money = 500 })
+local emptySlots = slots.service:listSlots(slots.game)
+T:eq(#emptySlots, 10, "slot listing always exposes ten permanent positions")
+T:eq(emptySlots[1].occupied, false, "fresh permanent slot is empty")
+local slotSaved, slotSaveCode, slotSaveMessage = slots.service:saveSlot(slots.game, 3)
+T:check(slotSaved ~= nil,
+  "saving an empty permanent slot succeeds: " .. tostring(slotSaveCode or slotSaveMessage))
+T:eq(slotSaved.metadata.slot, 3, "slot snapshot records logical slot number")
+T:eq(slotSaved.metadata.label, "SLOT 03", "slot receives conservative default label")
+T:check(slotSaved.metadata.id:match("^s03_%d%d%d%d%d%d%d%d$") ~= nil,
+  "slot payload uses a unique generation id")
+local firstSlotId = slotSaved.metadata.id
+local listedSlots = slots.service:listSlots(slots.game)
+T:eq(listedSlots[3].occupied, true, "saved permanent slot is occupied")
+T:eq(listedSlots[3].available, true, "saved permanent slot is loadable")
+T:eq(listedSlots[3].metadata.label, "SLOT 03", "slot listing exposes saved label")
+
+slots.game.current = checkpoint(600, "ROUTE_1")
+slots.storage.failWrite.index = true
+local failedOverwrite, failedOverwriteCode = slots.service:saveSlot(
+  slots.game, 3, "BEFORE BROCK")
+slots.storage.failWrite.index = nil
+T:eq(failedOverwrite, nil, "failed slot index publication rejects overwrite")
+T:eq(failedOverwriteCode, "write_failed", "failed slot overwrite preserves error")
+local preservedSlot = slots.service:listSlots(slots.game)[3]
+T:eq(preservedSlot.metadata.id, firstSlotId,
+  "failed slot overwrite leaves previous generation indexed")
+T:eq(slots.storeFactory(slots.game):readSnapshot(firstSlotId).checkpoint.save.money, 500,
+  "failed slot overwrite leaves previous generation loadable")
+
+local overwritten, overwriteCode, overwriteMessage = slots.service:saveSlot(
+  slots.game, 3, "BEFORE BROCK")
+T:check(overwritten ~= nil,
+  "slot overwrite succeeds: " .. tostring(overwriteCode or overwriteMessage))
+T:check(overwritten.metadata.id ~= firstSlotId,
+  "successful slot overwrite publishes a new generation")
+T:eq(overwritten.metadata.label, "BEFORE BROCK", "slot overwrite stores custom label")
+T:eq(slots.storage.values["states/" .. firstSlotId], nil,
+  "successful slot overwrite cleans previous generation")
+
+local renamed, renameCode, renameMessage = slots.service:renameSlot(
+  slots.game, 3, "ROUTE ONE")
+T:check(renamed ~= nil, "slot rename succeeds: " .. tostring(renameCode or renameMessage))
+T:eq(renamed.metadata.label, "ROUTE ONE", "slot rename changes metadata label")
+T:eq(renamed.checkpoint.save.money, 600, "slot rename preserves checkpoint progress")
+local renamedId = renamed.metadata.id
+local badName, badNameCode = slots.service:renameSlot(slots.game, 3, "BAD/NAME")
+T:eq(badName, nil, "unsupported slot label characters are rejected")
+T:eq(badNameCode, "invalid_label", "bad slot label has stable code")
+
+slots.game.current = checkpoint(700)
+local loadedSlot, loadedSlotCode, loadedSlotMessage = slots.service:loadSlot(slots.game, 3)
+T:check(loadedSlot ~= nil,
+  "permanent slot loads: " .. tostring(loadedSlotCode or loadedSlotMessage))
+T:eq(slots.game.current.save.money, 600, "permanent slot restores its checkpoint")
+
+local pinnedSource = slots.service:quickSave(slots.game)
+slots.game.current = checkpoint(800)
+local pinned, pinCode, pinMessage = slots.service:pinToSlot(
+  slots.game, pinnedSource.metadata.id, 4, "PINNED")
+T:check(pinned ~= nil, "quick state pins to permanent slot: "
+  .. tostring(pinCode or pinMessage))
+T:eq(pinned.metadata.slot, 4, "pinned state targets selected slot")
+T:eq(pinned.metadata.label, "PINNED", "pinned state stores selected label")
+T:eq(pinned.checkpoint.save.money, 600, "pin copies source checkpoint, not live runtime")
+
+local deletedSlot, deletedSlotCode, deletedSlotMessage = slots.service:deleteSlot(
+  slots.game, 3)
+T:check(deletedSlot == true,
+  "slot deletion succeeds: " .. tostring(deletedSlotCode or deletedSlotMessage))
+T:eq(slots.service:listSlots(slots.game)[3].occupied, false,
+  "deleted permanent slot becomes empty")
+T:eq(slots.storage.values["states/" .. renamedId], nil,
+  "slot deletion removes selected generation payload")
+local invalidSlotSave, invalidSlotSaveCode = slots.service:saveSlot(slots.game, 11)
+T:eq(invalidSlotSave, nil, "slot eleven cannot be saved")
+T:eq(invalidSlotSaveCode, "invalid_slot", "invalid slot save has stable code")
 
 local captureFailure = environment()
 captureFailure.checkpoints.captureFailure = "capture_failed"
@@ -226,6 +310,8 @@ T:check(recoveryWrite and restoreCall and recoveryWrite < restoreCall,
   "recovery is persisted before runtime mutation")
 T:eq(load.notifications[#load.notifications].kind, "state_loaded",
   "successful load emits notification")
+T:eq(load.service:summary(load.game).undoAvailable, true,
+  "summary exposes durable undo after successful load")
 
 local skipCorrupt = environment({ money = 10 })
 T:check(skipCorrupt.service:quickSave(skipCorrupt.game), "older valid quick fixture saves")
@@ -238,6 +324,30 @@ T:check(skipped ~= nil, "corrupt newest quick is skipped: "
   .. tostring(skippedCode or skippedMessage))
 T:eq(skipped.metadata.id, "q00000001", "quickload selects newest valid older quick")
 T:eq(skipCorrupt.game.current.save.money, 10, "older valid quick restores correctly")
+local listed = skipCorrupt.service:listStates(skipCorrupt.game, "quick")
+T:eq(#listed, 2, "state listing keeps corrupt entries visible")
+T:eq(listed[1].metadata.id, "q00000002", "state listing stays newest-first")
+T:eq(listed[1].available, false, "corrupt list entry is unavailable")
+T:eq(listed[1].status, "corrupt_metadata", "corrupt list entry explains status")
+T:eq(listed[2].available, true, "older valid list entry remains available")
+
+skipCorrupt.game.current = checkpoint(40)
+local explicit, explicitCode, explicitMessage = skipCorrupt.service:loadState(
+  skipCorrupt.game, "q00000001")
+T:check(explicit ~= nil, "explicit older-state load succeeds: "
+  .. tostring(explicitCode or explicitMessage))
+T:eq(skipCorrupt.game.current.save.money, 10, "explicit load restores selected id")
+
+local deleted, deleteCode, deleteMessage = skipCorrupt.service:deleteState(
+  skipCorrupt.game, "q00000002")
+T:check(deleted == true, "corrupt indexed state can be deleted: "
+  .. tostring(deleteCode or deleteMessage))
+T:eq(#skipCorrupt.storeFactory(skipCorrupt.game):loadIndex():list("quick"), 1,
+  "delete removes only selected metadata")
+T:eq(skipCorrupt.storage.values["states/q00000002"], nil,
+  "delete removes selected corrupt payload")
+T:eq(skipCorrupt.notifications[#skipCorrupt.notifications].kind, "state_deleted",
+  "delete emits notification")
 
 local allCorrupt = environment({ money = 10 })
 T:check(allCorrupt.service:quickSave(allCorrupt.game), "all-corrupt fixture saves")

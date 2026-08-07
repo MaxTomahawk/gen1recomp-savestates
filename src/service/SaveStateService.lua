@@ -131,8 +131,23 @@ return function(deps)
       locationId = mapId,
       locationName = self.locationLabel(mapId),
       fingerprint = fingerprint,
+      slot = metadata.slot,
       checkpoint = checkpoint,
     })
+  end
+
+  local function validSlot(slot)
+    return type(slot) == "number" and slot >= 1 and slot <= 10 and slot % 1 == 0
+  end
+
+  local function slotLabel(slot, label)
+    if label == nil or label == "" then return ("SLOT %02d"):format(slot) end
+    if type(label) ~= "string" or #label > 18
+        or not label:match("^[%w %._'%-]+$") then
+      return nil, "invalid_label",
+        "Slot labels may use up to 18 letters, numbers, spaces, apostrophes, dots, or hyphens."
+    end
+    return label
   end
 
   function Service:quickSave(game)
@@ -193,6 +208,162 @@ return function(deps)
     return snapshot, commitCode, commitMessage
   end
 
+  function Service:_writeSlot(store, index, checkpoint, slot, label)
+    if not validSlot(slot) then
+      return nil, "invalid_slot", "Permanent slot must be an integer from 1 through 10."
+    end
+    local checkedLabel, labelCode, labelMessage = slotLabel(slot, label)
+    if not checkedLabel then return nil, labelCode, labelMessage end
+    local previous = index:slot(slot)
+    local id, idCode, idMessage = invoke(index, "allocate", "slot", slot)
+    if not id then return nil, idCode, idMessage end
+    local createdAt, clockCode, clockMessage = self:_now()
+    if not createdAt then return nil, clockCode, clockMessage end
+    local snapshot, snapshotCode, snapshotMessage = self:_snapshot(checkpoint, {
+      id = id,
+      stateClass = "slot",
+      slot = slot,
+      trigger = "manual",
+      createdAt = createdAt,
+      label = checkedLabel,
+    })
+    if not snapshot then return nil, snapshotCode, snapshotMessage end
+    local assigned, assignCode, assignMessage = invoke(
+      index, "setSlot", slot, snapshot.metadata)
+    if not assigned then return nil, assignCode, assignMessage end
+    local cleanup = previous and { previous.id } or {}
+    local committed, commitCode, commitMessage = invoke(
+      store, "commitSlot", index, snapshot, cleanup)
+    if not committed then return nil, commitCode, commitMessage end
+    if commitCode then self:_warn(commitCode, commitMessage, snapshot.metadata) end
+    self:_notify("slot_saved", {
+      id = id,
+      slot = slot,
+      label = checkedLabel,
+      locationName = snapshot.metadata.locationName,
+      warning = commitCode,
+    })
+    return snapshot, commitCode, commitMessage
+  end
+
+  function Service:saveSlot(game, slot, label)
+    if not validSlot(slot) then
+      return self:_failure("save_failed", "invalid_slot",
+        "Permanent slot must be an integer from 1 through 10.")
+    end
+    local _, capabilityCode, capabilityMessage = self:_capability(game, "capture")
+    if capabilityCode then
+      return self:_failure("save_rejected", capabilityCode, capabilityMessage)
+    end
+    local checkpoint, captureCode, captureMessage = invoke(
+      self.checkpoints, "capture", game)
+    if not checkpoint then return self:_failure("save_failed", captureCode, captureMessage) end
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return self:_failure("save_failed", storeCode, storeMessage) end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return self:_failure("save_failed", indexCode, indexMessage) end
+    local snapshot, code, message = self:_writeSlot(store, index, checkpoint, slot, label)
+    if not snapshot then return self:_failure("save_failed", code, message) end
+    return snapshot, code, message
+  end
+
+  function Service:pinToSlot(game, sourceId, slot, label)
+    if not validSlot(slot) then
+      return self:_failure("save_failed", "invalid_slot",
+        "Permanent slot must be an integer from 1 through 10.")
+    end
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return self:_failure("save_failed", storeCode, storeMessage) end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return self:_failure("save_failed", indexCode, indexMessage) end
+    if not index:get(sourceId) then
+      return self:_failure("save_failed", "not_found", "Source savestate is not indexed.")
+    end
+    local source, sourceCode, sourceMessage = invoke(store, "readSnapshot", sourceId)
+    if not source then return self:_failure("save_failed", sourceCode, sourceMessage) end
+    local snapshot, code, message = self:_writeSlot(
+      store, index, source.checkpoint, slot, label)
+    if not snapshot then return self:_failure("save_failed", code, message) end
+    return snapshot, code, message
+  end
+
+  function Service:renameSlot(game, slot, label)
+    if not validSlot(slot) then
+      return self:_failure("save_failed", "invalid_slot",
+        "Permanent slot must be an integer from 1 through 10.")
+    end
+    local checkedLabel, labelCode, labelMessage = slotLabel(slot, label)
+    if not checkedLabel then return self:_failure("save_failed", labelCode, labelMessage) end
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return self:_failure("save_failed", storeCode, storeMessage) end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return self:_failure("save_failed", indexCode, indexMessage) end
+    local current = index:slot(slot)
+    if not current then
+      return self:_failure("save_failed", "empty_slot", "Permanent slot is empty.")
+    end
+    local source, sourceCode, sourceMessage = invoke(store, "readSnapshot", current.id)
+    if not source then return self:_failure("save_failed", sourceCode, sourceMessage) end
+    local snapshot, code, message = self:_writeSlot(
+      store, index, source.checkpoint, slot, checkedLabel)
+    if not snapshot then return self:_failure("save_failed", code, message) end
+    return snapshot, code, message
+  end
+
+  function Service:listSlots(game)
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return nil, storeCode, storeMessage end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return nil, indexCode, indexMessage end
+    local rows = {}
+    for slot = 1, 10 do
+      local metadata = index:slot(slot)
+      local row = { slot = slot, occupied = metadata ~= nil, metadata = metadata }
+      if metadata then
+        local snapshot, code, message, warnings = invoke(
+          store, "readSnapshot", metadata.id)
+        row.available = snapshot ~= nil
+        row.status = snapshot and "compatible" or code
+        row.message = message
+        row.warnings = warnings
+      end
+      rows[slot] = row
+    end
+    return rows
+  end
+
+  function Service:loadSlot(game, slot)
+    if not validSlot(slot) then
+      return self:_failure("load_failed", "invalid_slot",
+        "Permanent slot must be an integer from 1 through 10.")
+    end
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return self:_failure("load_failed", storeCode, storeMessage) end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return self:_failure("load_failed", indexCode, indexMessage) end
+    local metadata = index:slot(slot)
+    if not metadata then
+      return self:_failure("load_failed", "empty_slot", "Permanent slot is empty.")
+    end
+    return self:loadState(game, metadata.id)
+  end
+
+  function Service:deleteSlot(game, slot)
+    if not validSlot(slot) then
+      return self:_failure("save_failed", "invalid_slot",
+        "Permanent slot must be an integer from 1 through 10.")
+    end
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return self:_failure("save_failed", storeCode, storeMessage) end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return self:_failure("save_failed", indexCode, indexMessage) end
+    local metadata = index:slot(slot)
+    if not metadata then
+      return self:_failure("save_failed", "empty_slot", "Permanent slot is empty.")
+    end
+    return self:deleteState(game, metadata.id)
+  end
+
   function Service:_newestValidQuick(store, entries)
     for _, metadata in ipairs(entries) do
       local snapshot, code, message, warnings = invoke(
@@ -203,6 +374,51 @@ return function(deps)
     end
     return nil, nil, "no_valid_quick_save",
       "No valid Quick Save is available in this history."
+  end
+
+  function Service:summary(game)
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return nil, storeCode, storeMessage end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return nil, indexCode, indexMessage end
+    local record = index:record()
+    local slotCount = 0
+    for _ in pairs(record.slots or {}) do slotCount = slotCount + 1 end
+    local recovery, recoveryCode, recoveryMessage = invoke(store, "loadRecovery")
+    if not recovery and recoveryCode ~= "no_recovery" then
+      self:_warn(recoveryCode, recoveryMessage, { id = "recovery" })
+    end
+    return {
+      quickCount = #index:list("quick"),
+      autoCount = #index:list("auto"),
+      slotCount = slotCount,
+      slotCapacity = 10,
+      undoAvailable = recovery ~= nil,
+      recoveryStatus = recovery and "available" or recoveryCode,
+    }
+  end
+
+  function Service:listStates(game, class)
+    if class ~= "quick" and class ~= "auto" then
+      return nil, "invalid_class", "Only rolling state histories can be listed."
+    end
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return nil, storeCode, storeMessage end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return nil, indexCode, indexMessage end
+    local rows = {}
+    for _, metadata in ipairs(index:list(class)) do
+      local snapshot, code, message, warnings = invoke(
+        store, "readSnapshot", metadata.id)
+      rows[#rows + 1] = {
+        metadata = metadata,
+        available = snapshot ~= nil,
+        status = snapshot and "compatible" or code,
+        message = message,
+        warnings = warnings,
+      }
+    end
+    return rows
   end
 
   function Service:_captureRecovery(game, store)
@@ -226,6 +442,67 @@ return function(deps)
     return verified
   end
 
+  function Service:_restoreTarget(game, store, target, warnings)
+    local _, capabilityCode, capabilityMessage = self:_capability(game, "restore")
+    if capabilityCode then
+      return self:_failure("load_failed", capabilityCode, capabilityMessage)
+    end
+    local recovery, recoveryCode, recoveryMessage = self:_captureRecovery(game, store)
+    if not recovery then
+      return self:_failure("load_failed", recoveryCode, recoveryMessage)
+    end
+
+    -- Re-read after durable recovery so compatibility warnings use the current
+    -- engine identity and no state can change between validation and restore.
+    local current, targetCode, targetMessage, currentWarnings = invoke(
+      store, "readSnapshot", target.metadata.id,
+      { engineVersion = recovery.identity.engineVersion })
+    if not current then return self:_failure("load_failed", targetCode, targetMessage) end
+    warnings = currentWarnings or warnings
+    local restored, restoreCode, restoreMessage = invoke(
+      self.checkpoints, "restore", game, current.checkpoint)
+    if not restored then
+      return self:_failure("load_failed", restoreCode, restoreMessage,
+        { id = current.metadata.id })
+    end
+    self:_notify("state_loaded", {
+      id = current.metadata.id,
+      locationName = current.metadata.locationName,
+      warnings = warnings,
+    })
+    return current, nil, nil, warnings
+  end
+
+  function Service:loadState(game, id)
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return self:_failure("load_failed", storeCode, storeMessage) end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return self:_failure("load_failed", indexCode, indexMessage) end
+    if not index:get(id) then
+      return self:_failure("load_failed", "not_found", "Savestate is not indexed.")
+    end
+    local target, targetCode, targetMessage, warnings = invoke(
+      store, "readSnapshot", id)
+    if not target then return self:_failure("load_failed", targetCode, targetMessage) end
+    return self:_restoreTarget(game, store, target, warnings)
+  end
+
+  function Service:deleteState(game, id)
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return self:_failure("save_failed", storeCode, storeMessage) end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return self:_failure("save_failed", indexCode, indexMessage) end
+    local metadata = index:get(id)
+    if not metadata then
+      return self:_failure("save_failed", "not_found", "Savestate is not indexed.")
+    end
+    local updated, deleteCode, deleteMessage = invoke(store, "delete", index, id)
+    if not updated then return self:_failure("save_failed", deleteCode, deleteMessage) end
+    if deleteCode then self:_warn(deleteCode, deleteMessage, metadata) end
+    self:_notify("state_deleted", { id = id, warning = deleteCode })
+    return true, deleteCode, deleteMessage
+  end
+
   function Service:quickLoad(game)
     local store, storeCode, storeMessage = self:_store(game)
     if not store then return self:_failure("load_failed", storeCode, storeMessage) end
@@ -239,33 +516,7 @@ return function(deps)
       store, entries)
     if not target then return self:_failure("load_failed", targetCode, targetMessage) end
 
-    local _, capabilityCode, capabilityMessage = self:_capability(game, "restore")
-    if capabilityCode then
-      return self:_failure("load_failed", capabilityCode, capabilityMessage)
-    end
-    local recovery, recoveryCode, recoveryMessage = self:_captureRecovery(game, store)
-    if not recovery then
-      return self:_failure("load_failed", recoveryCode, recoveryMessage)
-    end
-
-    -- Re-read after durable recovery so compatibility warnings use the current
-    -- engine identity and no state can change between validation and restore.
-    target, targetCode, targetMessage, warnings = invoke(
-      store, "readSnapshot", target.metadata.id,
-      { engineVersion = recovery.identity.engineVersion })
-    if not target then return self:_failure("load_failed", targetCode, targetMessage) end
-    local restored, restoreCode, restoreMessage = invoke(
-      self.checkpoints, "restore", game, target.checkpoint)
-    if not restored then
-      return self:_failure("load_failed", restoreCode, restoreMessage,
-        { id = target.metadata.id })
-    end
-    self:_notify("state_loaded", {
-      id = target.metadata.id,
-      locationName = target.metadata.locationName,
-      warnings = warnings,
-    })
-    return target, nil, nil, warnings
+    return self:_restoreTarget(game, store, target, warnings)
   end
 
   function Service:undoLastLoad(game)

@@ -50,6 +50,14 @@ T:eq(state.identity.modId, "savestates", "snapshot owns a stable mod id")
 T:eq(state.identity.engineVersion, "0.9.0-dev", "engine version comes from checkpoint identity")
 T:eq(state.metadata.stateKind, "overworld", "runtime kind comes from the checkpoint")
 
+local slotState = newSnapshot({
+  id = "s03_00000001", stateClass = "slot", slot = 3, label = "BEFORE MISTY",
+})
+local validSlot, validSlotCode, validSlotMessage = Validator.validate(slotState, context)
+T:check(validSlot ~= nil,
+  "slot generation metadata validates: " .. tostring(validSlotCode or validSlotMessage))
+T:eq(validSlot.metadata.slot, 3, "slot number survives construction and validation")
+
 local validated, validCode, validMessage, warnings = Validator.validate(state, context)
 T:check(validated ~= nil,
   "a complete matching state validates: " .. tostring(validCode or validMessage))
@@ -90,6 +98,11 @@ local cases = {
       s.metadata.stateKind, s.checkpoint.kind = "battle", "battle" return s
     end, "unsupported_runtime_kind" },
   { "corrupt metadata", function(s) s.metadata.createdAt = -1 return s end,
+    "corrupt_metadata" },
+  { "slot without number", function(s)
+      s.metadata.stateClass, s.metadata.id = "slot", "s01_00000001" return s
+    end, "corrupt_metadata" },
+  { "non-slot with number", function(s) s.metadata.slot = 1 return s end,
     "corrupt_metadata" },
   { "kind disagreement", function(s) s.metadata.stateKind = "battle" return s end,
     "corrupt_metadata" },

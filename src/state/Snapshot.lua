@@ -34,6 +34,7 @@ return function(DataOnly)
         locationName = args.locationName,
         stateKind = checkpoint.kind,
         fingerprint = args.fingerprint,
+        slot = args.slot,
       },
       checkpoint = checkpoint,
     }

@@ -61,8 +61,9 @@ return function(DataOnly)
     end
     for slot, id in pairs(data.slots) do
       if type(slot) ~= "number" or slot < 1 or slot > 10 or slot % 1 ~= 0
-          or id ~= ("slot%02d"):format(slot)
-          or referenced[id] or not metadataOk(id, data.records[id], "slot") then
+          or type(id) ~= "string" or referenced[id]
+          or not metadataOk(id, data.records[id], "slot")
+          or data.records[id].slot ~= slot then
         return nil
       end
       referenced[id] = true
@@ -86,9 +87,17 @@ return function(DataOnly)
     return setmetatable({ data = data }, StateIndex)
   end
 
-  function StateIndex:allocate(class)
+  function StateIndex:allocate(class, slot)
     local prefix = class == "quick" and "q" or (class == "auto" and "a" or nil)
-    if not prefix then return nil, "invalid_class", "Only rolling histories allocate ids." end
+    if class == "slot" then
+      if type(slot) ~= "number" or slot < 1 or slot > 10 or slot % 1 ~= 0 then
+        return nil, "invalid_slot", "Permanent slot must be an integer from 1 through 10."
+      end
+      prefix = ("s%02d_"):format(slot)
+    end
+    if not prefix then
+      return nil, "invalid_class", "Only quick, auto, and slot states allocate ids."
+    end
     self.data.sequence = self.data.sequence + 1
     return ("%s%08d"):format(prefix, self.data.sequence)
   end
@@ -157,16 +166,24 @@ return function(DataOnly)
     if type(slot) ~= "number" or slot < 1 or slot > 10 or slot % 1 ~= 0 then
       return nil, "invalid_slot", "Permanent slot must be an integer from 1 through 10."
     end
-    local id = ("slot%02d"):format(slot)
     if metadata == nil then
+      local id = self.data.slots[slot]
       self.data.slots[slot] = nil
-      self.data.records[id] = nil
+      if id then self.data.records[id] = nil end
       return true
     end
     local detached = copy(metadata)
-    if not metadataOk(id, detached, "slot") then
-      return nil, "bad_metadata", "Slot metadata must use its fixed slot id."
+    local id = detached and detached.id
+    if not metadataOk(id, detached, "slot") or detached.slot ~= slot then
+      return nil, "bad_metadata", "Slot metadata must identify its slot generation."
     end
+    for otherSlot, otherId in pairs(self.data.slots) do
+      if otherSlot ~= slot and otherId == id then
+        return nil, "bad_metadata", "Slot generation is already used by another slot."
+      end
+    end
+    local previous = self.data.slots[slot]
+    if previous and previous ~= id then self.data.records[previous] = nil end
     self.data.records[id] = detached
     self.data.slots[slot] = id
     return true

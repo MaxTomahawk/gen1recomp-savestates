@@ -75,11 +75,12 @@ local function checkpoint()
   }
 end
 
-local function snapshot(id, class, createdAt)
+local function snapshot(id, class, createdAt, slot)
   return Snapshot.new({
     id = id, modVersion = "0.1.0", modApi = 2,
     stateClass = class, trigger = class == "auto" and "location_enter" or "manual",
     createdAt = createdAt, locationId = "PALLET_TOWN", locationName = "PALLET TOWN",
+    slot = slot,
     checkpoint = checkpoint(),
   })
 end
@@ -280,6 +281,62 @@ T:eq(rejectedCommit, nil, "index/payload metadata disagreement is rejected")
 T:eq(rejectedCommitCode, "bad_metadata", "metadata disagreement has stable code")
 T:eq(rollingStorage.values["states/q00000005"], nil,
   "rejected rolling transaction writes no payload")
+
+local slotStorage = fakeStorage()
+local slotStore = StateStore.new({
+  storage = slotStorage, game = game, validator = Validator,
+  migrations = migrations, supportedKinds = { overworld = true },
+})
+local slotIndex = slotStore:loadIndex()
+local slotId1 = slotIndex:allocate("slot", 1)
+local slotOne = snapshot(slotId1, "slot", 20, 1)
+T:check(slotIndex:setSlot(1, slotOne.metadata), "first slot generation prepares")
+T:check(slotStore:commitSlot(slotIndex, slotOne, {}), "first slot generation commits")
+T:eq(slotStore:loadIndex():slot(1).id, slotId1, "slot index points at first generation")
+
+local failedSlotIndex = slotStore:loadIndex()
+local slotId2 = failedSlotIndex:allocate("slot", 1)
+local slotTwo = snapshot(slotId2, "slot", 21, 1)
+slotTwo.checkpoint.save.money = 4000
+T:check(failedSlotIndex:setSlot(1, slotTwo.metadata), "slot overwrite prepares")
+slotStorage.failWrite.index = true
+local failedSlot, failedSlotCode = slotStore:commitSlot(
+  failedSlotIndex, slotTwo, { slotId1 })
+slotStorage.failWrite.index = nil
+T:eq(failedSlot, nil, "failed slot publication is reported")
+T:eq(failedSlotCode, "write_failed", "failed slot publication preserves error")
+T:eq(slotStore:loadIndex():slot(1).id, slotId1,
+  "failed slot publication leaves previous generation indexed")
+T:eq(slotStore:readSnapshot(slotId1).checkpoint.save.money, 3000,
+  "failed slot publication leaves previous generation loadable")
+T:check(slotStorage.values["states/" .. slotId2] ~= nil,
+  "failed slot publication leaves new generation as orphan")
+
+local successfulSlotIndex = slotStore:loadIndex()
+local slotId3 = successfulSlotIndex:allocate("slot", 1)
+local slotThree = snapshot(slotId3, "slot", 22, 1)
+slotThree.checkpoint.save.money = 5000
+T:check(successfulSlotIndex:setSlot(1, slotThree.metadata),
+  "successful slot overwrite prepares")
+slotStorage.calls = {}
+local committedSlot, committedSlotCode, committedSlotMessage = slotStore:commitSlot(
+  successfulSlotIndex, slotThree, { slotId1 })
+T:check(committedSlot == true,
+  "slot overwrite commits: " .. tostring(committedSlotCode or committedSlotMessage))
+T:eq(slotStorage.calls[1], "write:states/" .. slotId3,
+  "slot overwrite stages unique generation first")
+T:eq(slotStorage.calls[2], "write:index", "slot overwrite publishes index second")
+T:eq(slotStorage.calls[3], "delete:states/" .. slotId1,
+  "slot overwrite deletes old generation last")
+T:eq(slotStore:loadIndex():slot(1).id, slotId3,
+  "successful slot overwrite points at new generation")
+T:eq(slotStorage.values["states/" .. slotId1], nil,
+  "successful slot overwrite removes old generation")
+
+local wrongSlotCommit, wrongSlotCommitCode = slotStore:commitSlot(
+  successfulSlotIndex, rollingQ4, {})
+T:eq(wrongSlotCommit, nil, "rolling snapshot cannot use slot transaction")
+T:eq(wrongSlotCommitCode, "invalid_class", "wrong slot transaction class is explicit")
 
 storage.corruptKeys.index = { format = 99 }
 storage.values.index = nil

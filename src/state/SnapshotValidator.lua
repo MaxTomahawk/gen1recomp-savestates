@@ -42,6 +42,10 @@ return function(DataOnly)
     end
 
     local metadata = copy.metadata
+    local slotOk = type(metadata) == "table" and (
+      (metadata.stateClass == "slot" and type(metadata.slot) == "number"
+        and metadata.slot >= 1 and metadata.slot <= 10 and metadata.slot % 1 == 0)
+      or (metadata.stateClass ~= "slot" and metadata.slot == nil))
     if type(metadata) ~= "table" or not nonempty(metadata.id)
         or not metadata.id:match("^[%w_-]+$")
         or not CLASSES[metadata.stateClass] or not nonempty(metadata.trigger)
@@ -50,7 +54,7 @@ return function(DataOnly)
         or not optionalString(metadata.label)
         or not optionalString(metadata.locationId)
         or not optionalString(metadata.locationName)
-        or not optionalString(metadata.fingerprint) then
+        or not optionalString(metadata.fingerprint) or not slotOk then
       return failure("corrupt_metadata", "Snapshot metadata is missing or corrupt.")
     end
 

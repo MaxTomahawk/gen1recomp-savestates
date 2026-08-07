@@ -124,16 +124,16 @@ return function(deps)
     return true
   end
 
-  -- Commit one newly allocated rolling payload and a final index view as a
+  -- Commit one newly allocated payload and a final index view as a
   -- cross-key transaction. A failed publication leaves the previous index and
   -- payloads authoritative; the staged new payload is an enumerable orphan.
   -- Cleanup is deliberately last, so a deletion failure is warning-grade.
-  function StateStore:commitRolling(index, snapshot, cleanupIds)
+  function StateStore:_commitIndexed(index, snapshot, cleanupIds, allowed, label)
     if type(index) ~= "table" or type(index.record) ~= "function" then
-      return nil, "bad_index", "StateStore.commitRolling needs a StateIndex."
+      return nil, "bad_index", "StateStore." .. label .. " needs a StateIndex."
     end
     if not denseIds(cleanupIds) then
-      return nil, "invalid_id", "Rolling cleanup ids are invalid."
+      return nil, "invalid_id", "State cleanup ids are invalid."
     end
     local working, indexCode, indexMessage = StateIndex.new(index:record())
     if not working then return nil, indexCode, indexMessage end
@@ -141,12 +141,12 @@ return function(deps)
     local validated, code, message = self:_validate(snapshot)
     if not validated then return nil, code, message end
     local metadata = validated.metadata
-    if metadata.stateClass ~= "quick" and metadata.stateClass ~= "auto" then
-      return nil, "invalid_class", "Only rolling states use this transaction."
+    if not allowed[metadata.stateClass] then
+      return nil, "invalid_class", "Snapshot class does not match this transaction."
     end
     if not sameData(working:get(metadata.id), metadata) then
       return nil, "bad_metadata",
-        "Published metadata must exactly match the rolling snapshot."
+        "Published metadata must exactly match the snapshot."
     end
 
     local seen = {}
@@ -171,10 +171,20 @@ return function(deps)
     end
     if #failed > 0 then
       return true, "orphaned_payload",
-        "History was published, but payload cleanup failed for: "
+        "State metadata was published, but payload cleanup failed for: "
           .. table.concat(failed, ", ")
     end
     return true
+  end
+
+  function StateStore:commitRolling(index, snapshot, cleanupIds)
+    return self:_commitIndexed(index, snapshot, cleanupIds,
+      { quick = true, auto = true }, "commitRolling")
+  end
+
+  function StateStore:commitSlot(index, snapshot, cleanupIds)
+    return self:_commitIndexed(index, snapshot, cleanupIds,
+      { slot = true }, "commitSlot")
   end
 
   function StateStore:delete(index, id)
