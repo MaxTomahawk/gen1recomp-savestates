@@ -1,6 +1,6 @@
 # Save States Living Project Plan
 
-Status: prepared for goal-driven execution; broad implementation not started
+Status: active execution; M1 upstream Level A seams in progress
 
 Updated: 2026-08-07
 
@@ -31,6 +31,11 @@ commits named there. Key conclusions:
 - Battle state and gameplay RNG have no public serializable contract.
 - Rebindable custom mod actions do not exist; START-menu operation remains the
   complete baseline until that optional seam lands.
+
+The approved design is recorded in
+`docs/superpowers/specs/2026-08-07-native-savestates-design.md`. Milestones are
+executed through focused plans under `docs/superpowers/plans/`; the current plan is
+`2026-08-07-level-a-upstream-seams.md`.
 
 ## Corrected specification assumptions
 
@@ -133,17 +138,17 @@ test, documentation, or packaging task that remains valid.
 
 | Item | State | Decision / next evidence |
 | --- | --- | --- |
-| `SAVESTATES-SP-01` scoped storage | CANDIDATE | spike a generic upstream API; do not fall back silently to vanilla-save persistence |
-| `SAVESTATES-SP-02` Level A checkpoint | CANDIDATE, Gate A blocker | write public capture/restore acceptance tests and the smallest RFC before engine code |
-| `SAVESTATES-SP-03` playthrough identity | CANDIDATE | solve with opaque storage/checkpoint scope, not player name/timestamp |
+| `SAVESTATES-SP-01` scoped storage | PLANNED | public `mod.storage` contract defined; test-first implementation is M1 Task 3 |
+| `SAVESTATES-SP-02` Level A checkpoint | PLANNED, Gate A blocker | public `mod.checkpoints` contract defined; acceptance and rollback tests precede implementation |
+| `SAVESTATES-SP-03` playthrough identity | PLANNED | engine-owned opaque id plus stable legacy mapping; M1 Task 2 |
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
 | `SAVESTATES-SP-05` battle/RNG | CANDIDATE, post-Level-A | complete battle-state map before API or implementation |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
 | Core event triggers | VERIFIED capability | defer requested autosaves until confirmed safe point |
 
-## Next-goal boundary
+## Current execution boundary
 
-The repository is intentionally stopped before broad implementation. The next goal
-should authorize execution beginning with M1: write public acceptance tests and
-focused RFC designs for the two Gate A seams, while scaffolding only the pure mod
-components that do not assume those APIs.
+The active product goal authorizes autonomous implementation. M1 is being executed
+in a separate upstream worktree. Mod implementation will begin with pure modules
+after the Level A public contracts have failing acceptance tests; it will not use
+private engine imports as a temporary shortcut.
