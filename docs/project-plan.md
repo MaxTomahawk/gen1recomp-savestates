@@ -1,6 +1,6 @@
 # Save States Living Project Plan
 
-Status: active execution; M1 upstream Level A seams in progress
+Status: active execution; M1 Level A contracts implemented and under upstream documentation/review gate
 
 Updated: 2026-08-07
 
@@ -53,6 +53,13 @@ executed through focused plans under `docs/superpowers/plans/`; the current plan
 - Current modkit can scaffold externally. The proposed tree is a responsibility
   map, not a required filename map.
 - Mod-index `repo` requires an HTTPS URL, while `github` uses `owner/repo`.
+- Playthrough identity must be lazy. Creating, loading, or normally saving a game
+  with no storage/checkpoint caller leaves progress bytes unchanged; the first
+  public call allocates identity and persists only the legacy slot mapping until
+  the next normal SAVE.
+- The deterministic recursive save writer must run outside LuaJIT traces. A
+  1,000-process GC stress run reproduced zero corruption after this boundary;
+  compiled recursion intermittently emitted an invalid empty nested identity map.
 
 ## Chosen architecture
 
@@ -80,11 +87,12 @@ namespace to prevent recursion. Runtime payloads are tagged by capability kind.
 
 ### Storage and identity
 
-The target design is an upstream-provided, namespaced per-mod store scoped by an
-opaque active game-version/playthrough identity. It must route through standard and
-portable persistence backends and support verified replacement without rewriting
-the vanilla progress checkpoint. The mod owns its snapshot schema, index,
-retention, quarantine, and recovery semantics on top of that primitive.
+The implemented Level A design is an upstream-provided, namespaced per-mod store
+scoped by an opaque active game-version/playthrough identity. It routes through
+standard and portable persistence backends and supports verified replacement
+without rewriting the vanilla progress checkpoint. Identity is allocated only on
+first use. The mod owns its snapshot schema, index, retention, quarantine, and
+recovery semantics on top of that primitive.
 
 ### Runtime support levels
 
@@ -108,7 +116,7 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | Milestone | Outcome | Exit verification |
 | --- | --- | --- |
 | M0 — Project baseline | Governance, audit, living plan, remote, feature branch | pinned sources, clean diff review, planning commit pushed |
-| M1 — Upstream proof/RFCs | Prove and specify scoped storage plus Level A checkpoint seams; keep candidates separate | failing public-API tests, exact RFCs, no-mod parity plan, upstream tests green before PR |
+| M1 — Upstream proof/RFCs | Implement and specify scoped storage plus Level A checkpoint seams; keep candidates separate | local contracts and RFCs complete; focused suites, 1,000-run GC regression, and `./scripts/test.sh --quick` green; upstream review/release still required |
 | M2 — Mod shell and pure core | Current modkit shell; injected adapters; snapshot schema/validation/index/retention/migrations | ROM-free loader, lint, red-green unit tests, package listing |
 | M3 — Level A prototype | Stable overworld capture/mutate/restore/re-capture | normalized A equals A2 across outdoor, indoor, route, party, inventory, flags, objects, trainer state |
 | M4 — Quicksaves and recovery | Rolling quick history, newest quickload, transactional recovery, undo | failure-injection tests; A -> load B -> undo -> A; restart persistence |
@@ -138,9 +146,9 @@ test, documentation, or packaging task that remains valid.
 
 | Item | State | Decision / next evidence |
 | --- | --- | --- |
-| `SAVESTATES-SP-01` scoped storage | PLANNED | public `mod.storage` contract defined; test-first implementation is M1 Task 3 |
-| `SAVESTATES-SP-02` Level A checkpoint | PLANNED, Gate A blocker | public `mod.checkpoints` contract defined; acceptance and rollback tests precede implementation |
-| `SAVESTATES-SP-03` playthrough identity | PLANNED | engine-owned opaque id plus stable legacy mapping; M1 Task 2 |
+| `SAVESTATES-SP-01` scoped storage | VERIFIED locally; upstream review required | `0399ad0` plus lazy correction `49954ec`; 28/28 public API checks and full ROM-free suite green |
+| `SAVESTATES-SP-02` Level A checkpoint | VERIFIED locally; upstream review required | `6e94625` plus lazy correction `49954ec`; 32/32 public API checks and differential rollback proof green |
+| `SAVESTATES-SP-03` playthrough identity | VERIFIED locally; upstream review required | `726ed11` plus `49954ec`; 18/18 focused checks and 1,000 clean-process stress runs green |
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
 | `SAVESTATES-SP-05` battle/RNG | CANDIDATE, post-Level-A | complete battle-state map before API or implementation |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
@@ -148,7 +156,21 @@ test, documentation, or packaging task that remains valid.
 
 ## Current execution boundary
 
-The active product goal authorizes autonomous implementation. M1 is being executed
-in a separate upstream worktree. Mod implementation will begin with pure modules
-after the Level A public contracts have failing acceptance tests; it will not use
-private engine imports as a temporary shortcut.
+The active product goal authorizes autonomous implementation. The Level A public
+contracts are implemented in `/home/max/src/gen1recomp-savestates-engine` on
+`feat/mod-state-checkpoints`, based on upstream `112120e`, with four coherent
+commits. RFC/reference work and upstream publication are the remaining M1 review
+gate. Pure distributable-mod work may now proceed against injected public
+adapters; it will not import private engine modules while the upstream seam awaits
+merge/release.
+
+Latest verification (2026-08-07):
+
+- `luajit tests/engine/playthrough_identity.lua` — 18/18.
+- identity test in 1,000 fresh LuaJIT processes — 1,000/1,000.
+- `luajit tests/modkit/cases/storage.lua` — 28/28.
+- `luajit tests/modkit/cases/checkpoints.lua` — 32/32.
+- `luajit tests/engine/save_slots.lua` — 78/78.
+- `luajit tests/mod_save_tests.lua` — 132/132.
+- `./scripts/test.sh --quick` — 129/129 engine suites and 7/7 modkit suites;
+  ROM-derived T3 correctly skipped because no imported data is present.

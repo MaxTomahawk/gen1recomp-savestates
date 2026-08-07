@@ -33,10 +33,13 @@ routing that a mod cannot safely infer.
 
 ### Opaque playthrough identity
 
-Every real playthrough has an engine-generated opaque identifier in save metadata.
-New Game creates a new identifier. Existing saves receive a stable, independently
-persisted migration identity until the next normal SAVE writes it into the save.
-Identity is not derived solely from player name, map, or a timestamp.
+Every playthrough that uses storage/checkpoint tooling receives an engine-generated
+opaque identifier in save metadata. Allocation is lazy: New Game, normal load, and
+normal SAVE remain byte-compatible until the first public tool call. Existing saves
+receive a stable, independently persisted migration identity until the next normal
+SAVE writes it into the save. A fresh New Game in the same launcher slot cannot
+reuse the previous mapping. Identity is not derived solely from player name, map,
+or a timestamp and does not consume gameplay RNG.
 
 The mod sees identity through the public checkpoint/storage context, not private
 slot ids. A copied checkpoint remains associated with its original playthrough;

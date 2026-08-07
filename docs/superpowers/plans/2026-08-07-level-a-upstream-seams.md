@@ -60,16 +60,18 @@ project plan.
 
 **Interfaces:**
 - Consumes: active game version and active SaveData slot routing.
-- Produces: `SaveData.ensurePlaythroughId(save)` and
+- Produces: `SaveData.ensurePlaythroughId(save[, fs])` and
   `SaveData.newPlaythroughId()`; `save.meta.playthroughId` is a nonempty opaque
-  string stable across reload and different for a new game.
+  string allocated on first public-tool use, stable across reload, and different
+  for a fresh new game.
 
 - [ ] **Step 1: Write the failing identity tests**
 
-Cover literal behaviors: two New Game records differ; saving and loading preserves
-the id; a legacy save receives one stable id across two loads before a normal SAVE;
-Red and Blue plus two active slots do not share migration identity. Use an injected
-memfs and reset function so tests never touch user saves.
+Cover literal behaviors: unused New Game/save/load stays identity-free; sequential
+New Games differ after first public use; saving and loading preserves the id; a
+legacy save receives one stable id across two explicit requests before a normal
+SAVE; Red and Blue plus two active slots do not share migration identity. Use an
+injected memfs and reset function so tests never touch user saves.
 
 - [ ] **Step 2: Run the focused test and observe RED**
 
@@ -81,8 +83,9 @@ Expected: failure because `ensurePlaythroughId` and the metadata field do not ex
 
 Generate identifiers without consuming the global gameplay RNG. Persist only the
 legacy backfill mapping in `options.lua`, keyed by version and active slot/legacy
-scope. Stamp a newly generated id directly into every user-created New Game save.
-Call the ensure function before `Game:restoreSave` exposes a loaded playthrough.
+scope. Allocate lazily from the bound storage/checkpoint facade so no-caller New
+Game, SAVE, and load bytes are unchanged. Track the one pending New Game outside
+serialized data so it cannot adopt an old slot mapping.
 
 - [ ] **Step 4: Verify GREEN and regressions**
 
