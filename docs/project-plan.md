@@ -1,6 +1,6 @@
 # Save States Living Project Plan
 
-Status: active execution; M1 Level A contracts implemented and under upstream documentation/review gate
+Status: active execution; M2 pure data/storage core implemented, M3 overworld service proof next
 
 Updated: 2026-08-07
 
@@ -117,7 +117,7 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | --- | --- | --- |
 | M0 — Project baseline | Governance, audit, living plan, remote, feature branch | pinned sources, clean diff review, planning commit pushed |
 | M1 — Upstream proof/RFCs | Implement and specify scoped storage plus Level A checkpoint seams; keep candidates separate | local contracts and RFCs complete; focused suites, 1,000-run GC regression, and `./scripts/test.sh --quick` green; upstream review/release still required |
-| M2 — Mod shell and pure core | Current modkit shell; injected adapters; snapshot schema/validation/index/retention/migrations | ROM-free loader, lint, red-green unit tests, package listing |
+| M2 — Mod shell and pure core | Current modkit shell; injected adapters; snapshot schema/validation/index/retention/migrations | VERIFIED locally: 243 pure behavior checks, real modkit load/lint, strict reproducible package and root listing |
 | M3 — Level A prototype | Stable overworld capture/mutate/restore/re-capture | normalized A equals A2 across outdoor, indoor, route, party, inventory, flags, objects, trainer state |
 | M4 — Quicksaves and recovery | Rolling quick history, newest quickload, transactional recovery, undo | failure-injection tests; A -> load B -> undo -> A; restart persistence |
 | M5 — Native UX and slots | START rows, manager screens, ten permanent slots, rename/delete, HUD notifications, options | second decorator coexistence, empty states, disabled notifications, menu recovery |
@@ -162,7 +162,8 @@ contracts are implemented in `/home/max/src/gen1recomp-savestates-engine` on
 commits. RFC/reference work and upstream publication are the remaining M1 review
 gate. Pure distributable-mod work may now proceed against injected public
 adapters; it will not import private engine modules while the upstream seam awaits
-merge/release.
+merge/release. M2 now composes the data-only core through `mod:read`/`load`; M3
+will add the first end-to-end service over the public checkpoint/storage facades.
 
 Latest verification (2026-08-07):
 
@@ -174,3 +175,7 @@ Latest verification (2026-08-07):
 - `luajit tests/mod_save_tests.lua` — 132/132.
 - `./scripts/test.sh --quick` — 129/129 engine suites and 7/7 modkit suites;
   ROM-derived T3 correctly skipped because no imported data is present.
+- Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-engine` —
+  243/243 Lua behavior checks across composition, modules, snapshots, migrations,
+  index/retention, fingerprints/deduplication, and transaction failure recovery;
+  modkit validate/lint and reproducible package root verification pass.
