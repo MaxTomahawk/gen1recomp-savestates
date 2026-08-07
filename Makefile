@@ -15,6 +15,7 @@ test:
 	else \
 		for file in $(TEST_FILES); do $(LUAJIT) "$$file"; done; \
 	fi
+	$(PYTHON) -m unittest discover -s tests -p '*_test.py'
 
 validate:
 	$(PYTHON) $(GEN1RECOMP)/tools/modkit.py validate --repo $(GEN1RECOMP) --base fixture .

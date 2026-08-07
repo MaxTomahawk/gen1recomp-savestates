@@ -2,4 +2,6 @@ dist/
 .artifacts/
 *.zip
 *.luac
+*.pyc
+__pycache__/
 .DS_Store

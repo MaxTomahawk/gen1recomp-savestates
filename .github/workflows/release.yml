@@ -19,43 +19,25 @@ jobs:
       - name: Checkout Save States
         uses: actions/checkout@v4
 
-      # Release verification deliberately targets the official repository. The
-      # workflow must stay red until its released API contains mod.storage and
-      # both overworld and battle forms of mod.checkpoints.
+      - name: Verify release identity
+        id: release
+        env:
+          TAG: ${{ github.ref_name }}
+        run: python3 tools/release_gate.py manifest.json "$TAG" >> "$GITHUB_OUTPUT"
+
+      # Release verification deliberately targets the exact official minimum
+      # declared by the manifest, not dev or a moving branch. The workflow must
+      # stay red until that released tag contains mod.storage and both
+      # overworld and battle forms of mod.checkpoints.
       - name: Checkout official Gen1Recomp
         uses: actions/checkout@v4
         with:
           repository: bryanthaboi/gen1recomp
-          ref: dev
+          ref: ${{ steps.release.outputs.engine_ref }}
           path: .upstream
 
       - name: Install ROM-free toolchain
         run: sudo apt-get update && sudo apt-get install -y luajit unzip
-
-      - name: Verify release identity
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          python3 - "$TAG" <<'PY'
-          import json
-          import re
-          import sys
-
-          tag = sys.argv[1]
-          with open("manifest.json", encoding="utf-8") as handle:
-              manifest = json.load(handle)
-          expected = "v" + str(manifest.get("version", ""))
-          if not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
-              raise SystemExit(f"release tag {tag!r} is not vX.Y.Z")
-          if tag != expected:
-              raise SystemExit(f"release tag {tag!r} does not match {expected!r}")
-          if manifest.get("experimental") is not False:
-              raise SystemExit("release manifest must set experimental to false")
-          game_range = str(manifest.get("game_version", ""))
-          if "dev" in game_range or not game_range:
-              raise SystemExit("release manifest must target a released engine range")
-          PY
 
       - name: Test, validate, lint, and clean-install package
         run: make check GEN1RECOMP=.upstream

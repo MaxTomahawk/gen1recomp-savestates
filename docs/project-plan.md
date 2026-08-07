@@ -164,7 +164,9 @@ test, documentation, or packaging task that remains valid.
 
 ## Current execution boundary
 
-The active product goal authorizes autonomous implementation. The Level A public
+The active product goal authorizes autonomous implementation. The official
+upstream/index refs were refreshed on 2026-08-07 and remain `112120e`/`17314bf`.
+The Level A public
 contracts are implemented in `/home/max/src/gen1recomp-savestates-engine` on
 `feat/mod-state-checkpoints`, based on upstream `112120e`; the focused branch is
 published as draft PR #952 through `af00d6a`. Upstream merge/release remains the
@@ -173,9 +175,10 @@ through `mod:read`, `mod.storage`, `mod.checkpoints`, registered screens, hooks,
 events, options, and HUD drawing. Gate D and its Level B implementation are
 complete locally in `docs/battle-state-map.md` and the separate stacked upstream
 branch `feat/mod-battle-checkpoints`, published as fork draft PR #1 through
-`5b3eed8`. The next lane is release-grade hardening: broader failure/clean-install
-coverage, upstream review adaptation, and accurate
-release compatibility once both public seams have an upstream release.
+`5b3eed8`. Independent release hardening and clean-package coverage are complete;
+the active lane is requirement traceability plus prepared (unsubmitted) index
+metadata, followed by upstream review adaptation and exact release compatibility
+once both public seams have an official release.
 
 Latest verification (2026-08-07):
 
@@ -198,7 +201,10 @@ Latest verification (2026-08-07):
   real public-facade battle differential roundtrip, switched/fainted-party
   fidelity, and complete overworld-progress fidelity.
 - Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-battle` —
-  721/721 Lua behavior checks; modkit validate/lint and reproducible 28-file
+  739/739 Lua behavior checks plus 4/4 Python release-gate tests; modkit
+  validate/lint and reproducible 28-file
   package root verification plus a clean extracted-install pass with battle
-  support enabled. This includes default-NO destructive-action confirmation,
-  structured warning/error reporting, and pre-load engine-version warnings.
+  support enabled. This includes semantic autosave fingerprinting, fitted native
+  notifications, live manager counts, default-NO destructive-action confirmation,
+  structured diagnostics, pre-load engine-version warnings, and exact-minimum
+  release-engine selection.

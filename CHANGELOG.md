@@ -30,6 +30,12 @@ Version headings match `manifest.json`.
 - Default-NO native confirmation for history and permanent-slot deletion.
 - Structured warning/error diagnostics for capability refusal, persistence,
   restoration, and unexpected autosave-controller failures.
+- Semantic autosave fingerprints ignore play time and remembered START cursor
+  while retaining gameplay progress, so true duplicates can replace after cooldown.
+- Native notification text fitting/wrapping, live manager count refresh after
+  pin/delete, and visible autosave capture failures.
+- A tested release gate that validates against the exact minimum released engine
+  tag declared by the manifest rather than a moving development branch.
 
 ## 0.1.0
 

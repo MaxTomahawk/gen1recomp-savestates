@@ -1,0 +1,49 @@
+# Product Acceptance Matrix
+
+Status vocabulary:
+
+- **Verified** — current repository/branch evidence directly exercises the behavior.
+- **Prepared** — implementation is complete, but an external release/runtime gate
+  prevents final player validation.
+- **Blocked externally** — cannot truthfully complete until upstream publishes the
+  required public API or an installable release exists.
+
+| Player outcome / invariant | State | Current evidence / remaining proof |
+| --- | --- | --- |
+| Vanilla `SAVE` remains unchanged | Verified | Public START hook decorates after `next`; coexistence test retains `SAVE`, other-mod rows, `OPTION`, and `QUIT`. |
+| `QUICKSAVE` and `STATES` appear natively | Verified | `tests/start_menu_test.lua`; real modkit loader validation. |
+| Rolling manual quicksaves and configured retention | Verified | Service, retention, index, and transaction failure tests. |
+| Newest valid quickload; corrupt newest falls back safely | Verified | Service tests cover empty, valid, corrupt-newest, all-invalid, and identity cases. |
+| Browse/load/pin/delete quick and auto histories | Verified | Native screen tests including empty and unavailable rows, detail status, confirmation, and count refresh. |
+| Event-based location/trainer/wild autosaves | Verified | Public event composition plus runtime-kind deferral/stale-request tests; no timer autosave. |
+| Optional after-battle and synchronous before-warp saves | Verified | Controller/service tests; `player.warped` timing is documented from the public emit site. |
+| Cooldown, semantic duplicate replacement, retention | Verified | Fingerprint/deduplicator/service tests; presentation-only counters are excluded. |
+| Ten permanent slots with load/overwrite/rename/delete | Verified | Service/UI tests; generation-safe overwrite and failed-publication preservation. |
+| Durable one-level recovery and undo-load | Verified | A -> load B -> undo -> A tests; recovery is written/re-read before restore and not overwritten by undo. |
+| Native non-modal replace-in-place notifications | Verified | HUD model/draw tests cover toggles, replacement, expiry, fitting/wrapping, failures, and compatibility warnings. |
+| Configurable histories, autosave triggers, notifications | Verified | Public option schema and settings-summary tests cover all product options. |
+| Persistence across restarts | Verified at API/storage layer | Public storage fresh-decode, main/tmp/backup recovery, and process-independent checkpoint reconstruction tests. Final packaged runtime restart is part of the private release acceptance pass. |
+| Game/playthrough isolation | Verified | Hard wrapper/checkpoint validation plus upstream active-slot/new-game/playthrough storage tests. |
+| Corrupt and incompatible records never mutate runtime | Verified | Data-only/schema/migration/store tests; unavailable-row cleanup; upstream content/map/position validation and rollback tests. |
+| Settled overworld restoration | Verified on upstream branch | Public facade differential recapture includes coordinates/facing, party, inventory/PC items/boxes, money, Pokédex, flags, trainers, and object toggles. |
+| Deterministic supported battle restoration | Verified on upstream branch | Ordinary wild/trainer player-decision reconstruction, switched/fainted party fidelity, rollback, and exact damage/crit/accuracy/AI/escape/encounter RNG replay. |
+| Unsafe scripts/transitions/menus/animations/battle phases rejected | Verified | Public checkpoint capability and exclusion tests; compatibility docs name every supported boundary. |
+| Manual battle quicksave UX | Accurately limited | No public custom action or battle-menu decorator exists. Default battle-start autosaves are user-accessible; cooperating mods may call the public export at later safe decisions. |
+| No private engine dependency in distributed mod | Verified | Source boundary inspection and real modkit load/lint; engine work remains in separate branches/PRs. |
+| ROM-free CI, tests, lint, reproducible package | Verified | 739/739 Lua checks, 4/4 Python release-gate tests, modkit validate/lint, reproducible 28-file ZIP, fresh extracted-install check. |
+| Exact released-engine compatibility | Prepared | Release gate derives/checks out the manifest's exact minimum official tag. Manifest intentionally remains experimental/dev until upstream APIs ship. |
+| Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
+| Installable GitHub Release | Blocked externally | Tag workflow intentionally refuses preview metadata; requires official upstream API release and final manifest range. |
+| Mod-index listing | Prepared, submission blocked | Current schema/process is documented and staging metadata can be validated, but policy requires an installable GitHub Release first. |
+
+## External release gates
+
+1. Official acceptance/release of the Level A storage/overworld API and stacked
+   Level B battle/RNG API (or equivalent upstream APIs requiring adaptation).
+2. Private clean-runtime acceptance using legally imported game data.
+3. Final non-experimental manifest/version range, reviewed merge, tag, release
+   asset verification, then index PR.
+
+These gates do not reduce the product scope. Every independent distributable-mod,
+test, documentation, and packaging component remains active work until this matrix
+shows no locally resolvable gap.

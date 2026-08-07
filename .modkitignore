@@ -4,6 +4,8 @@ Makefile
 .luarc.json
 docs/project-plan.md
 docs/upstream-audit.md
+docs/development.md
+docs/acceptance.md
 docs/superpowers/plans/2026-08-07-level-a-upstream-seams.md
 docs/superpowers/plans/2026-08-07-mod-core.md
 docs/superpowers/specs/2026-08-07-native-savestates-design.md
@@ -22,3 +24,5 @@ tests/state_store_test.lua
 tests/testlib.lua
 tests/time_test.lua
 tests/ui_screens_test.lua
+tests/release_gate_test.py
+tools/release_gate.py
