@@ -223,14 +223,14 @@ Latest verification (2026-08-07):
   release-engine selection. Permanent-slot rename also preserves the original
   checkpoint time and contextual metadata.
 - The same `make check` passed from a fresh clone of published head
-  `e3bacb050ec5da02fd52e7532819c854ce16dca4`; two consecutive package
+  `4c56732be12f41b30802bace261480d1fa63b40e`; two consecutive package
   builds were byte-identical. The archive SHA-256 was
-  `bfa916d3c3efefb13084998650f73ca8226e2b0f2b5c8a76f42cd18b73ac25a8`,
+  `7124ab490d534015c91ffa95df010719ff3b5689d7e05ad8e15437996e2c9bd5`,
   the resulting archive contains 28 distributable files plus
   `.modkit/pack.json`, and a clean extracted install validates and lints.
-- GitHub Actions `Test` run `31194290488` completed successfully for the prior
-  documentation-only head; the new reproducibility workflow is pending its
-  pushed-head run. The preview release gate was also exercised directly and
+- GitHub Actions `Test` run `31195358731` completed successfully for that exact
+  source-date packaging head. The preview release gate was also exercised
+  directly and
   correctly refused publication because `experimental` remains `true`.
 - A source-boundary audit found no private `src.*` require, raw filesystem,
   state-stack, process, package, or debug dependency in distributable Lua. The
