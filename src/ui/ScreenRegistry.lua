@@ -10,6 +10,7 @@ return function(deps)
     slotActions = "SavestatesSlotActions",
     pinPicker = "SavestatesPinPicker",
     rename = "SavestatesRename",
+    overwriteConfirm = "SavestatesOverwriteConfirm",
     deleteConfirm = "SavestatesDeleteConfirm",
     settings = "SavestatesSettings",
   }
@@ -198,16 +199,23 @@ return function(deps)
         local items = {}
         for slot = 1, 10 do
           local row = rows[slot] or { slot = slot, occupied = false }
+          local function pin()
+            local pinned = service:pinToSlot(game, opts.sourceId, slot)
+            if pinned then
+              refreshRoot(game, opts.root)
+              menu:close()
+              if opts.action and opts.action.close then opts.action:close() end
+            end
+          end
           items[#items + 1] = {
             label = ("SLOT %d"):format(slot),
             right = row.occupied and truncate(row.metadata.label
               or row.metadata.locationName, 12) or "EMPTY",
             onSelect = function()
-              local pinned = service:pinToSlot(game, opts.sourceId, slot)
-              if pinned then
-                refreshRoot(game, opts.root)
-                menu:close()
-                if opts.action and opts.action.close then opts.action:close() end
+              if row.occupied then
+                mod.ui.push(game, IDS.overwriteConfirm, { confirm = pin })
+              else
+                pin()
               end
             end,
           }
@@ -276,7 +284,9 @@ return function(deps)
               service:loadSlot(game, slot)
             end }
           end
-          items[#items + 1] = { label = "OVERWRITE", onSelect = saveHere }
+          items[#items + 1] = { label = "OVERWRITE", onSelect = function()
+            mod.ui.push(game, IDS.overwriteConfirm, { confirm = saveHere })
+          end }
           items[#items + 1] = { label = "RENAME", onSelect = function()
             mod.ui.push(game, IDS.rename, {
               slot = slot,
@@ -325,6 +335,18 @@ return function(deps)
               }
             end
             if renamed and opts.action and opts.action.close then opts.action:close() end
+          end,
+        })
+      end,
+    })
+
+    mod.content.screens:register(IDS.overwriteConfirm, {
+      new = function(game, opts)
+        opts = opts or {}
+        return mod.ui.TextBox.new(game, "OVERWRITE THIS SLOT?", nil, {
+          defaultNo = true,
+          choice = function(yes)
+            if yes and type(opts.confirm) == "function" then opts.confirm() end
           end,
         })
       end,

@@ -76,7 +76,14 @@ function service:renameSlot(_, slot, name)
 end
 function service:pinToSlot(_, id, slot)
   calls[#calls + 1] = "pin:" .. id .. ":" .. slot
-  self.summaryValue.slotCount = self.summaryValue.slotCount + 1
+  if not self.slotRows[slot].occupied then
+    self.summaryValue.slotCount = self.summaryValue.slotCount + 1
+  end
+  self.slotRows[slot] = {
+    slot = slot, occupied = true, available = true,
+    metadata = { id = ("s%02d_pinned"):format(slot), label = "PINNED",
+      locationName = "CERULEAN GYM", createdAt = 1000 },
+  }
   return true
 end
 
@@ -161,6 +168,22 @@ local pinPicker = registered[ids.pinPicker].new(game, pushes[#pushes].opts)
 pinPicker.items[1].onSelect()
 T:eq(calls[#calls], "pin:q00000002:1", "pin picker copies into selected slot")
 T:eq(root.items[3].right, "2/10", "pinning refreshes occupied-slot root count")
+local callsBeforeOccupiedPin = #calls
+pinPicker.items[2].onSelect()
+T:eq(pushes[#pushes].id, ids.overwriteConfirm,
+  "pinning into an occupied slot requests overwrite confirmation")
+local overwriteConfirm = registered[ids.overwriteConfirm].new(
+  game, pushes[#pushes].opts)
+T:eq(overwriteConfirm.opts.defaultNo, true,
+  "slot overwrite confirmation defaults to NO")
+overwriteConfirm.opts.choice(false)
+T:eq(#calls, callsBeforeOccupiedPin,
+  "cancelled occupied-slot pin leaves the permanent slot untouched")
+pinPicker.items[2].onSelect()
+overwriteConfirm = registered[ids.overwriteConfirm].new(game, pushes[#pushes].opts)
+overwriteConfirm.opts.choice(true)
+T:eq(calls[#calls], "pin:q00000002:2",
+  "confirmed occupied-slot pin invokes the requested copy")
 
 action.items[6].onSelect()
 T:eq(action.closeCount, 1, "load closes action menu")
@@ -195,17 +218,19 @@ T:eq(root.items[1].right, "1", "history deletion refreshes root history count")
 
 local slotsScreen = registered[ids.slots].new(game, { parent = root })
 T:eq(#slotsScreen.items, 10, "slot screen always renders ten rows")
-T:eq(slotsScreen.items[1].right, "EMPTY", "empty slot is explicit")
-T:eq(slotsScreen.items[2].right, "BEFORE MISTY", "occupied slot shows custom label")
-slotsScreen.items[1].onSelect(slotsScreen.items[1], slotsScreen)
+T:eq(slotsScreen.items[1].right, "PINNED", "newly pinned slot stays visible")
+T:eq(slotsScreen.items[2].right, "PINNED",
+  "confirmed pin refreshes the occupied slot label")
+T:eq(slotsScreen.items[3].right, "EMPTY", "empty slot is explicit")
+slotsScreen.items[3].onSelect(slotsScreen.items[3], slotsScreen)
 T:eq(pushes[#pushes].id, ids.slotActions, "slot row opens slot action screen")
 
 local emptySlotAction = registered[ids.slotActions].new(game, {
-  row = service.slotRows[1], parents = { slotsScreen, root },
+  row = service.slotRows[3], parents = { slotsScreen, root },
 })
 T:eq(emptySlotAction.items[1].label, "SAVE HERE", "empty slot offers save")
 emptySlotAction.items[1].onSelect()
-T:eq(calls[#calls], "saveSlot:1", "empty slot invokes stable save action")
+T:eq(calls[#calls], "saveSlot:3", "empty slot invokes stable save action")
 
 local occupiedSlotAction = registered[ids.slotActions].new(game, {
   row = service.slotRows[2], parents = { slotsScreen, root }, slotMenu = slotsScreen,
@@ -216,6 +241,19 @@ T:eq(occupiedLabels[1], "LOAD", "occupied slot can load")
 T:eq(occupiedLabels[2], "OVERWRITE", "occupied slot can overwrite")
 T:eq(occupiedLabels[3], "RENAME", "occupied slot can rename")
 T:eq(occupiedLabels[4], "DELETE", "occupied slot can delete")
+local callsBeforeOverwrite = #calls
+occupiedSlotAction.items[2].onSelect()
+T:eq(pushes[#pushes].id, ids.overwriteConfirm,
+  "occupied slot overwrite opens the native confirmation")
+overwriteConfirm = registered[ids.overwriteConfirm].new(game, pushes[#pushes].opts)
+overwriteConfirm.opts.choice(false)
+T:eq(#calls, callsBeforeOverwrite,
+  "cancelled slot overwrite does not capture or mutate state")
+occupiedSlotAction.items[2].onSelect()
+overwriteConfirm = registered[ids.overwriteConfirm].new(game, pushes[#pushes].opts)
+overwriteConfirm.opts.choice(true)
+T:eq(calls[#calls], "saveSlot:2",
+  "confirmed slot overwrite invokes the explicit save action")
 root.items[3].right = "STALE"
 local slotCallsBeforeDelete = #calls
 occupiedSlotAction.items[4].onSelect()

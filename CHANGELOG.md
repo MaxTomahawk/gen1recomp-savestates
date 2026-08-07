@@ -27,7 +27,8 @@ Version headings match `manifest.json`.
   diagnostics.
 - State detail rows for trigger, age, runtime kind, and compatibility, plus a
   complete native settings summary.
-- Default-NO native confirmation for history and permanent-slot deletion.
+- Default-NO native confirmation for history deletion, permanent-slot deletion,
+  direct slot overwrite, and pinning onto an occupied slot.
 - Structured warning/error diagnostics for capability refusal, persistence,
   restoration, and unexpected autosave-controller failures.
 - Semantic autosave fingerprints ignore play time and remembered START cursor
