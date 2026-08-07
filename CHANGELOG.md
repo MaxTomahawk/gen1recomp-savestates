@@ -44,6 +44,9 @@ Version headings match `manifest.json`.
 
 - Renaming a permanent slot now preserves the original checkpoint creation time
   and contextual metadata; only the label and transaction generation change.
+- Pinning a Quick Save or Auto Save now preserves the source capture time,
+  trigger, and semantic context instead of describing the pin operation as a new
+  manual capture.
 
 ## 0.1.0
 

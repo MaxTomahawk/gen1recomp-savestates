@@ -357,6 +357,7 @@ T:eq(slots.game.current.save.money, 600, "permanent slot restores its checkpoint
 
 local pinnedSource = slots.service:quickSave(slots.game)
 slots.game.current = checkpoint(800)
+slots.setNow(3000)
 local pinned, pinCode, pinMessage = slots.service:pinToSlot(
   slots.game, pinnedSource.metadata.id, 4, "PINNED")
 T:check(pinned ~= nil, "quick state pins to permanent slot: "
@@ -364,6 +365,8 @@ T:check(pinned ~= nil, "quick state pins to permanent slot: "
 T:eq(pinned.metadata.slot, 4, "pinned state targets selected slot")
 T:eq(pinned.metadata.label, "PINNED", "pinned state stores selected label")
 T:eq(pinned.checkpoint.save.money, 600, "pin copies source checkpoint, not live runtime")
+T:eq(pinned.metadata.createdAt, pinnedSource.metadata.createdAt,
+  "pin preserves the source checkpoint creation time")
 
 local deletedSlot, deletedSlotCode, deletedSlotMessage = slots.service:deleteSlot(
   slots.game, 3)
@@ -409,6 +412,16 @@ T:eq(autoOne.metadata.trigger, "location_enter", "autosave records semantic trig
 T:eq(autoOne.metadata.contextKey, "PALLET_TOWN", "autosave records cooldown context")
 T:eq(autos.notifications[#autos.notifications].kind, "auto_saved",
   "autosave emits notification")
+
+autos.setNow(201)
+local pinnedAuto = autos.service:pinToSlot(autos.game, autoOne.metadata.id, 2)
+T:check(pinnedAuto ~= nil, "autosave pins to permanent slot")
+T:eq(pinnedAuto.metadata.createdAt, autoOne.metadata.createdAt,
+  "pinning autosave preserves source creation time")
+T:eq(pinnedAuto.metadata.trigger, autoOne.metadata.trigger,
+  "pinning autosave preserves semantic trigger")
+T:eq(pinnedAuto.metadata.contextKey, autoOne.metadata.contextKey,
+  "pinning autosave preserves semantic context")
 
 autos.setNow(202)
 autos.game.current = checkpoint(101)

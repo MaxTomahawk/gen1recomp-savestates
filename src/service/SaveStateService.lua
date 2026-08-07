@@ -527,7 +527,7 @@ return function(deps)
     local source, sourceCode, sourceMessage = invoke(store, "readSnapshot", sourceId)
     if not source then return self:_failure("save_failed", sourceCode, sourceMessage) end
     local snapshot, code, message = self:_writeSlot(
-      store, index, source.checkpoint, slot, label)
+      store, index, source.checkpoint, slot, label, source.metadata)
     if not snapshot then return self:_failure("save_failed", code, message) end
     return snapshot, code, message
   end

@@ -57,7 +57,8 @@ significant.
 
 Ten permanent, renameable slots are outside rolling retention. Each overwrite
 uses a new payload generation so failed index publication leaves the old slot
-loadable. Overwriting directly or pinning onto an occupied slot requires an
+loadable. Pinning preserves the source checkpoint's capture time and semantic
+trigger. Overwriting directly or pinning onto an occupied slot requires an
 explicit confirmation that defaults to NO.
 
 ## Undo Last Load
