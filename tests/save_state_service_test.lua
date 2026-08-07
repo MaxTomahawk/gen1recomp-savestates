@@ -1,0 +1,322 @@
+local Test = dofile("tests/testlib.lua")
+local T = Test.new("save state service")
+local DataOnly = dofile("src/util/DataOnly.lua")
+local Snapshot = dofile("src/state/Snapshot.lua")(DataOnly)
+local Validator = dofile("src/state/SnapshotValidator.lua")(DataOnly)
+local StateMigrations = dofile("src/state/StateMigrations.lua")(DataOnly)
+local StateIndex = dofile("src/state/StateIndex.lua")(DataOnly)
+local Retention = dofile("src/state/Retention.lua")
+local Canonical = dofile("src/util/Canonical.lua")(DataOnly)
+local Fingerprint = dofile("src/util/Fingerprint.lua")(Canonical)
+local StateStore = dofile("src/state/StateStore.lua")({
+  DataOnly = DataOnly,
+  StateIndex = StateIndex,
+})
+
+local function checkpoint(money, map)
+  map = map or "PALLET_TOWN"
+  return {
+    format = 1,
+    kind = "overworld",
+    identity = {
+      engineVersion = "0.9.0-dev",
+      gameVersion = "red",
+      playthroughId = "play-a",
+    },
+    save = {
+      version = "red",
+      meta = { playthroughId = "play-a" },
+      player = { map = map, x = 5, y = 6, facing = "down", surfing = false },
+      money = money,
+    },
+    runtime = { overworld = {
+      map = map, x = 5, y = 6, facing = "down", surfing = false,
+    } },
+  }
+end
+
+local function environment(args)
+  args = args or {}
+  local events = {}
+  local game = { current = checkpoint(args.money or 100) }
+  local storage = {
+    values = {}, failWrite = {}, failRead = {}, failDelete = {}, events = events,
+  }
+  function storage:context()
+    return { gameVersion = "red", playthroughId = "play-a" }
+  end
+  function storage:write(_, key, value)
+    events[#events + 1] = "write:" .. key
+    if self.failWrite[key] then return nil, "write_failed", "injected write failure" end
+    self.values[key] = assert(DataOnly.copy(value))
+    return true
+  end
+  function storage:read(_, key)
+    events[#events + 1] = "read:" .. key
+    if self.failRead[key] then return nil, "read_failed", "injected read failure" end
+    local value = self.values[key]
+    if value == nil then return nil, "not_found", "missing" end
+    return DataOnly.copy(value)
+  end
+  function storage:list(_, prefix)
+    events[#events + 1] = "list:" .. (prefix or "")
+    local keys = {}
+    for key in pairs(self.values) do
+      if not prefix or key == prefix or key:sub(1, #prefix + 1) == prefix .. "/" then
+        keys[#keys + 1] = key
+      end
+    end
+    table.sort(keys)
+    return keys
+  end
+  function storage:delete(_, key)
+    events[#events + 1] = "delete:" .. key
+    if self.failDelete[key] then return nil, "write_failed", "injected delete failure" end
+    if self.values[key] == nil then return nil, "not_found", "missing" end
+    self.values[key] = nil
+    return true
+  end
+
+  local checkpoints = {
+    events = events,
+    capability = { canCapture = true, canRestore = true, kind = "overworld" },
+  }
+  function checkpoints:inspect()
+    events[#events + 1] = "inspect"
+    return DataOnly.copy(self.capability)
+  end
+  function checkpoints:capture(targetGame)
+    events[#events + 1] = "capture"
+    if self.captureFailure then
+      return nil, self.captureFailure, "injected capture failure"
+    end
+    return DataOnly.copy(targetGame.current)
+  end
+  function checkpoints:restore(targetGame, target)
+    events[#events + 1] = "restore:" .. tostring(target.save.money)
+    if self.restoreFailure then
+      return false, self.restoreFailure, "injected restore failure"
+    end
+    targetGame.current = assert(DataOnly.copy(target))
+    return true
+  end
+
+  local migrations = StateMigrations.new(1)
+  local function storeFactory(targetGame)
+    return StateStore.new({
+      storage = storage,
+      game = targetGame,
+      validator = Validator,
+      migrations = migrations,
+      supportedKinds = { overworld = true },
+    })
+  end
+  local notifications = {}
+  local now = args.now or 1000
+  local limit = args.limit or 5
+  local Service = dofile("src/service/SaveStateService.lua")({
+    Snapshot = Snapshot,
+    Retention = Retention,
+    Fingerprint = Fingerprint,
+  })
+  local service = Service.new({
+    checkpoints = checkpoints,
+    storeFactory = storeFactory,
+    clock = function() return now end,
+    quickLimit = function() return limit end,
+    modVersion = "0.1.0",
+    modApi = 2,
+    notify = function(kind, detail)
+      notifications[#notifications + 1] = { kind = kind, detail = detail }
+    end,
+  })
+  return {
+    game = game,
+    storage = storage,
+    checkpoints = checkpoints,
+    service = service,
+    notifications = notifications,
+    events = events,
+    storeFactory = storeFactory,
+    setNow = function(value) now = value end,
+    setLimit = function(value) limit = value end,
+  }
+end
+
+local unsafe = environment()
+unsafe.checkpoints.capability = {
+  canCapture = false, canRestore = false, kind = "overworld",
+  reason = "script_busy", message = "Wait for the active script to finish.",
+}
+local unsafeSave, unsafeCode = unsafe.service:quickSave(unsafe.game)
+T:eq(unsafeSave, nil, "unsafe quicksave is rejected")
+T:eq(unsafeCode, "script_busy", "unsafe quicksave preserves capability reason")
+T:eq(unsafe.events[1], "inspect", "unsafe quicksave only inspects capability")
+T:eq(#unsafe.events, 1, "unsafe quicksave does not capture or persist")
+T:eq(unsafe.notifications[1].kind, "save_rejected", "unsafe save emits refusal notice")
+
+local happy = environment({ money = 3000, now = 1234 })
+local saved, saveCode, saveMessage = happy.service:quickSave(happy.game)
+T:check(saved ~= nil, "quicksave succeeds: " .. tostring(saveCode or saveMessage))
+T:eq(saved.metadata.id, "q00000001", "first quicksave receives monotonic id")
+T:eq(saved.metadata.stateClass, "quick", "quicksave records its state class")
+T:eq(saved.metadata.locationId, "PALLET_TOWN", "quicksave records public map id")
+T:eq(saved.metadata.locationName, "PALLET TOWN", "fallback map label is readable")
+T:eq(saved.metadata.createdAt, 1234, "quicksave uses injected wall clock")
+T:check(type(saved.metadata.fingerprint) == "string"
+  and #saved.metadata.fingerprint == 16, "quicksave records semantic fingerprint")
+local happyIndex = happy.storeFactory(happy.game):loadIndex()
+T:eq(happyIndex:list("quick")[1].id, "q00000001", "quicksave publishes history")
+T:check(happy.storage.values["states/q00000001"] ~= nil,
+  "quicksave payload persists independently")
+T:eq(happy.notifications[1].kind, "quick_saved", "successful save emits notification")
+T:eq(happy.notifications[1].detail.count, 1, "save notification reports history count")
+
+happy.setLimit(2)
+happy.setNow(1235)
+happy.game.current = checkpoint(3100, "ROUTE_1")
+T:check(happy.service:quickSave(happy.game) ~= nil, "second quicksave succeeds")
+happy.setNow(1236)
+happy.game.current = checkpoint(3200, "VIRIDIAN_CITY")
+T:check(happy.service:quickSave(happy.game) ~= nil, "third quicksave succeeds")
+happyIndex = happy.storeFactory(happy.game):loadIndex()
+T:eq(#happyIndex:list("quick"), 2, "rolling quick history honors current limit")
+T:eq(happyIndex:list("quick")[1].id, "q00000003", "rolling history stays newest-first")
+T:eq(happyIndex:list("quick")[2].id, "q00000002", "second newest state is retained")
+T:eq(happy.storage.values["states/q00000001"], nil, "oldest trimmed payload is removed")
+
+local captureFailure = environment()
+captureFailure.checkpoints.captureFailure = "capture_failed"
+local failedSave, failedSaveCode = captureFailure.service:quickSave(captureFailure.game)
+T:eq(failedSave, nil, "capture failure aborts quicksave")
+T:eq(failedSaveCode, "capture_failed", "capture failure preserves engine code")
+T:eq(captureFailure.storage.values.index, nil, "capture failure publishes no index")
+T:eq(captureFailure.notifications[1].kind, "save_failed", "capture failure is notified")
+
+local writeFailure = environment()
+writeFailure.storage.failWrite["states/q00000001"] = true
+local unwritten, unwrittenCode = writeFailure.service:quickSave(writeFailure.game)
+T:eq(unwritten, nil, "payload write failure aborts quicksave")
+T:eq(unwrittenCode, "write_failed", "payload write failure preserves storage code")
+T:eq(writeFailure.storage.values.index, nil, "payload failure publishes no index")
+
+local empty = environment()
+local noQuick, noQuickCode = empty.service:quickLoad(empty.game)
+T:eq(noQuick, nil, "quickload with empty history is rejected")
+T:eq(noQuickCode, "no_quick_save", "empty history has product-level error code")
+T:eq(empty.notifications[1].kind, "load_failed", "empty quickload is notified")
+
+local load = environment({ money = 100 })
+local target = load.service:quickSave(load.game)
+load.game.current = checkpoint(999, "ROUTE_1")
+load.events = load.events
+for i = #load.events, 1, -1 do load.events[i] = nil end
+local loaded, loadCode, loadMessage = load.service:quickLoad(load.game)
+T:check(loaded ~= nil, "newest quickload succeeds: " .. tostring(loadCode or loadMessage))
+T:eq(loaded.metadata.id, target.metadata.id, "quickload returns selected snapshot")
+T:eq(load.game.current.save.money, 100, "quickload restores selected progress")
+local recovery = load.storeFactory(load.game):loadRecovery()
+T:eq(recovery.checkpoint.save.money, 999, "quickload durably captures pre-load recovery")
+local recoveryWrite, restoreCall
+for index, event in ipairs(load.events) do
+  if event == "write:recovery" then recoveryWrite = index end
+  if event == "restore:100" then restoreCall = index end
+end
+T:check(recoveryWrite and restoreCall and recoveryWrite < restoreCall,
+  "recovery is persisted before runtime mutation")
+T:eq(load.notifications[#load.notifications].kind, "state_loaded",
+  "successful load emits notification")
+
+local skipCorrupt = environment({ money = 10 })
+T:check(skipCorrupt.service:quickSave(skipCorrupt.game), "older valid quick fixture saves")
+skipCorrupt.game.current = checkpoint(20)
+T:check(skipCorrupt.service:quickSave(skipCorrupt.game), "new corrupt quick fixture saves")
+skipCorrupt.storage.values["states/q00000002"].metadata.createdAt = -1
+skipCorrupt.game.current = checkpoint(30)
+local skipped, skippedCode, skippedMessage = skipCorrupt.service:quickLoad(skipCorrupt.game)
+T:check(skipped ~= nil, "corrupt newest quick is skipped: "
+  .. tostring(skippedCode or skippedMessage))
+T:eq(skipped.metadata.id, "q00000001", "quickload selects newest valid older quick")
+T:eq(skipCorrupt.game.current.save.money, 10, "older valid quick restores correctly")
+
+local allCorrupt = environment({ money = 10 })
+T:check(allCorrupt.service:quickSave(allCorrupt.game), "all-corrupt fixture saves")
+allCorrupt.storage.values["states/q00000001"].metadata.createdAt = -1
+local noValid, noValidCode = allCorrupt.service:quickLoad(allCorrupt.game)
+T:eq(noValid, nil, "history with no valid payload cannot load")
+T:eq(noValidCode, "no_valid_quick_save", "all-invalid history has distinct error code")
+
+local recoveryCaptureFailure = environment({ money = 100 })
+T:check(recoveryCaptureFailure.service:quickSave(recoveryCaptureFailure.game),
+  "recovery-capture target saves")
+recoveryCaptureFailure.game.current = checkpoint(200)
+recoveryCaptureFailure.checkpoints.captureFailure = "capture_failed"
+local blockedLoad, blockedLoadCode = recoveryCaptureFailure.service:quickLoad(
+  recoveryCaptureFailure.game)
+T:eq(blockedLoad, nil, "failed recovery capture blocks load")
+T:eq(blockedLoadCode, "capture_failed", "recovery capture error is preserved")
+T:eq(recoveryCaptureFailure.game.current.save.money, 200,
+  "failed recovery capture leaves runtime untouched")
+
+local recoveryWriteFailure = environment({ money = 100 })
+T:check(recoveryWriteFailure.service:quickSave(recoveryWriteFailure.game),
+  "recovery-write target saves")
+recoveryWriteFailure.game.current = checkpoint(200)
+recoveryWriteFailure.storage.failWrite.recovery = true
+local unprotectedLoad, unprotectedCode = recoveryWriteFailure.service:quickLoad(
+  recoveryWriteFailure.game)
+T:eq(unprotectedLoad, nil, "failed durable recovery blocks load")
+T:eq(unprotectedCode, "write_failed", "recovery write error is preserved")
+T:eq(recoveryWriteFailure.game.current.save.money, 200,
+  "failed recovery write leaves runtime untouched")
+
+local restoreFailure = environment({ money = 100 })
+T:check(restoreFailure.service:quickSave(restoreFailure.game), "restore-failure target saves")
+restoreFailure.game.current = checkpoint(200)
+restoreFailure.checkpoints.restoreFailure = "restore_failed"
+local unrestored, unrestoredCode = restoreFailure.service:quickLoad(restoreFailure.game)
+T:eq(unrestored, nil, "engine restore failure is reported")
+T:eq(unrestoredCode, "restore_failed", "engine restore error is preserved")
+T:eq(restoreFailure.game.current.save.money, 200,
+  "engine restore failure leaves fake runtime unchanged")
+T:eq(restoreFailure.storeFactory(restoreFailure.game):loadRecovery().checkpoint.save.money,
+  200, "failed restore still leaves durable recovery available")
+
+local undoEmpty = environment()
+local noUndo, noUndoCode = undoEmpty.service:undoLastLoad(undoEmpty.game)
+T:eq(noUndo, nil, "undo without recovery is rejected")
+T:eq(noUndoCode, "no_recovery", "undo without recovery preserves store code")
+
+local undo = environment({ money = 100 })
+T:check(undo.service:quickSave(undo.game), "undo target saves")
+undo.game.current = checkpoint(200)
+T:check(undo.service:quickLoad(undo.game), "undo fixture performs initial load")
+T:eq(undo.game.current.save.money, 100, "initial load changes runtime")
+local writesBeforeUndo = 0
+for _, event in ipairs(undo.events) do
+  if event == "write:recovery" then writesBeforeUndo = writesBeforeUndo + 1 end
+end
+local undone, undoCode, undoMessage = undo.service:undoLastLoad(undo.game)
+T:check(undone ~= nil, "undo restores recovery: " .. tostring(undoCode or undoMessage))
+T:eq(undo.game.current.save.money, 200, "undo restores exact pre-load progress")
+local writesAfterUndo = 0
+for _, event in ipairs(undo.events) do
+  if event == "write:recovery" then writesAfterUndo = writesAfterUndo + 1 end
+end
+T:eq(writesAfterUndo, writesBeforeUndo, "undo does not overwrite its recovery target")
+T:eq(undo.notifications[#undo.notifications].kind, "load_undone",
+  "successful undo emits notification")
+
+local unsafeUndo = environment({ money = 100 })
+T:check(unsafeUndo.service:quickSave(unsafeUndo.game), "unsafe-undo target saves")
+unsafeUndo.game.current = checkpoint(200)
+T:check(unsafeUndo.service:quickLoad(unsafeUndo.game), "unsafe-undo recovery is created")
+unsafeUndo.checkpoints.capability = {
+  canCapture = false, canRestore = false, kind = "overworld",
+  reason = "screen_busy", message = "Close the active screen.",
+}
+local rejectedUndo, rejectedUndoCode = unsafeUndo.service:undoLastLoad(unsafeUndo.game)
+T:eq(rejectedUndo, nil, "unsafe undo is rejected before reading/mutation")
+T:eq(rejectedUndoCode, "screen_busy", "unsafe undo preserves capability reason")
+
+T:finish()
