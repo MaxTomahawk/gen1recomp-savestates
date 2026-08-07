@@ -65,6 +65,9 @@ executed through focused plans under `docs/superpowers/plans/`; the current plan
 - The deterministic recursive save writer must run outside LuaJIT traces. A
   1,000-process GC stress run reproduced zero corruption after this boundary;
   compiled recursion intermittently emitted an invalid empty nested identity map.
+- The public storage context now includes the current engine version. This makes
+  the specified warning-grade engine compatibility status available while
+  browsing histories, before recovery capture or live restore begins.
 
 ## Chosen architecture
 
@@ -151,11 +154,11 @@ test, documentation, or packaging task that remains valid.
 
 | Item | State | Decision / next evidence |
 | --- | --- | --- |
-| `SAVESTATES-SP-01` scoped storage | VERIFIED locally; upstream review required | `0399ad0` plus lazy correction `49954ec`; 28/28 public API checks and full ROM-free suite green |
+| `SAVESTATES-SP-01` scoped storage | VERIFIED locally; upstream review required | `0399ad0`, lazy correction `49954ec`, compatibility context `af00d6a`; 28/28 public API checks and full ROM-free suite green |
 | `SAVESTATES-SP-02` Level A checkpoint | VERIFIED locally; upstream review required | `6e94625`, `49954ec`, `9d6ea84`, `05b43ca`; 34/34 public API checks and differential rollback/content-rejection proof green; checkpoint identity exposes engine version for warning-grade compatibility |
 | `SAVESTATES-SP-03` playthrough identity | VERIFIED locally; upstream review required | `726ed11` plus `49954ec`; 18/18 focused checks and 1,000 clean-process stress runs green |
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
-| `SAVESTATES-SP-05` battle/RNG | VERIFIED locally; stacked review required | `docs/battle-state-map.md`; branch `feat/mod-battle-checkpoints` through `487e5ef`, fork draft PR #1; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, legacy Level A compatibility |
+| `SAVESTATES-SP-05` battle/RNG | VERIFIED locally; stacked review required | `docs/battle-state-map.md`; branch `feat/mod-battle-checkpoints` through `5b3eed8`, fork draft PR #1; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, legacy Level A compatibility |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
 
@@ -164,13 +167,13 @@ test, documentation, or packaging task that remains valid.
 The active product goal authorizes autonomous implementation. The Level A public
 contracts are implemented in `/home/max/src/gen1recomp-savestates-engine` on
 `feat/mod-state-checkpoints`, based on upstream `112120e`; the focused branch is
-published as draft PR #952 through `05b43ca`. Upstream merge/release remains the
+published as draft PR #952 through `af00d6a`. Upstream merge/release remains the
 M1 external gate. The distributable mod now composes its Level A services entirely
 through `mod:read`, `mod.storage`, `mod.checkpoints`, registered screens, hooks,
 events, options, and HUD drawing. Gate D and its Level B implementation are
 complete locally in `docs/battle-state-map.md` and the separate stacked upstream
 branch `feat/mod-battle-checkpoints`, published as fork draft PR #1 through
-`487e5ef`. The next lane is release-grade hardening: broader failure/clean-install
+`5b3eed8`. The next lane is release-grade hardening: broader failure/clean-install
 coverage, upstream review adaptation, and accurate
 release compatibility once both public seams have an upstream release.
 
@@ -191,9 +194,11 @@ Latest verification (2026-08-07):
   modkit validate/lint and reproducible 49-file package root verification pass.
 - Stacked Level B `./scripts/test.sh --quick` — 133/133 engine suites and 7/7
   modkit suites; battle boundary 13/13, capture 29/29, continuation 17/17,
-  restore/determinism/failure rollback 36/36, public checkpoints 45/45 including
-  a real public-facade battle differential roundtrip.
+  restore/determinism/failure rollback 43/43, public checkpoints 53/53 including
+  real public-facade battle differential roundtrip, switched/fainted-party
+  fidelity, and complete overworld-progress fidelity.
 - Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-battle` —
-  667/667 Lua behavior checks; modkit validate/lint and reproducible 28-file
+  721/721 Lua behavior checks; modkit validate/lint and reproducible 28-file
   package root verification plus a clean extracted-install pass with battle
-  support enabled.
+  support enabled. This includes default-NO destructive-action confirmation,
+  structured warning/error reporting, and pre-load engine-version warnings.

@@ -193,3 +193,26 @@ The battle-state inventory remains a mandatory gate before proposing field shape
 
 These are prerequisites, not pre-approved engine changes. Each remains a candidate
 until its spike and RFC prove the exact delta.
+
+## Prepared public extensions (not yet released upstream)
+
+The audit above remains a statement about unmodified upstream `112120e`. Separate
+engine worktrees now contain the smallest proven public additions:
+
+- `feat/mod-state-checkpoints` through `af00d6a` implements
+  `mod.storage` plus settled-overworld `mod.checkpoints`. Storage context is
+  `{ engineVersion, gameVersion, playthroughId }`; the engine version is advisory,
+  while game/playthrough remain hard isolation boundaries. Draft upstream PR #952
+  is open and the ROM-free quick suite passes 129/129 engine and 7/7 modkit suites.
+- stacked `feat/mod-battle-checkpoints` through `5b3eed8` extends the same opaque
+  checkpoint facade at settled ordinary wild/trainer decision menus, including
+  semantic continuation reconstruction and exact LÖVE RNG restoration. The
+  ROM-free quick suite passes 133/133 engine and 7/7 modkit suites; battle restore
+  passes 43/43 and the public checkpoint facade passes 53/53.
+- `SAVESTATES-SP-04` custom actions remains unimplemented and non-blocking. The
+  complete product remains operable through native START-menu rows; no global key
+  is intercepted.
+
+These branches are development evidence, not a released compatibility target.
+The manifest remains experimental until the necessary public APIs ship in an
+upstream release and the final release range can name that version honestly.

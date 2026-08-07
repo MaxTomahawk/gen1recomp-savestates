@@ -180,6 +180,8 @@ API is unused.
 - mod integration tests proving recovery and compatibility behavior for battle
   checkpoints.
 
-These checks pass on the stacked Level B branch through `487e5ef`; the public
-facade suite includes a complete battle capture/restore/recapture roundtrip. The mod now
-advertises the supported `battle` kind while retaining every exclusion above.
+These checks pass on the stacked Level B branch through `5b3eed8`; battle restore
+has 43/43 checks and the public facade has 53/53 checks. The public suite includes
+a complete battle capture/restore/recapture roundtrip and explicit complete
+overworld-progress fidelity. The mod advertises the supported `battle` kind while
+retaining every exclusion above.

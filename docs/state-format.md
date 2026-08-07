@@ -36,10 +36,11 @@ versioned Gen1Recomp checkpoint:
 ## Identity
 
 `gameVersion` and `playthroughId` must match the current public storage context
-and the nested checkpoint identity. Mismatch is a hard rejection. `engineVersion`
-must agree between wrapper and checkpoint; mismatch with the currently running
+and the nested checkpoint identity. Mismatch is a hard rejection. The public
+storage context also reports the current `engineVersion`; the wrapper and nested
+checkpoint must agree with one another, while mismatch with the currently running
 engine is warning-grade because patch releases are not assumed incompatible
-without evidence.
+without evidence. Histories expose that warning before the player chooses LOAD.
 
 The mod id is always `savestates`, and Mod API is 2. A copied state never becomes
 loadable in another game or playthrough merely because its location/player name
