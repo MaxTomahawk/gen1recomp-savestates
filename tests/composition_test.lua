@@ -71,7 +71,9 @@ T:check(ok, "entry composes without throwing: " .. tostring(err))
 T:eq(mod.exports.snapshotFormat, 1, "composition publishes snapshot format compatibility")
 T:eq(mod.exports.apiVersion, 1, "composition publishes its inter-mod API version")
 T:eq((mod.exports.supportedStateKinds or {})[1], "overworld",
-  "composition accurately advertises only implemented runtime kinds")
+  "composition advertises overworld checkpoints")
+T:eq((mod.exports.supportedStateKinds or {})[2], "battle",
+  "composition advertises proven battle safe-point checkpoints")
 T:eq(type(mod.exports.quickSave), "function", "composition publishes quicksave command")
 T:eq(type(mod.exports.quickLoad), "function", "composition publishes quickload command")
 T:eq(type(mod.exports.undoLastLoad), "function", "composition publishes undo command")
@@ -83,6 +85,8 @@ T:eq(type(eventHandlers["map.entered"]), "function",
   "composition subscribes to location autosaves")
 T:eq(type(eventHandlers["battle.ended"]), "function",
   "composition subscribes to enabled-safe after-battle autosaves")
+T:eq(type(eventHandlers["battle.started"]), "function",
+  "composition subscribes to deferred battle-start autosaves")
 local screenCount = 0
 for _ in pairs(registeredScreens) do screenCount = screenCount + 1 end
 T:eq(screenCount, 8, "composition registers every state manager screen")

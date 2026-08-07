@@ -3,6 +3,8 @@ AutoSaveController.__index = AutoSaveController
 
 local TRIGGERS = {
   location_enter = { option = "auto_location" },
+  trainer_battle_start = { option = "auto_trainer_battle", runtime = "battle" },
+  wild_battle_start = { option = "auto_wild_battle", runtime = "battle" },
   battle_end = { option = "auto_after_battle" },
 }
 
@@ -17,6 +19,7 @@ local function detachedContext(context)
     contextKey = context.contextKey,
     locationName = context.locationName,
     result = context.result,
+    battleKind = context.battleKind,
   }
 end
 
@@ -63,8 +66,17 @@ end
 
 function AutoSaveController:tick(game)
   if #self.pending == 0 then return false, "empty" end
+  local entry = self.pending[1]
   local ok, capability = pcall(self.checkpoints.inspect, self.checkpoints, game)
   if not ok then return false, "unexpected_error", tostring(capability) end
+  local definition = TRIGGERS[entry.trigger]
+  if definition and definition.runtime
+      and type(capability) == "table" and capability.kind ~= definition.runtime then
+    table.remove(self.pending, 1)
+    reindex(self)
+    return false, "stale_trigger",
+      "The deferred event no longer matches the active runtime."
+  end
   if type(capability) ~= "table" or not capability.canCapture then
     return false,
       type(capability) == "table" and capability.reason or "runtime_unsafe",
@@ -72,7 +84,7 @@ function AutoSaveController:tick(game)
         or "The current runtime cannot be checkpointed safely."
   end
 
-  local entry = table.remove(self.pending, 1)
+  entry = table.remove(self.pending, 1)
   reindex(self)
   local called, result, code, message = pcall(
     self.service.autoSave, self.service, game, entry.trigger, entry.context)
@@ -94,6 +106,16 @@ function AutoSaveController:install(mod)
       contextKey = "battle_end",
       result = event.result,
     })
+  end)
+  mod.events:on("battle.started", function(event)
+    event = type(event) == "table" and event or {}
+    local kind = event.kind
+    if kind == "trainer" or kind == "wild" then
+      self:onTrigger(kind .. "_battle_start", {
+        contextKey = kind .. "_battle_start",
+        battleKind = kind,
+      })
+    end
   end)
   mod.hooks:wrap("input.step", function(next, game, dt)
     self:tick(game)

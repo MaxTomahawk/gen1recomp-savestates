@@ -40,7 +40,7 @@ local context = {
   engineVersion = "0.9.0-dev",
   gameVersion = "red",
   playthroughId = "play-a",
-  supportedKinds = { overworld = true },
+  supportedKinds = { overworld = true, battle = true },
 }
 
 local state, code, message = newSnapshot()
@@ -66,6 +66,19 @@ T:check(validated ~= state and validated.checkpoint ~= state.checkpoint,
   "validation returns detached data")
 validated.checkpoint.save.money = 1
 T:eq(state.checkpoint.save.money, 3000, "mutating validated data cannot mutate stored input")
+
+local battleCheckpoint = checkpoint()
+battleCheckpoint.kind = "battle"
+battleCheckpoint.runtime.battle = {
+  kind = "wild", origin = { kind = "wild_encounter", map = "PALLET_TOWN" },
+}
+battleCheckpoint.rng = { love = "fixture-rng" }
+local battleState = newSnapshot({ id = "q00000003", checkpoint = battleCheckpoint })
+local validBattle, battleCode, battleMessage = Validator.validate(battleState, context)
+T:check(validBattle ~= nil,
+  "opaque data-only battle checkpoint validates: " .. tostring(battleCode or battleMessage))
+T:eq(validBattle.metadata.stateKind, "battle",
+  "battle runtime kind survives mod snapshot validation")
 
 local sourceCheckpoint = checkpoint()
 local detached = Snapshot.new({
@@ -95,7 +108,7 @@ local cases = {
     "wrong_playthrough" },
   { "missing checkpoint", function(s) s.checkpoint = nil return s end, "missing_checkpoint" },
   { "unsupported kind", function(s)
-      s.metadata.stateKind, s.checkpoint.kind = "battle", "battle" return s
+      s.metadata.stateKind, s.checkpoint.kind = "script", "script" return s
     end, "unsupported_runtime_kind" },
   { "corrupt metadata", function(s) s.metadata.createdAt = -1 return s end,
     "corrupt_metadata" },

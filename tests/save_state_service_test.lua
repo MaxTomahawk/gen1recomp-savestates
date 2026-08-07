@@ -36,6 +36,19 @@ local function checkpoint(money, map)
   }
 end
 
+local function battleCheckpoint(money, kind)
+  local value = checkpoint(money, "PALLET_TOWN")
+  value.kind = "battle"
+  value.runtime.battle = {
+    kind = kind or "wild",
+    origin = { kind = (kind == "trainer") and "trainer_encounter"
+      or "wild_encounter", map = "PALLET_TOWN" },
+    turnCount = 1,
+  }
+  value.rng = { love = "fixture-battle-rng" }
+  return value
+end
+
 local function environment(args)
   args = args or {}
   local events = {}
@@ -109,7 +122,7 @@ local function environment(args)
       game = targetGame,
       validator = Validator,
       migrations = migrations,
-      supportedKinds = { overworld = true },
+      supportedKinds = { overworld = true, battle = true },
     })
   end
   local notifications = {}
@@ -182,6 +195,32 @@ T:eq(happySummary.autoCount, 0, "summary reports empty auto history")
 T:eq(happySummary.slotCount, 0, "summary reports no occupied slots")
 T:eq(happySummary.slotCapacity, 10, "summary reports permanent slot capacity")
 T:eq(happySummary.undoAvailable, false, "summary reports no recovery before a load")
+
+local battleStates = environment({ money = 400 })
+battleStates.game.current = battleCheckpoint(400, "wild")
+battleStates.checkpoints.capability = {
+  canCapture = true, canRestore = true, kind = "battle",
+}
+local battleSaved, battleSaveCode, battleSaveMessage =
+  battleStates.service:quickSave(battleStates.game)
+T:check(battleSaved ~= nil,
+  "battle safe-point quicksave succeeds: "
+    .. tostring(battleSaveCode or battleSaveMessage))
+T:eq(battleSaved.metadata.stateKind, "battle",
+  "battle quicksave records its runtime kind")
+battleStates.game.current = checkpoint(900, "ROUTE_1")
+battleStates.checkpoints.capability = {
+  canCapture = true, canRestore = true, kind = "overworld",
+}
+local battleLoaded, battleLoadCode, battleLoadMessage =
+  battleStates.service:quickLoad(battleStates.game)
+T:check(battleLoaded ~= nil,
+  "battle safe-point quickload succeeds: "
+    .. tostring(battleLoadCode or battleLoadMessage))
+T:eq(battleStates.game.current.kind, "battle",
+  "quickload forwards opaque battle checkpoint to the engine")
+T:eq(battleStates.storeFactory(battleStates.game):loadRecovery().checkpoint.kind,
+  "overworld", "battle quickload preserves an overworld undo target")
 
 happy.setLimit(2)
 happy.setNow(1235)

@@ -91,7 +91,7 @@ return function(mod)
           game = game,
           validator = Validator,
           migrations = migrations,
-          supportedKinds = { overworld = true },
+          supportedKinds = { overworld = true, battle = true },
         })
       end,
       clock = os.time,
@@ -156,7 +156,7 @@ return function(mod)
   -- promise that every future internal module stays public.
   mod.exports.apiVersion = 1
   mod.exports.snapshotFormat = core.Snapshot.FORMAT
-  mod.exports.supportedStateKinds = { "overworld" }
+  mod.exports.supportedStateKinds = { "overworld", "battle" }
   mod.exports.quickSave = function(game) return core.service:quickSave(game) end
   mod.exports.quickLoad = function(game) return core.service:quickLoad(game) end
   mod.exports.autoSave = function(game, trigger, context)

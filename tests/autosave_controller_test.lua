@@ -34,10 +34,23 @@ T:eq(disabled, false, "disabled autosave trigger is ignored")
 T:eq(disabledCode, "disabled", "disabled trigger has stable status")
 T:eq(controller:pendingCount(), 0, "disabled trigger is not queued")
 
-local unsupported, unsupportedCode = controller:onTrigger(
+local queuedBattle, queuedBattleCode = controller:onTrigger(
   "trainer_battle_start", { contextKey = "trainer:1" })
-T:eq(unsupported, false, "unproven battle trigger is not faked")
-T:eq(unsupportedCode, "unsupported_trigger", "unproven trigger is explicit")
+T:eq(queuedBattle, true, "trainer battle trigger queues for a proven safe point")
+T:eq(queuedBattleCode, nil, "supported trainer trigger has no error")
+T:eq(controller:pendingCount(), 1, "battle trigger waits while intro is unsafe")
+checkpoints.capability = {
+  canCapture = false, kind = "battle", reason = "battle_phase_busy",
+  message = "Wait for the command menu.",
+}
+local introWait, introCode = controller:tick(game)
+T:eq(introWait, false, "unsafe battle intro defers autosave")
+T:eq(introCode, "battle_phase_busy", "battle intro preserves capability reason")
+controller.pending, controller.pendingByKey = {}, {}
+checkpoints.capability = {
+  canCapture = false, kind = "overworld", reason = "transition_busy",
+  message = "Wait for transition.",
+}
 
 T:eq(controller:onTrigger("location_enter", {
   mapId = "PALLET_TOWN", contextKey = "PALLET_TOWN",
@@ -82,8 +95,8 @@ T:eq(type(eventHandlers["battle.ended"]), "function",
   "installation uses public battle-end event")
 T:eq(type(hookHandlers["input.step"]), "function",
   "installation uses fixed-step safe retry hook")
-T:eq(eventHandlers["battle.started"], nil,
-  "installation does not subscribe to unsupported battle capture")
+T:eq(type(eventHandlers["battle.started"]), "function",
+  "installation subscribes to semantic battle start")
 
 eventHandlers["map.entered"]({ mapId = "CERULEAN_CITY", via = "warp" })
 local downstream = 0
@@ -100,5 +113,26 @@ T:eq(calls[#calls].context.contextKey, "CERULEAN_CITY",
 options.auto_after_battle = true
 eventHandlers["battle.ended"]({ result = "win" })
 T:eq(installed:pendingCount(), 1, "enabled battle end queues for overworld return")
+
+eventHandlers["battle.started"]({ kind = "trainer" })
+T:eq(installed:pendingCount(), 2,
+  "trainer battle start queues independently for the safe decision menu")
+eventHandlers["battle.started"]({ kind = "wild" })
+T:eq(installed:pendingCount(), 3,
+  "wild battle start queues independently for the safe decision menu")
+eventHandlers["battle.started"]({ kind = "safari" })
+T:eq(installed:pendingCount(), 3,
+  "unsupported battle variants never queue a mislabeled autosave")
+
+local stale = AutoSaveController.new({
+  service = service, checkpoints = checkpoints,
+  option = function(key) return options[key] end,
+})
+stale:onTrigger("wild_battle_start", { contextKey = "wild" })
+checkpoints.capability = { canCapture = true, canRestore = true, kind = "overworld" }
+local staleResult, staleCode = stale:tick(game)
+T:eq(staleResult, false, "battle request is discarded after battle has ended")
+T:eq(staleCode, "stale_trigger", "expired battle request is explicit")
+T:eq(stale:pendingCount(), 0, "expired battle request cannot save later overworld state")
 
 T:finish()
