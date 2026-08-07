@@ -44,10 +44,13 @@ return function(mod)
   local Retention = IndexFactory and module("src/state/Retention.lua")
   local CanonicalFactory = Retention and module("src/util/Canonical.lua")
   local FingerprintFactory = CanonicalFactory and module("src/util/Fingerprint.lua")
-  local Deduplicator = FingerprintFactory and module("src/autosave/Deduplicator.lua")
+  local Time = FingerprintFactory and module("src/util/Time.lua")
+  local Deduplicator = Time and module("src/autosave/Deduplicator.lua")
   local StoreFactory = Deduplicator and module("src/state/StateStore.lua")
   local Options = StoreFactory and module("src/config/Options.lua")
-  local ServiceFactory = Options and module("src/service/SaveStateService.lua")
+  local StartMenu = Options and module("src/ui/StartMenuIntegration.lua")
+  local ScreenFactory = StartMenu and module("src/ui/ScreenRegistry.lua")
+  local ServiceFactory = ScreenFactory and module("src/service/SaveStateService.lua")
   if not ServiceFactory then return end
 
   local ok, core = pcall(function()
@@ -58,6 +61,7 @@ return function(mod)
     local Canonical = CanonicalFactory(DataOnly)
     local Fingerprint = FingerprintFactory(Canonical)
     local StateStore = StoreFactory({ DataOnly = DataOnly, StateIndex = StateIndex })
+    local Screens = ScreenFactory({ Time = Time })
     local migrations = StateMigrations.new(Snapshot.FORMAT)
     local Service = ServiceFactory({
       Snapshot = Snapshot,
@@ -97,9 +101,12 @@ return function(mod)
       Retention = Retention,
       Canonical = Canonical,
       Fingerprint = Fingerprint,
+      Time = Time,
       Deduplicator = Deduplicator,
       StateStore = StateStore,
       Options = Options,
+      StartMenu = StartMenu,
+      Screens = Screens,
       Service = Service,
       service = service,
     }
@@ -110,6 +117,8 @@ return function(mod)
   end
 
   mod.options:define(core.Options.schema())
+  core.screenIds = core.Screens.install(mod, core.service, os.time)
+  core.StartMenu.install(mod, core.service, core.screenIds.root)
 
   -- This deliberately small inter-mod surface is compatibility metadata, not a
   -- promise that every future internal module stays public.
@@ -119,6 +128,15 @@ return function(mod)
   mod.exports.quickSave = function(game) return core.service:quickSave(game) end
   mod.exports.quickLoad = function(game) return core.service:quickLoad(game) end
   mod.exports.undoLastLoad = function(game) return core.service:undoLastLoad(game) end
+  mod.exports.loadState = function(game, id) return core.service:loadState(game, id) end
+  mod.exports.listStates = function(game, class) return core.service:listStates(game, class) end
+  mod.exports.listSlots = function(game) return core.service:listSlots(game) end
+  mod.exports.saveSlot = function(game, slot, label)
+    return core.service:saveSlot(game, slot, label)
+  end
+  mod.exports.loadSlot = function(game, slot) return core.service:loadSlot(game, slot) end
+  mod.exports.deleteSlot = function(game, slot) return core.service:deleteSlot(game, slot) end
+  mod.exports.screenIds = core.screenIds
 
   mod.log:info("Save States %s core ready", mod.version)
 end
