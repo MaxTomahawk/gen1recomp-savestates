@@ -14,22 +14,15 @@ jobs:
       - name: Checkout Save States
         uses: actions/checkout@v6
 
-      - name: Checkout verified Gen1Recomp API branch
+      - name: Checkout Gen1Recomp with proposed battle API
         uses: actions/checkout@v6
         with:
           repository: MaxTomahawk/gen1recomp
-          ref: 5b3eed8c066098df921007f07c6170c5e24021ba
+          ref: 12b6ef6350984436f214d76e5407f1baba904ba1
           path: .upstream
-
-      - name: Checkout reproducible modkit tooling
-        uses: actions/checkout@v6
-        with:
-          repository: MaxTomahawk/gen1recomp
-          ref: 02fd21bcdb7bc46ac16565a76b3100c869ecd4ea
-          path: .modkit-tooling
 
       - name: Install ROM-free toolchain
         run: sudo apt-get update && sudo apt-get install -y luajit unzip
 
       - name: Test, validate, lint, and package
-        run: make check GEN1RECOMP=.upstream MODKIT=.modkit-tooling/tools/modkit.py
+        run: make check GEN1RECOMP=.upstream
