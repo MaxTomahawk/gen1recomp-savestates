@@ -217,13 +217,13 @@ Latest verification (2026-08-08):
   occupied-slot replacement defaults to NO. Native slot naming accepts the
   documented 12-character `BEFORE MISTY` label without leaving the canvas.
 - The same `make check` passed from a fresh clone of published product head
-  `15fe985659cdac887ae9b38a8239d3ff32155327`; two consecutive package
+  `8358ae7661830bb04d3bc9e896d30df66435f79d`; two consecutive package
   builds were byte-identical. The archive SHA-256 was
-  `e77c0233a9cdbefefb9920aef2b22cf69434ed7a8e352ae76e149d85f26a76ba`,
+  `4d95869e1583059e1fdf14438323dcbf70c43b8dcee7745dec119a3f57410a15`,
   the resulting archive contains 28 distributable files plus
   `.modkit/pack.json`, and a clean extracted install validates and lints.
-- GitHub Actions `Test` runs `31247283884` and `31247285239` completed
-  successfully at exact repository head `f3ac692c790848b3b07e59ba3aac037848957fa9`.
+- GitHub Actions `Test` runs `31247517995` and `31247519521` completed
+  successfully at exact repository head `8358ae7661830bb04d3bc9e896d30df66435f79d`.
   All checkout steps use the current Node-24 `actions/checkout@v6`, eliminating
   the runner's Node-20 deprecation warning. The preview release gate was exercised
   directly and
@@ -234,5 +234,8 @@ Latest verification (2026-08-08):
   public `mod:read` facade and were exercised by the real modkit loader.
 - Mod-index metadata is staged but intentionally unpushed on
   `prep/savestates-index` at `37321c5`; targeted validation passes with zero
-  warnings. It must be refreshed from the final release manifest and submitted
-  only after an installable release exists.
+  warnings. Current index `main` is `682272b`; the staging branch must be rebased
+  and refreshed from the final release manifest, then submitted only after an
+  installable release exists.
+- The newest official engine tag remains `v0.1.75`, which predates the merged
+  checkpoint APIs. Preview metadata and publication therefore remain fail-closed.
