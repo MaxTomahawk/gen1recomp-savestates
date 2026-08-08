@@ -25,12 +25,12 @@ Status vocabulary:
 | Persistence across restarts | Verified at API/storage layer | Public storage fresh-decode, main/tmp/backup recovery, and process-independent checkpoint reconstruction tests. Final packaged runtime restart is part of the private release acceptance pass. |
 | Game/playthrough isolation | Verified | Hard wrapper/checkpoint validation plus upstream active-slot/new-game/playthrough storage tests. |
 | Corrupt and incompatible records never mutate runtime | Verified | Data-only/schema/migration/store tests; unavailable-row cleanup; upstream content/map/position validation and rollback tests. |
-| Settled overworld restoration | Verified on upstream branch | Public facade differential recapture includes coordinates/facing, party, inventory/PC items/boxes, money, Pokédex, flags, trainers, and object toggles. |
+| Settled overworld restoration | Verified and merged upstream | Public facade differential recapture includes coordinates/facing, party, inventory/PC items/boxes, money, Pokédex, flags, trainers, and object toggles; upstream PR #952 is merged. |
 | Deterministic supported battle restoration | Verified on upstream branch | Ordinary wild/trainer player-decision reconstruction, switched/fainted party fidelity, rollback, and exact damage/crit/accuracy/AI/escape/encounter RNG replay. |
 | Unsafe scripts/transitions/menus/animations/battle phases rejected | Verified | Public checkpoint capability and exclusion tests; compatibility docs name every supported boundary. |
 | Manual battle quicksave UX | Accurately limited | No public custom action or battle-menu decorator exists. Default battle-start autosaves are user-accessible; cooperating mods may call the public export at later safe decisions. |
 | No private engine dependency in distributed mod | Verified | Source boundary inspection found no private `src.*` require, raw filesystem, state-stack, process, package, or debug access; sibling source loads use public `mod:read`, and real modkit load/lint passes. |
-| ROM-free CI, tests, lint, reproducible package | Verified | 755/755 Lua checks, 7/7 Python release/package-gate tests, modkit validate/lint, two byte-identical 28-file ZIP builds plus pack manifest, and fresh-clone/fresh-extracted-install checks at package head `15fe985`; Node-24 Actions runs `31197152964` and `31197159827` passed exact repository head `8421720`. |
+| ROM-free CI, tests, lint, reproducible package | Verified | 755/755 Lua checks, 7/7 Python release/package-gate tests, modkit validate/lint, two byte-identical 28-file ZIP builds plus pack manifest, and fresh-clone/fresh-extracted-install checks at package head `15fe985`; Actions runs `31247283884` and `31247285239` pass the merged-tooling/rebased-battle dependency layout. |
 | Exact released-engine compatibility | Prepared | Release gate derives/checks out the manifest's exact minimum official tag. Manifest intentionally remains experimental/dev until upstream APIs ship. |
 | Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
 | Installable GitHub Release | Blocked externally | Tag workflow intentionally refuses preview metadata; requires official upstream API release and final manifest range. |
@@ -38,9 +38,9 @@ Status vocabulary:
 
 ## External release gates
 
-1. Official acceptance/release of the Level A storage/overworld API, stacked
-   Level B battle/RNG API, and source-date modkit fix (or equivalent upstream
-   capabilities requiring adaptation).
+1. Official acceptance of Level B battle/RNG PR #986 and an engine release that
+   contains it. Level A storage/overworld checkpoints and the source-date modkit
+   fix are already merged into `dev`.
 2. Private clean-runtime acceptance using legally imported game data.
 3. Final non-experimental manifest/version range, reviewed merge, tag, release
    asset verification, then index PR.

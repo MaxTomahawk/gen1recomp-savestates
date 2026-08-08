@@ -110,9 +110,9 @@ and clean-install gate with:
 make check GEN1RECOMP=/path/to/gen1recomp
 ```
 
-Until the source-date modkit fix is available in that checkout, pass its
-review branch explicitly with `MODKIT=/path/to/modkit.py`. Repository-only
-release and upstream handoff details live in `docs/development.md`.
+Current upstream `dev` already contains source-date reproducible packaging.
+Repository-only release and upstream handoff details live in
+`docs/development.md`.
 
 No ROM, imported cache, user save, credential, generated secret, or extracted
 game asset belongs in this repository.

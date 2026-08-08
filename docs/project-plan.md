@@ -1,8 +1,8 @@
 # Save States Living Project Plan
 
-Status: active execution; Level A and supported Level B product slices implemented
+Status: active execution; Level A merged upstream, supported Level B submitted
 
-Updated: 2026-08-07
+Updated: 2026-08-08
 
 Product owner: MaxTomahawk
 
@@ -25,15 +25,16 @@ commits named there. Key conclusions:
 - Native UI decoration, registered screens, options, semantic events, and HUD
   notifications are available publicly now.
 - `mod.save` cannot be the savestate store without coupling quicksaves to vanilla
-  SAVE and recursively embedding the history.
-- Exact stable-overworld restore is not currently a supported public mod action.
+  SAVE and recursively embedding the history; merged `mod.storage` is the
+  independent playthrough-scoped public store selected for the product.
+- Merged `mod.checkpoints` supplies exact settled-overworld capture and restore.
 - Scripts are coroutine-driven; suspended scripts are unsafe.
 - Battle state and gameplay RNG have no public serializable contract.
 - Rebindable custom mod actions do not exist; START-menu operation remains the
   complete baseline until that optional seam lands.
 
-The first battle/RNG statement above describes unmodified upstream. The stacked
-Level B branch now implements the generic contract selected by the Gate D audit:
+The battle/RNG statement above describes official upstream `dev`. Upstream PR
+#986 implements the generic contract selected by the Gate D audit:
 persistent ordinary wild/trainer decision-menu reconstruction plus exact LÖVE RNG,
 while preserving explicit refusal for scripts and unsupported variants.
 
@@ -68,10 +69,9 @@ history; current work is governed by this living plan and acceptance matrix.
 - The public storage context now includes the current engine version. This makes
   the specified warning-grade engine compatibility status available while
   browsing histories, before recovery capture or live restore begins.
-- Current `modkit pack` normalizes ZIP entries but embeds wall-clock
-  `packed_at`, so its archive is not byte-reproducible despite the status text.
-  A separate generic tooling fix now honors `SOURCE_DATE_EPOCH`; this repository
-  independently rejects nonconforming metadata and compares two package builds.
+- Merged PR #959 makes current `modkit pack` honor `SOURCE_DATE_EPOCH`, including
+  `.modkit/pack.json`, so repeat builds are byte-reproducible. This repository
+  still rejects nonconforming metadata and compares two package builds.
 
 ## Chosen architecture
 
@@ -128,13 +128,13 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | Milestone | Outcome | Exit verification |
 | --- | --- | --- |
 | M0 — Project baseline | Governance, audit, living plan, remote, feature branch | pinned sources, clean diff review, planning commit pushed |
-| M1 — Upstream proof/RFCs | Implement and specify scoped storage plus Level A checkpoint seams; keep candidates separate | local contracts and RFCs complete; focused suites, 1,000-run GC regression, and `./scripts/test.sh --quick` green; upstream review/release still required |
+| M1 — Upstream Level A/tooling | Scoped storage, stable-overworld checkpoints, playthrough identity, reproducible packaging | MERGED: PR #952 and PR #959; focused suites, 1,000-run GC regression, and full ROM-free suite green; official release still required |
 | M2 — Mod shell and pure core | Current modkit shell; injected adapters; snapshot schema/validation/index/retention/migrations | VERIFIED locally: pure behavior suite, real modkit load/lint, strict reproducible package and root listing |
 | M3 — Level A prototype | Stable overworld capture/mutate/restore/re-capture | ENGINE CONTRACT VERIFIED: semantic differential recapture plus rejection/rollback tests; broader packaged fixture matrix remains before release |
 | M4 — Quicksaves and recovery | Rolling quick history, newest quickload, transactional recovery, undo | VERIFIED in injected public-API service tests: A -> load B -> undo -> A; corruption and persistence failure paths covered |
 | M5 — Native UX and slots | START rows, manager screens, ten permanent slots, rename/delete, HUD notifications, options | VERIFIED headlessly: second decorator coexistence, empty/unavailable states, generation-safe slot overwrite, disabled notifications, public widget close chain |
 | M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | IMPLEMENTED: location, ordinary trainer/wild start, optional after-battle deferral, synchronous capability-gated before-warp, stale-event expiry, dedup/retention, corrupt visibility, and opt-in phase timings; broader clean-runtime matrix remains |
-| M7 — Battle beta | VERIFIED LOCALLY: field/RNG/continuation map plus persistent safe-point capture/restore | 133/133 engine suites; wild/trainer differential reconstruction; damage/crit/accuracy/AI/escape/encounter RNG replay; rollback and unsupported-phase tests green |
+| M7 — Battle beta | SUBMITTED: field/RNG/continuation map plus persistent safe-point capture/restore | PR #986; 137/137 engine suites; wild/trainer differential reconstruction; damage/crit/accuracy/AI/escape/encounter RNG replay; rollback and unsupported-phase tests green |
 | M8 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | byte-identical source-date ZIP builds, clean install, validate/lint/tests, no private requires/ROM content, release asset resolves |
 
 Milestones are sequencing boundaries, not permission to claim incomplete features.
@@ -158,42 +158,35 @@ test, documentation, or packaging task that remains valid.
 
 | Item | State | Decision / next evidence |
 | --- | --- | --- |
-| `SAVESTATES-SP-01` scoped storage | VERIFIED locally; upstream review required | review-ready upstream PR #952 through `af00d6a`; 28/28 public API checks and full ROM-free suite green |
-| `SAVESTATES-SP-02` Level A checkpoint | VERIFIED locally; upstream review required | review-ready upstream PR #952; 34/34 public API checks and differential rollback/content-rejection proof green; checkpoint identity exposes engine version for warning-grade compatibility |
-| `SAVESTATES-SP-03` playthrough identity | VERIFIED locally; upstream review required | `726ed11` plus `49954ec`; 18/18 focused checks and 1,000 clean-process stress runs green |
+| `SAVESTATES-SP-01` scoped storage | MERGED | upstream PR #952 at `cd0ace2`; 28/28 public API checks and full ROM-free suite green |
+| `SAVESTATES-SP-02` Level A checkpoint | MERGED | upstream PR #952; 34/34 public API checks and differential rollback/content-rejection proof green; checkpoint identity exposes engine version for warning-grade compatibility |
+| `SAVESTATES-SP-03` playthrough identity | MERGED | upstream PR #952; 18/18 focused checks and 1,000 clean-process stress runs green |
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
-| `SAVESTATES-SP-05` battle/RNG | VERIFIED locally; stacked review required | `docs/battle-state-map.md`; branch `feat/mod-battle-checkpoints` through `5b3eed8`, review-ready stacked fork PR #1; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, legacy Level A compatibility |
-| `SAVESTATES-SP-06` reproducible modkit package | VERIFIED locally; upstream review required | review-ready upstream PR #959 at `02fd21b`; `SOURCE_DATE_EPOCH`, invalid-input refusal, and byte-identity tests |
+| `SAVESTATES-SP-05` battle/RNG | VERIFIED and submitted | `docs/battle-state-map.md`; official upstream PR #986 through `12b6ef6`; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, Level A compatibility; all PR checks green |
+| `SAVESTATES-SP-06` reproducible modkit package | MERGED | upstream PR #959 at `5b6dfed`; `SOURCE_DATE_EPOCH`, invalid-input refusal, and byte-identity tests |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
 
 ## Current execution boundary
 
-The active product goal authorizes autonomous implementation. The official
-upstream/index refs were refreshed on 2026-08-07 and remain `112120e`/`17314bf`.
-The Level A public
-contracts are implemented in `/home/max/src/gen1recomp-savestates-engine` on
-`feat/mod-state-checkpoints`, based on upstream `112120e`; the focused branch is
-published as review-ready PR #952 through `af00d6a`. Upstream merge/release remains the
-M1 external gate. The distributable mod now composes its Level A services entirely
-through `mod:read`, `mod.storage`, `mod.checkpoints`, registered screens, hooks,
-events, options, and HUD drawing. Gate D and its Level B implementation are
-complete locally in `docs/battle-state-map.md` and the separate stacked upstream
-branch `feat/mod-battle-checkpoints`, published as review-ready fork PR #1 through
-`5b3eed8`. Independent release hardening and clean-package coverage are complete;
-the active lane is requirement traceability plus prepared (unsubmitted) index
-metadata, followed by upstream review adaptation and exact release compatibility
-once both public seams have an official release.
+The active product goal authorizes autonomous implementation. Official upstream
+`dev` is pinned at `cab62ff7b340ba29ee212487fd9944fa636974a8`; index `main` is
+pinned at `682272bb5b2c48b6552be4aa692681f38a825edf`. Level A storage,
+identity, and settled-overworld checkpoints are merged through PR #952, and
+reproducible modkit packages are merged through PR #959. The distributable mod
+composes its Level A services entirely through `mod:read`, `mod.storage`,
+`mod.checkpoints`, registered screens, hooks, events, options, and HUD drawing.
 
-Packaging reconnaissance also found and corrected a separate upstream modkit
-reproducibility defect. The focused branch `feat/reproducible-mod-packages` is
-published through `02fd21b` as review-ready upstream PR #959. Level A PR #952 is
-also review-ready, with its body reconciled to the final engine-version context;
-the Level B dependent change remains review-ready in stacked fork PR #1 until its
-base lands. The mod test workflow pins tooling separately from the runtime API
-branch; the release workflow remains fail-closed against the exact official tag.
+Gate D and its Level B implementation are complete in
+`docs/battle-state-map.md`. Branch `feat/mod-battle-checkpoints` was rebased
+without semantic patch changes onto current official `dev`, published through
+`12b6ef6`, and submitted directly as official upstream PR #986. The mod test
+workflow pins that one proposed runtime branch and uses the merged official
+modkit from the same checkout. The remaining external product gate is review,
+merge, and release of Level B in an official engine version; the release workflow
+stays fail-closed against that exact future tag.
 
-Latest verification (2026-08-07):
+Latest verification (2026-08-08):
 
 - `luajit tests/engine/playthrough_identity.lua` — 18/18.
 - identity test in 1,000 fresh LuaJIT processes — 1,000/1,000.
@@ -201,20 +194,18 @@ Latest verification (2026-08-07):
 - `luajit tests/modkit/cases/checkpoints.lua` — 34/34, including invalid-content rejection before mutation.
 - `luajit tests/engine/save_slots.lua` — 78/78.
 - `luajit tests/mod_save_tests.lua` — 132/132.
-- `./scripts/test.sh --quick` — 129/129 engine suites and 7/7 modkit suites;
+- `./scripts/test.sh --quick` on rebased Level B — 137/137 engine suites and 7/7 modkit suites;
   ROM-derived T3 correctly skipped because no imported data is present.
 - Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-engine` —
   616/616 Lua behavior checks across composition, modules, snapshots, migrations,
   index/retention, quick/auto/slot/recovery services, native screens, notifications,
   event deferral, fingerprints/deduplication, and transaction failure recovery;
   modkit validate/lint and reproducible 49-file package root verification pass.
-- Stacked Level B `./scripts/test.sh --quick` — 133/133 engine suites and 7/7
-  modkit suites; battle boundary 13/13, capture 29/29, continuation 17/17,
+- Level B focused suites — battle boundary 13/13, capture 29/29, continuation 17/17,
   restore/determinism/failure rollback 43/43, public checkpoints 53/53 including
   real public-facade battle differential roundtrip, switched/fainted-party
   fidelity, and complete overworld-progress fidelity.
-- Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-battle
-  MODKIT=/home/max/src/gen1recomp-modkit-reproducible/tools/modkit.py` —
+- Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-battle` —
   755/755 Lua behavior checks plus 7/7 Python release/package-gate tests; modkit
   validate/lint and reproducible 28-file
   package root verification plus a clean extracted-install pass with battle
@@ -231,8 +222,8 @@ Latest verification (2026-08-07):
   `e77c0233a9cdbefefb9920aef2b22cf69434ed7a8e352ae76e149d85f26a76ba`,
   the resulting archive contains 28 distributable files plus
   `.modkit/pack.json`, and a clean extracted install validates and lints.
-- GitHub Actions `Test` runs `31197152964` and `31197159827` completed
-  successfully at exact repository head `842172005fd7ee87918c44508ca9ff49a9c5ba7c`.
+- GitHub Actions `Test` runs `31247283884` and `31247285239` completed
+  successfully at exact repository head `f3ac692c790848b3b07e59ba3aac037848957fa9`.
   All checkout steps use the current Node-24 `actions/checkout@v6`, eliminating
   the runner's Node-20 deprecation warning. The preview release gate was exercised
   directly and

@@ -2,8 +2,8 @@
 
 Status: Gate D complete; supported Level B subset implemented and verified
 
-Evidence baseline: `bryanthaboi/gen1recomp` `dev` at `112120e`, plus the
-Level A checkpoint branch through `05b43ca`
+Evidence baseline: `bryanthaboi/gen1recomp` `dev` at `cab62ff`, which includes
+merged Level A storage/checkpoints, plus the Level B branch through `12b6ef6`
 
 ## Scope and conclusion
 
@@ -180,8 +180,9 @@ API is unused.
 - mod integration tests proving recovery and compatibility behavior for battle
   checkpoints.
 
-These checks pass on the stacked Level B branch through `5b3eed8`; battle restore
-has 43/43 checks and the public facade has 53/53 checks. The public suite includes
-a complete battle capture/restore/recapture roundtrip and explicit complete
-overworld-progress fidelity. The mod advertises the supported `battle` kind while
-retaining every exclusion above.
+These checks pass on the Level B branch through `12b6ef6`, submitted as upstream
+PR #986; battle restore has 43/43 checks and the public facade has 53/53 checks.
+The complete rebased quick suite passes 137/137 engine suites and 7/7 modkit
+suites. The public suite includes a complete battle capture/restore/recapture
+roundtrip and explicit complete overworld-progress fidelity. The mod advertises
+the supported `battle` kind while retaining every exclusion above.

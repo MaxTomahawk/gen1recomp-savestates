@@ -1,14 +1,14 @@
 # Upstream Audit
 
-Status: Phase 0 evidence baseline
+Status: refreshed after merged Level A and packaging contributions
 
-Audited: 2026-08-07
+Audited: 2026-08-08
 
-Engine: `bryanthaboi/gen1recomp` `dev` at `112120e8fe4ab03665e7e3eff761032451b36d8c`
+Engine: `bryanthaboi/gen1recomp` `dev` at `cab62ff7b340ba29ee212487fd9944fa636974a8`
 
 Wiki: `bryanthaboi/gen1recomp.wiki` at `635e1e87d2e3b2e71c2276a60327aee7a24e57c9`
 
-Index: `bryanthaboi/gen1recomp-mod-index` `main` at `17314bfc79e980fcc4fb75e2439bfae75cfa05c8`
+Index: `bryanthaboi/gen1recomp-mod-index` `main` at `682272bb5b2c48b6552be4aa692681f38a825edf`
 
 This document distinguishes documented public API from private engine capability.
 Absence statements apply to the pinned commits and must be rechecked after an
@@ -24,9 +24,10 @@ upstream update.
   `">=0.0.0-0 <2.0.0"`. It does not create tests, `mod.card`, or a changelog.
 - `modkit validate` drives the real loader with ROM-free fixture data when imported
   data is absent. `lint` enforces the ROM-content rules. `pack` runs strict
-  validation and lint and adds `.modkit/pack.json`. At `112120e`, that metadata
-  embeds wall-clock `packed_at`, so repeated packages are not byte-identical even
-  though ZIP entry timestamps are normalized.
+  validation and lint and adds `.modkit/pack.json`. Merged PR #959 makes
+  `SOURCE_DATE_EPOCH` control `packed_at`, rejects invalid epochs before output,
+  and tests byte-identical repeated packages. Wall-clock behavior remains only
+  when callers do not request a reproducible build.
 - The generated release workflow creates `<id>-<version>.zip` with `manifest.json`
   at the archive root. Mod code is expected in its own repository.
 - Mod tests use LuaJIT and the public SDK harness under `tests/modkit/`, normally
@@ -47,6 +48,8 @@ requires is unsupported.
 | Notifications | `render.hud(next, game, viewport)` draws non-modal screen-space UI after composition and before touch controls | `src/core/Game.lua:Game:draw`; `tests/engine/tool_mod_hooks.lua` |
 | Options | `mod.options:define/get`; toggle, choice, number, and text rows persist in `options.lua` | `src/mods/Loader.lua:Loader:_api`; wiki `Concepts-Save-Model.md` |
 | Per-save mod data | `mod.save:get/set` maps to `save.modData[modId]` and persists only with the vanilla progress save | same sources |
+| Independent tool storage | `mod.storage:context/write/read/list/delete` is data-only, verified, portable-aware, and scoped by game/playthrough/mod | `src/mods/Storage.lua`; `docs/modding.md`; RFC 0003 |
+| Runtime checkpoints | `mod.checkpoints:inspect/capture/restore` supports strict settled-overworld semantic reconstruction | `src/core/Checkpoint.lua`; `docs/modding.md`; RFC 0004 |
 | Migrations | `mod.migrations:add(since, fn)` upgrades a mod's per-save shape | `src/core/SaveData.lua:SaveData.runMigrations` |
 | Events | `map.entered/exited`, `player.warped`, `world.trainer_engaged`, `battle.started/turn_started/turn_ended/ended`, `script.started/ended`, save and screen events | wiki `Reference-Events.md`; emit sites in `src/` |
 | Input | `input.step` hook and `mod.input` can inject the eight Game Boy buttons safely | `src/core/Game.lua:Game:step`; `src/mods/Loader.lua:Loader:_api` |
@@ -65,24 +68,21 @@ parser and staged main/tmp/bak recovery. Red, Blue, and Yellow progress are
 separate, and current upstream also has multiple vanilla save slots under
 `saves/<version>/<slot>.lua`.
 
-Important limitations:
+`mod.save` retains these important limitations:
 
 - `mod.save` is not an independent store. It aliases the active live save's
   `modData` and is flushed by vanilla save writing. Forcing that write from a
   quicksave would also change the vanilla SAVE checkpoint.
 - A whole `game.save` copied into `mod.save` would recursively include the
   savestate collection and grow without bound.
-- `SaveData.activeSlot(version)` exists privately, but no public mod API exposes
-  an opaque active playthrough/slot identity.
-- There is no public namespaced transactional blob/file store tied to the active
-  game version and playthrough. Raw `love.filesystem` is possible with the
-  declared `filesystem` permission, but it bypasses portable-mode routing and
-  supplies no engine-owned playthrough scope.
+- Physical launcher-slot identity remains private by design.
 
-Conclusion: production persistence and isolation need a small generic upstream
-per-mod storage/profile seam, or a consciously limited filesystem implementation.
-The selected product design uses the upstream seam; it will not make portable-mode
-and identity correctness somebody else's problem.
+Current conclusion: merged `mod.storage` supplies the selected production seam.
+Its context exposes only `{ engineVersion, gameVersion, playthroughId }`; logical
+keys are mod-scoped, values are restricted data-only tables, writes are staged and
+decode-verified, reads recover valid temporary/backup generations, and persistence
+uses the engine's standard or portable backend. No filesystem permission or
+private slot/path access is required by the mod.
 
 ## Overworld runtime and scripts
 
@@ -103,23 +103,24 @@ music, forced movement, darkness, follower state, and map-enter behavior. This
 supports the proposed semantic reconstruction model and argues against serializing
 controller objects.
 
-`ScriptRunner` is coroutine-driven. It stores a suspended Lua coroutine and
+`ScriptRunner` remains coroutine-driven. It stores a suspended Lua coroutine and
 blocking commands yield/resume it. Foreground and up to four parallel runners can
 exist; killing a parallel runner does not emit a balancing `script.ended` event.
 Therefore counting public script events is not a reliable snapshot-safety oracle,
 and coroutine stack serialization is not viable.
 
-Current public API has no:
+Merged `mod.checkpoints` now provides the stable-overworld query, detached
+data-only capture, and validated quiescent reconstruction that were previously
+missing. It requires the overworld topmost, stationary tile control, and no
+transition, menu, script, queued script movement, or partial field animation.
+Restore validates identity/content/position before mutation, preserves current
+options, suppresses ordinary entry/load side effects, verifies by recapture, and
+rolls back in memory on failure.
 
-- stable-overworld safe-point query;
-- data-only progress capture that includes all required live semantic fields;
-- validated, quiescent progress restore operation;
-- resumable script checkpoint representation.
-
-Gate A conclusion: an exact, public-API-only Level A implementation is **blocked**
-on a generic stable-runtime checkpoint seam. Direct calls to
-`OverworldState:captureSave`, `Game:restoreSave`, state-stack methods, or runner
-internals would violate the distribution rule.
+It deliberately does not provide a resumable script checkpoint representation.
+Direct controller/state-stack/runner access remains unsupported and unnecessary.
+Gate A conclusion is now **GO on merged public API**; an official release tag is
+still required before the distributable manifest can declare compatibility.
 
 ## Events and autosave timing
 
@@ -150,12 +151,14 @@ Battle logic injects `self.rng`, but it currently wraps global
 `math.random`/global random sources. Link battles have a separate deterministic
 Park-Miller stream. No public serializable gameplay RNG state exists.
 
-Battle restoration is therefore deferred behind two proven upstream needs:
+Battle restoration still depends on two proven upstream needs not present in
+official `dev`:
 
 1. a generic battle safe-point export/import contract;
 2. one engine-owned serializable gameplay RNG stream, with no-mod parity tests.
 
-The battle-state inventory remains a mandatory gate before proposing field shapes.
+The completed battle-state inventory and implementation are submitted as focused
+upstream PR #986.
 
 ## Input, UI, and notifications
 
@@ -187,37 +190,35 @@ The battle-state inventory remains a mandatory gate before proposing field shape
 
 | Candidate | Requested capability | Current public surface | Private proof | Smallest generic direction | Required upstream evidence |
 | --- | --- | --- | --- | --- | --- |
-| `SAVESTATES-SP-01` | Playthrough-scoped durable state payloads independent of vanilla SAVE | `mod.save` is embedded; raw filesystem is unscoped | `SaveData` knows active version/slot and portable persistence FS | Namespaced per-mod storage scoped to active playthrough, with verified replace/read/delete/list | failure injection, portable/standard parity, cross-slot isolation, no-mod parity |
-| `SAVESTATES-SP-02` | Safe Level A capture/restore | read access to `game`, `mod.world:current/warpTo`; no checkpoint API | `OverworldState:captureSave`, `Game:restoreSave`, `SaveData.validate` | Data-only stable-overworld capability/capture/restore facade that reconstructs runtime and rejects unsafe phases | roundtrip equivalence, malformed input, restore rollback/recovery, event ordering, no-mod parity |
-| `SAVESTATES-SP-03` | Stable profile identity | generated per-save mod data only; no active slot id | `SaveData.activeSlot` and versioned slot registry | Opaque identity returned by storage/checkpoint context, not mutable slot internals | new/load/switch/delete slot isolation tests |
+| `SAVESTATES-SP-01` | Playthrough-scoped durable state payloads independent of vanilla SAVE | **Merged:** `mod.storage` | `SaveData` owns active version/slot and portable persistence FS | Implemented as namespaced verified data-only storage | 28/28 public storage checks plus engine suite |
+| `SAVESTATES-SP-02` | Safe Level A capture/restore | **Merged:** overworld `mod.checkpoints` | `OverworldState:captureSave`, checkpoint reconstruction, `SaveData.validate` | Implemented as semantic capability/capture/restore facade | 34/34 public checks, differential equivalence, rollback/content rejection |
+| `SAVESTATES-SP-03` | Stable profile identity | **Merged:** opaque `playthroughId` in storage/checkpoint context | private slot registry remains hidden | Implemented lazy opaque identity | new/load/switch/delete isolation and 1,000-process regression |
 | `SAVESTATES-SP-04` | Rebindable quick actions | GB-button injection only | core `Input`/`BindingsMenu` fixed action list | Additive mod action registry integrated with bindings UI | keyboard/pad/rebind/conflict/no-mod tests |
-| `SAVESTATES-SP-05` | Deterministic battle restore | battle events/hooks only | `BattleState` mutable fields; global random use | Serializable engine RNG plus battle safe-point export/import, proposed only after inventory | RNG parity/differential battle suite and no-mod parity |
+| `SAVESTATES-SP-05` | Deterministic battle restore | overworld-only checkpoint API in official `dev` | `BattleState` mutable fields; global random use | Implemented battle safe-point/RNG extension in PR #986 | 137/137 engine, 7/7 modkit, differential/RNG/rollback suites |
 
-These are prerequisites, not pre-approved engine changes. Each remains a candidate
-until its spike and RFC prove the exact delta.
+The table records both landed and remaining seams. Only custom actions and the
+battle/RNG extension remain candidates for further upstream action; Level A and
+packaging are merged public behavior.
 
-## Prepared public extensions (not yet released upstream)
+## Merged and proposed public extensions
 
-The audit above remains a statement about unmodified upstream `112120e`. Separate
-engine worktrees now contain the smallest proven public additions:
-
-- `feat/mod-state-checkpoints` through `af00d6a` implements
-  `mod.storage` plus settled-overworld `mod.checkpoints`. Storage context is
-  `{ engineVersion, gameVersion, playthroughId }`; the engine version is advisory,
-  while game/playthrough remain hard isolation boundaries. Review-ready upstream PR #952
-  is open and the ROM-free quick suite passes 129/129 engine and 7/7 modkit suites.
-- stacked `feat/mod-battle-checkpoints` through `5b3eed8` extends the same opaque
-  checkpoint facade at settled ordinary wild/trainer decision menus, including
-  semantic continuation reconstruction and exact LÖVE RNG restoration. The
-  ROM-free quick suite passes 133/133 engine and 7/7 modkit suites; battle restore
-  passes 43/43 and the public checkpoint facade passes 53/53.
+- PR #952 is merged at `cd0ace2`: `mod.storage`, lazy playthrough identity, and
+  settled-overworld `mod.checkpoints` are now official `dev` APIs. Storage context
+  is `{ engineVersion, gameVersion, playthroughId }`; engine version is advisory,
+  while game/playthrough remain hard isolation boundaries.
+- `feat/mod-battle-checkpoints` through `12b6ef6` extends that opaque checkpoint
+  facade at settled ordinary wild/trainer decision menus, including semantic
+  continuation reconstruction and exact LÖVE RNG restoration. It is submitted as
+  official upstream PR #986. The rebased quick suite passes 137/137 engine and
+  7/7 modkit suites; battle restore passes 43/43 and the public checkpoint facade
+  passes 53/53. All upstream CI checks currently pass.
 - `SAVESTATES-SP-04` custom actions remains unimplemented and non-blocking. The
   complete product remains operable through native START-menu rows; no global key
   is intercepted.
-- `feat/reproducible-mod-packages` through `02fd21b` makes `modkit pack` honor
-  standard `SOURCE_DATE_EPOCH`, rejects invalid epochs before writing, and proves
-  byte-identical archives. It is submitted as review-ready upstream PR #959.
+- PR #959 is merged at `5b6dfed`: official `modkit pack` honors standard
+  `SOURCE_DATE_EPOCH`, rejects invalid epochs before writing, and proves
+  byte-identical archives.
 
-These branches are development evidence, not a released compatibility target.
-The manifest remains experimental until the necessary public APIs ship in an
-upstream release and the final release range can name that version honestly.
+Merged `dev` is still not a released compatibility target. The manifest remains
+experimental until PR #986 lands, the complete public APIs ship in an upstream
+release, and the final range can name that version honestly.

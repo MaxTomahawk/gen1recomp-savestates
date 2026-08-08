@@ -7,10 +7,10 @@ bootstraps `src/ModuleLoader.lua` through `mod:read` and Lua `load`; every sibli
 module follows the same installed-mod filesystem path. No distributable file
 imports private `src.*` engine modules.
 
-The Level A engine dependency is proposed in upstream PR
+The Level A engine dependency landed in upstream PR
 [`bryanthaboi/gen1recomp#952`](https://github.com/bryanthaboi/gen1recomp/pull/952),
-with Level B battle/RNG reconstruction in stacked draft
-[`MaxTomahawk/gen1recomp#1`](https://github.com/MaxTomahawk/gen1recomp/pull/1):
+with Level B battle/RNG reconstruction proposed separately in upstream PR
+[`bryanthaboi/gen1recomp#986`](https://github.com/bryanthaboi/gen1recomp/pull/986):
 
 - `mod.storage` owns physical persistence routing, game/playthrough/mod
   isolation, restricted serialization, staged writes, verification, and backup

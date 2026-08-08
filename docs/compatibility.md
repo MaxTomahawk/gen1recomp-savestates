@@ -2,12 +2,13 @@
 
 ## Required engine capability
 
-The development package currently targets the additive Level A APIs in upstream
-PR [`bryanthaboi/gen1recomp#952`](https://github.com/bryanthaboi/gen1recomp/pull/952)
-plus the stacked Level B review branch
-[`MaxTomahawk/gen1recomp#1`](https://github.com/MaxTomahawk/gen1recomp/pull/1).
-It is not a supported player release until those contracts are merged into a
-released engine and `manifest.json` can name that release as its minimum.
+The development package uses the additive Level A APIs merged by upstream PR
+[`bryanthaboi/gen1recomp#952`](https://github.com/bryanthaboi/gen1recomp/pull/952)
+plus the Level B battle/RNG extension in upstream PR
+[`bryanthaboi/gen1recomp#986`](https://github.com/bryanthaboi/gen1recomp/pull/986).
+It is not a supported player release until Level B is merged, the complete API
+ships in an official engine release, and `manifest.json` can name that release as
+its minimum.
 
 ## Supported now
 

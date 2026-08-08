@@ -5,8 +5,10 @@
 The distributable mod lives in this repository and may use only the public mod
 object. Generic engine work stays in separate Gen1Recomp worktrees:
 
-- `feat/mod-state-checkpoints` — scoped storage and settled-overworld checkpoints;
-- `feat/mod-battle-checkpoints` — stacked battle safe points and RNG restoration.
+- official `dev` — merged scoped storage, settled-overworld checkpoints, and
+  source-date reproducible modkit packaging;
+- `feat/mod-battle-checkpoints` — focused battle safe points and RNG restoration,
+  submitted as upstream PR #986.
 
 Never copy private engine modules into the mod. Never add a ROM, generated import,
 user save, extracted asset, credential, or ROM-derived screenshot.
@@ -23,11 +25,10 @@ make clean-install-check GEN1RECOMP=/path/to/gen1recomp
 make check GEN1RECOMP=/path/to/gen1recomp
 ```
 
-`MODKIT=/path/to/modkit.py` may point at a separate tooling checkout while the
-runtime API and source-date packaging changes are under independent review. The
-package gate sets `SOURCE_DATE_EPOCH` from the newest commit affecting shipped
-content, verifies `.modkit/pack.json`, and compares two complete archive builds.
-An official modkit that ignores that contract fails closed.
+The merged upstream modkit honors `SOURCE_DATE_EPOCH`. The package gate derives it
+from the newest commit affecting shipped content, verifies `.modkit/pack.json`,
+and compares two complete archive builds. An older or nonconforming modkit still
+fails closed.
 
 The ROM-free fixture proves loader/API behavior and packaging. In a private local
 checkout that already has legally imported `data/generated/`, additionally run
@@ -42,9 +43,10 @@ evidence.
 
 ## Release gate
 
-A public tag remains prohibited until both checkpoint branches and the
-source-date modkit fix (or an equivalent reproducible pack implementation) are
-merged and included in an official Gen1Recomp release. Then:
+A public tag remains prohibited until the Level B battle/RNG checkpoint extension
+is merged and the complete checkpoint API is included in an official Gen1Recomp
+release. Level A and the source-date modkit fix are already merged into `dev`.
+Then:
 
 1. Rebase/adapt against current official upstream and rerun its complete relevant
    test tiers.
