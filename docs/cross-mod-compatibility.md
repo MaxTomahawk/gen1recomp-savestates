@@ -27,7 +27,7 @@ tables.
 | Independent data in another mod's `mod.storage` | not captured or restored | does not rewind | expected for histories, indexes, caches, and tool-owned records | owning mod keeps its durable data and may reconcile references itself |
 | Global or per-mod options | not rewound; current options are preserved | does not rewind | the player's present configuration remains active | existing `mod.options_changed` behavior remains authoritative |
 | Runtime-only/in-memory mod state | not serialized | does not rewind directly | a progress-derived cache can temporarily describe condition B after progress returns to A | derive on demand or subscribe to `checkpoint.restored` and rebuild from public restored state |
-| Mod-added data-only Pokémon/gameplay metadata embedded in canonical progress | captured and restored with its containing record | rewinds | identity/progress metadata would detach from the Pokémon or object it describes | use data-only fields on canonical save records; validate/rederive redundant markers |
+| Mod-added data-only Pokémon/gameplay metadata embedded in canonical progress | captured and restored with its containing record | rewinds | identity/progress metadata would detach from the Pokémon or object it describes | use data-only fields on canonical save records and keep coupled fields consistent |
 | Derived/cached runtime state | not serialized | rebuilds | stale visuals, lookup results, or transient flags may persist until refresh | make the cache self-validating or clear/rebuild it on `checkpoint.restored` |
 
 `mod.storage` is intentionally not a second progress save. A mod that chooses to
@@ -37,10 +37,10 @@ it may also contain independent history or configuration.
 
 ## Shiny Pokémon roundtrip
 
-The shiny mod's authoritative identity is the Gen 2 DV predicate over
-`mon.dvs`. `applyShinyToMon` writes the selected DVs, recalculates the Pokémon's
-stats/HP, and also writes `mon.shiny` as a redundant convenience marker.
-`isShinyMon` accepts the marker or derives the result from `mon.dvs`.
+The shiny mod represents shiny identity with two fields on the same Pokémon
+record: `isShinyMon` accepts a true `mon.shiny` marker first, or derives shiny
+status from the Gen 2 predicate over `mon.dvs`. `applyShinyToMon` writes both the
+selected DVs and marker, then recalculates the Pokémon's stats/HP.
 
 Party, boxes, daycare records, battle parties, and battle enemy Pokémon are plain
 data-only Pokémon records inside the canonical checkpoint save/battle payload.

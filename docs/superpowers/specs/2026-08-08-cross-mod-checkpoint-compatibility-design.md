@@ -21,8 +21,9 @@ runtime state. It must never inspect or special-case another mod's private state
 
 Shiny Pokemon 1.0.8 does not use `mod.save` or `mod.storage` for shiny identity.
 It makes a captured or party Pokémon shiny by mutating the plain Pokémon record:
-the Gen 2-compatible `dvs` are authoritative and `mon.shiny` is a redundant fast
-marker. Those records live in canonical progress for party, boxes, and daycare.
+both the Gen 2-compatible `dvs` and the directly checked `mon.shiny` marker are
+identity inputs. Those records live in canonical progress for party, boxes, and
+daycare.
 Checkpoint capture copies the complete save except `options`; validation preserves
 unknown data-only Pokémon fields; battle capture also copies the enemy Pokémon and
 the canonical player party. Both overworld and supported battle restore therefore

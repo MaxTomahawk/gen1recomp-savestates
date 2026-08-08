@@ -157,10 +157,11 @@ owns both reconstruction and deterministic replay.
 
 The indexed `masterwebx@SHINY_POKEMON` implementation was inspected directly at
 `masterwebx/gen1recomp-shiny-pokemon` commit
-`2141b2ed35f4261d7306d8bb4d66a8c50e87125f`. Its authoritative shiny identity is
-the Gen 2 predicate over plain Pokémon `mon.dvs`; `mon.shiny` is a redundant
-data-only marker. `applyShinyToMon` updates DVs, recalculates stats/HP, and writes
-that marker. It stores no shiny identity in `mod.save` or `mod.storage`.
+`2141b2ed35f4261d7306d8bb4d66a8c50e87125f`. It represents shiny identity with
+two data-only fields on a plain Pokémon record: `isShinyMon` accepts a true
+`mon.shiny` marker first, or derives status from the Gen 2 predicate over
+`mon.dvs`. `applyShinyToMon` writes both fields and recalculates stats/HP. It
+stores no shiny identity in `mod.save` or `mod.storage`.
 
 Canonical party/box/daycare and battle Pokémon records are copied wholesale by
 the checkpoint formats, and `SaveData.validate` preserves extra data-only fields.

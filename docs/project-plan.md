@@ -78,11 +78,12 @@ history; current work is governed by this living plan and acceptance matrix.
 - Merged PR #959 makes current `modkit pack` honor `SOURCE_DATE_EPOCH`, including
   `.modkit/pack.json`, so repeat builds are byte-reproducible. This repository
   still rejects nonconforming metadata and compares two package builds.
-- The indexed shiny mod stores identity in canonical Pokémon `dvs` plus a
-  redundant data-only marker, not private durable storage. Those records already
-  roundtrip in overworld and supported battle checkpoints. The general rule and
-  fake-mod integration proof are documented in
-  `docs/cross-mod-compatibility.md`; Save States has no per-mod adapter layer.
+- The indexed shiny mod stores both its behaviorally meaningful `mon.shiny`
+  marker and Gen 2-compatible `mon.dvs` in canonical Pokémon records, not private
+  durable storage. Those records already roundtrip in overworld and supported
+  battle checkpoints. The general rule and fake-mod integration proof are
+  documented in `docs/cross-mod-compatibility.md`; Save States has no per-mod
+  adapter layer.
 
 ## Chosen architecture
 
