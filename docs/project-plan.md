@@ -209,6 +209,13 @@ Latest verification (2026-08-08):
   53/53 and meta coverage remains 178/178.
 - `./scripts/test.sh --quick` at upstream branch `aa3b2a1` — 139/139 engine and
   8/8 modkit suites; ROM-derived T3 correctly skipped without imported data.
+- Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-crossmod` at
+  cross-mod audit head `6b76cbd5127c28d2a987783b6c7544400de1602c` — 755/755
+  Lua checks, 7/7 Python checks, modkit validate/lint, two byte-identical package
+  builds, and clean extracted-install validation. The package has 29
+  distributable files plus `.modkit/pack.json` and SHA-256
+  `f4a02c1c59ec248fab5d28121510753c6f2c573f857dcb5b0a5ce76b11a15458`.
+  GitHub Actions run `31255626794` passes the same exact head.
 
 - `luajit tests/engine/playthrough_identity.lua` — 18/18.
 - identity test in 1,000 fresh LuaJIT processes — 1,000/1,000.
