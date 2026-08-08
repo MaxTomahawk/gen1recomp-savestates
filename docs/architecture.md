@@ -9,7 +9,7 @@ imports private `src.*` engine modules.
 
 The Level A engine dependency landed in upstream PR
 [`bryanthaboi/gen1recomp#952`](https://github.com/bryanthaboi/gen1recomp/pull/952),
-with Level B battle/RNG reconstruction proposed separately in upstream PR
+with Level B battle/RNG reconstruction merged separately in upstream PR
 [`bryanthaboi/gen1recomp#986`](https://github.com/bryanthaboi/gen1recomp/pull/986):
 
 - `mod.storage` owns physical persistence routing, game/playthrough/mod
@@ -22,6 +22,15 @@ with Level B battle/RNG reconstruction proposed separately in upstream PR
 The mod treats the returned checkpoint as opaque data. It adds product metadata
 and history semantics without copying engine controllers, registries, scripts,
 renderer state, or static ROM-derived content.
+
+Cross-mod ownership follows the same semantic boundary. Canonical `game.save`
+progress, every mod's `save.modData`, and data-only metadata on canonical records
+rewind. Independent `mod.storage`, current options, and arbitrary mod runtime
+state do not. Draft upstream PR #993 adds only a success-only
+`checkpoint.restored` invalidation boundary so cooperating mods can rebuild
+progress-derived caches after final verified reconstruction. Save States never
+enumerates another mod's private state or storage. See
+`docs/cross-mod-compatibility.md`.
 
 ## Composition
 
@@ -89,6 +98,12 @@ current capability, capture and durably verify `recovery`, then call
 `mod.checkpoints:restore`. Engine reconstruction performs its own complete
 validation, recapture comparison, and in-memory rollback. Undo loads the fixed
 recovery key without overwriting it.
+
+After that verified engine commit, `checkpoint.restored` is the generic
+cross-mod reconciliation point. It is not emitted for validation failure,
+reconstruction failure, or rollback. The event cannot participate in the
+transaction and carries no snapshot payload; subscribers observe the already
+restored canonical world and rebuild only their own derived runtime state.
 
 No UI callback throws for expected user-data or I/O failures. Structured error
 codes flow to logging and native notifications/screens. Capability refusals and

@@ -5,10 +5,10 @@
 The distributable mod lives in this repository and may use only the public mod
 object. Generic engine work stays in separate Gen1Recomp worktrees:
 
-- official `dev` — merged scoped storage, settled-overworld checkpoints, and
-  source-date reproducible modkit packaging;
-- `feat/mod-battle-checkpoints` — focused battle safe points and RNG restoration,
-  submitted as upstream PR #986.
+- official `dev` — merged scoped storage, settled-overworld checkpoints, battle
+  safe points/RNG restoration, and source-date reproducible modkit packaging;
+- `feat/checkpoint-restore-event` — success-only generic cross-mod restore
+  lifecycle, submitted as upstream draft PR #993.
 
 Never copy private engine modules into the mod. Never add a ROM, generated import,
 user save, extracted asset, credential, or ROM-derived screenshot.
@@ -43,9 +43,10 @@ evidence.
 
 ## Release gate
 
-A public tag remains prohibited until the Level B battle/RNG checkpoint extension
-is merged and the complete checkpoint API is included in an official Gen1Recomp
-release. Level A and the source-date modkit fix are already merged into `dev`.
+A public tag remains prohibited until the cross-mod restore lifecycle contract is
+merged and the complete checkpoint API is included in an official Gen1Recomp
+release. Level A, Level B, and the source-date modkit fix are already merged into
+`dev`.
 Then:
 
 1. Rebase/adapt against current official upstream and rerun its complete relevant

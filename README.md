@@ -82,7 +82,9 @@ until Gen1Recomp exposes public rebindable mod actions.
 ## Compatibility
 
 Snapshot format, engine compatibility, and exact supported runtime phases are
-tracked in `docs/compatibility.md` as implementation lands.
+tracked in `docs/compatibility.md`. What rewinds across other installed mods and
+how cooperating mods rebuild derived state is documented in
+`docs/cross-mod-compatibility.md`.
 
 ## Known Limitations
 
@@ -91,6 +93,9 @@ tracked in `docs/compatibility.md` as implementation lands.
 - Battle checkpoints support ordinary single-player wild/trainer player-decision
   menus. Link, Safari, ghost, demo, fishing/static-origin, scripted, forced-action,
   message, queue, and animation phases are rejected.
+- Other mods' canonical `mod.save` progress rewinds, while independent
+  `mod.storage`, options, and arbitrary runtime state do not. Progress-derived
+  runtime caches require the generic post-restore cooperation contract.
 - Arbitrary-frame emulator-style snapshots are not promised.
 
 ## State Safety

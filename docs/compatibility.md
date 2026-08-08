@@ -4,11 +4,14 @@
 
 The development package uses the additive Level A APIs merged by upstream PR
 [`bryanthaboi/gen1recomp#952`](https://github.com/bryanthaboi/gen1recomp/pull/952)
-plus the Level B battle/RNG extension in upstream PR
+plus the merged Level B battle/RNG extension in upstream PR
 [`bryanthaboi/gen1recomp#986`](https://github.com/bryanthaboi/gen1recomp/pull/986).
-It is not a supported player release until Level B is merged, the complete API
-ships in an official engine release, and `manifest.json` can name that release as
-its minimum.
+The focused cross-mod audit proved one remaining generic lifecycle need, proposed
+as success-only `checkpoint.restored` in upstream draft PR
+[`bryanthaboi/gen1recomp#993`](https://github.com/bryanthaboi/gen1recomp/pull/993).
+It is not a supported player release until that complete public contract ships in
+an official engine release and `manifest.json` can name that release as its
+minimum.
 
 ## Supported now
 
@@ -69,3 +72,14 @@ exact source-map boundary.
 | Unsupported runtime kind | rejected: `unsupported_runtime_kind` |
 
 Suspended script and arbitrary-frame support require separate future contracts.
+
+## Other installed mods
+
+Checkpoint restore rewinds `game.save`, including all loaded mods' `mod.save` /
+`save.modData` and data-only mod metadata embedded in canonical Pokémon or game
+records. It does not rewind another mod's independent `mod.storage`, global or
+per-mod options, or arbitrary Lua runtime state. Cooperating mods may rebuild
+progress-derived caches after the success-only restore lifecycle event.
+
+The full ownership matrix, shiny-mod case study, and tested cooperation examples
+are in [Cross-Mod Checkpoint Compatibility](cross-mod-compatibility.md).

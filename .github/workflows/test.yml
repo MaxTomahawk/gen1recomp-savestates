@@ -14,11 +14,11 @@ jobs:
       - name: Checkout Save States
         uses: actions/checkout@v6
 
-      - name: Checkout Gen1Recomp with proposed battle API
+      - name: Checkout Gen1Recomp with proposed checkpoint lifecycle
         uses: actions/checkout@v6
         with:
           repository: MaxTomahawk/gen1recomp
-          ref: 12b6ef6350984436f214d76e5407f1baba904ba1
+          ref: aa3b2a18ec06d844f42be873278c5232628376fa
           path: .upstream
 
       - name: Install ROM-free toolchain

@@ -1,6 +1,7 @@
 # Save States Living Project Plan
 
-Status: active execution; Level A merged upstream, supported Level B submitted
+Status: active execution; Level A and Level B merged upstream; cross-mod restore
+lifecycle submitted
 
 Updated: 2026-08-08
 
@@ -29,14 +30,19 @@ commits named there. Key conclusions:
   independent playthrough-scoped public store selected for the product.
 - Merged `mod.checkpoints` supplies exact settled-overworld capture and restore.
 - Scripts are coroutine-driven; suspended scripts are unsafe.
-- Battle state and gameplay RNG have no public serializable contract.
+- Merged Level B checkpoints supply supported battle reconstruction and exact
+  gameplay RNG replay.
+- Cross-mod progress ownership is now explicit: `game.save`/`mod.save` rewinds;
+  independent `mod.storage`, options, and arbitrary runtime state do not.
 - Rebindable custom mod actions do not exist; START-menu operation remains the
   complete baseline until that optional seam lands.
 
-The battle/RNG statement above describes official upstream `dev`. Upstream PR
-#986 implements the generic contract selected by the Gate D audit:
-persistent ordinary wild/trainer decision-menu reconstruction plus exact LÖVE RNG,
-while preserving explicit refusal for scripts and unsupported variants.
+Upstream PR #986 is merged and implements the generic contract selected by the
+Gate D audit: persistent ordinary wild/trainer decision-menu reconstruction plus
+exact LÖVE RNG, while preserving explicit refusal for scripts and unsupported
+variants. The focused cross-mod audit found one remaining public lifecycle gap;
+draft PR #993 adds only a success-only post-restore invalidation event for
+cooperating mods with progress-derived runtime caches.
 
 The approved design is recorded in
 `docs/superpowers/specs/2026-08-07-native-savestates-design.md`. Completed focused
@@ -72,6 +78,11 @@ history; current work is governed by this living plan and acceptance matrix.
 - Merged PR #959 makes current `modkit pack` honor `SOURCE_DATE_EPOCH`, including
   `.modkit/pack.json`, so repeat builds are byte-reproducible. This repository
   still rejects nonconforming metadata and compares two package builds.
+- The indexed shiny mod stores identity in canonical Pokémon `dvs` plus a
+  redundant data-only marker, not private durable storage. Those records already
+  roundtrip in overworld and supported battle checkpoints. The general rule and
+  fake-mod integration proof are documented in
+  `docs/cross-mod-compatibility.md`; Save States has no per-mod adapter layer.
 
 ## Chosen architecture
 
@@ -110,8 +121,8 @@ recovery semantics on top of that primitive.
 
 - Level A: stable overworld only, reconstructed through a public semantic
   checkpoint API. This is the first functional gate.
-- Level B: battle player-decision safe points after a complete battle field
-  inventory and serializable RNG seam.
+- Level B: ordinary wild/trainer player-decision safe points through the merged
+  semantic battle/RNG checkpoint contract.
 - Level C: suspended scripts remain rejected unless upstream later introduces
   explicit data checkpoints.
 - Arbitrary-frame state is not on the v1 critical path.
@@ -134,8 +145,9 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | M4 — Quicksaves and recovery | Rolling quick history, newest quickload, transactional recovery, undo | VERIFIED in injected public-API service tests: A -> load B -> undo -> A; corruption and persistence failure paths covered |
 | M5 — Native UX and slots | START rows, manager screens, ten permanent slots, rename/delete, HUD notifications, options | VERIFIED headlessly: second decorator coexistence, empty/unavailable states, generation-safe slot overwrite, disabled notifications, public widget close chain |
 | M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | IMPLEMENTED: location, ordinary trainer/wild start, optional after-battle deferral, synchronous capability-gated before-warp, stale-event expiry, dedup/retention, corrupt visibility, and opt-in phase timings; broader clean-runtime matrix remains |
-| M7 — Battle beta | SUBMITTED: field/RNG/continuation map plus persistent safe-point capture/restore | PR #986; 137/137 engine suites; wild/trainer differential reconstruction; damage/crit/accuracy/AI/escape/encounter RNG replay; rollback and unsupported-phase tests green |
-| M8 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | byte-identical source-date ZIP builds, clean install, validate/lint/tests, no private requires/ROM content, release asset resolves |
+| M7 — Battle beta | MERGED: field/RNG/continuation map plus persistent safe-point capture/restore | PR #986; wild/trainer differential reconstruction; damage/crit/accuracy/AI/escape/encounter RNG replay; rollback and unsupported-phase tests green |
+| M8 — Cross-mod compatibility | Generic rewind ownership, real shiny case, cooperating/passive fake mods, lifecycle proof | PR #993 draft; 46/46 public cross-mod checks; `mod.save` rewinds, storage/options do not, shiny-style metadata roundtrips in overworld/battle |
+| M9 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | byte-identical source-date ZIP builds, clean install, validate/lint/tests, no private requires/ROM content, release asset resolves |
 
 Milestones are sequencing boundaries, not permission to claim incomplete features.
 If an upstream dependency blocks one lane, continue every independent pure-mod,
@@ -162,31 +174,40 @@ test, documentation, or packaging task that remains valid.
 | `SAVESTATES-SP-02` Level A checkpoint | MERGED | upstream PR #952; 34/34 public API checks and differential rollback/content-rejection proof green; checkpoint identity exposes engine version for warning-grade compatibility |
 | `SAVESTATES-SP-03` playthrough identity | MERGED | upstream PR #952; 18/18 focused checks and 1,000 clean-process stress runs green |
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
-| `SAVESTATES-SP-05` battle/RNG | VERIFIED and submitted | `docs/battle-state-map.md`; official upstream PR #986 through `12b6ef6`; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, Level A compatibility; all PR checks green |
+| `SAVESTATES-SP-05` battle/RNG | MERGED | `docs/battle-state-map.md`; upstream PR #986 at `983bea6`; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, Level A compatibility |
 | `SAVESTATES-SP-06` reproducible modkit package | MERGED | upstream PR #959 at `5b6dfed`; `SOURCE_DATE_EPOCH`, invalid-input refusal, and byte-identity tests |
+| `SAVESTATES-SP-07` cross-mod restore lifecycle | VERIFIED and submitted | draft PR #993 at `aa3b2a1`; success-only `checkpoint.restored`, 46/46 public fake-mod/shiny-style checks, no storage/options rewind, no event on failure/rollback |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
 
 ## Current execution boundary
 
 The active product goal authorizes autonomous implementation. Official upstream
-`dev` is pinned at `cab62ff7b340ba29ee212487fd9944fa636974a8`; index `main` is
-pinned at `682272bb5b2c48b6552be4aa692681f38a825edf`. Level A storage,
-identity, and settled-overworld checkpoints are merged through PR #952, and
-reproducible modkit packages are merged through PR #959. The distributable mod
+`dev` is pinned at `943ba5dcbfa62cf831e881684857ffd4867fe774`; index `main` is
+pinned at `6f7eb4ad249bb6ca3080ce485be6a8053861a624`. Level A
+storage/overworld checkpoints, Level B battle/RNG checkpoints, and reproducible
+modkit packages are merged through PRs #952, #986, and #959. The distributable mod
 composes its Level A services entirely through `mod:read`, `mod.storage`,
 `mod.checkpoints`, registered screens, hooks, events, options, and HUD drawing.
 
-Gate D and its Level B implementation are complete in
-`docs/battle-state-map.md`. Branch `feat/mod-battle-checkpoints` was rebased
-without semantic patch changes onto current official `dev`, published through
-`12b6ef6`, and submitted directly as official upstream PR #986. The mod test
-workflow pins that one proposed runtime branch and uses the merged official
-modkit from the same checkout. The remaining external product gate is review,
-merge, and release of Level B in an official engine version; the release workflow
-stays fail-closed against that exact future tag.
+Gate D and its merged Level B implementation are recorded in
+`docs/battle-state-map.md`. The focused cross-mod audit is complete in
+`docs/cross-mod-compatibility.md`; its minimal lifecycle seam is branch
+`feat/checkpoint-restore-event` at `aa3b2a1`, submitted as draft upstream PR #993.
+The mod test workflow pins that exact public-contract branch. The remaining
+external product gate is review, merge, and official release of the complete
+checkpoint contract; the release workflow stays fail-closed against that exact
+future tag.
 
 Latest verification (2026-08-08):
+
+- Official `dev` baseline `./scripts/test.sh --quick` — 139/139 engine and 7/7
+  modkit suites before the cross-mod patch.
+- Cross-mod public SDK suite — expected red 33/42 before the lifecycle event,
+  then 46/46 after the minimal change. Existing public checkpoint suite remains
+  53/53 and meta coverage remains 178/178.
+- `./scripts/test.sh --quick` at upstream branch `aa3b2a1` — 139/139 engine and
+  8/8 modkit suites; ROM-derived T3 correctly skipped without imported data.
 
 - `luajit tests/engine/playthrough_identity.lua` — 18/18.
 - identity test in 1,000 fresh LuaJIT processes — 1,000/1,000.
@@ -194,7 +215,8 @@ Latest verification (2026-08-08):
 - `luajit tests/modkit/cases/checkpoints.lua` — 34/34, including invalid-content rejection before mutation.
 - `luajit tests/engine/save_slots.lua` — 78/78.
 - `luajit tests/mod_save_tests.lua` — 132/132.
-- `./scripts/test.sh --quick` on rebased Level B — 137/137 engine suites and 7/7 modkit suites;
+- Historical pre-merge Level B `./scripts/test.sh --quick` — 137/137 engine suites
+  and 7/7 modkit suites;
   ROM-derived T3 correctly skipped because no imported data is present.
 - Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-engine` —
   616/616 Lua behavior checks across composition, modules, snapshots, migrations,
@@ -234,7 +256,7 @@ Latest verification (2026-08-08):
   public `mod:read` facade and were exercised by the real modkit loader.
 - Mod-index metadata is staged but intentionally unpushed on
   `prep/savestates-index` at `37321c5`; targeted validation passes with zero
-  warnings. Current index `main` is `682272b`; the staging branch must be rebased
+  warnings. Current index `main` is `6f7eb4a`; the staging branch must be rebased
   and refreshed from the final release manifest, then submitted only after an
   installable release exists.
 - The newest official engine tag remains `v0.1.75`, which predates the merged

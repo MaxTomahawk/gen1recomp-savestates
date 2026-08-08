@@ -1,14 +1,16 @@
 # Upstream Audit
 
-Status: refreshed after merged Level A and packaging contributions
+Status: refreshed after merged Level A, Level B, and packaging contributions;
+cross-mod lifecycle audited
 
 Audited: 2026-08-08
 
-Engine: `bryanthaboi/gen1recomp` `dev` at `cab62ff7b340ba29ee212487fd9944fa636974a8`
+Engine: `bryanthaboi/gen1recomp` `dev` at `943ba5dcbfa62cf831e881684857ffd4867fe774`
 
 Wiki: `bryanthaboi/gen1recomp.wiki` at `635e1e87d2e3b2e71c2276a60327aee7a24e57c9`
 
-Index: `bryanthaboi/gen1recomp-mod-index` `main` at `682272bb5b2c48b6552be4aa692681f38a825edf`
+Index: `bryanthaboi/gen1recomp-mod-index` `main` at
+`6f7eb4ad249bb6ca3080ce485be6a8053861a624`
 
 This document distinguishes documented public API from private engine capability.
 Absence statements apply to the pinned commits and must be rechecked after an
@@ -49,9 +51,9 @@ requires is unsupported.
 | Options | `mod.options:define/get`; toggle, choice, number, and text rows persist in `options.lua` | `src/mods/Loader.lua:Loader:_api`; wiki `Concepts-Save-Model.md` |
 | Per-save mod data | `mod.save:get/set` maps to `save.modData[modId]` and persists only with the vanilla progress save | same sources |
 | Independent tool storage | `mod.storage:context/write/read/list/delete` is data-only, verified, portable-aware, and scoped by game/playthrough/mod | `src/mods/Storage.lua`; `docs/modding.md`; RFC 0003 |
-| Runtime checkpoints | `mod.checkpoints:inspect/capture/restore` supports strict settled-overworld semantic reconstruction | `src/core/Checkpoint.lua`; `docs/modding.md`; RFC 0004 |
+| Runtime checkpoints | `mod.checkpoints:inspect/capture/restore` supports strict settled-overworld and ordinary wild/trainer player-decision reconstruction | `src/core/Checkpoint.lua`; `docs/modding.md`; RFC 0004 and RFC 0005 |
 | Migrations | `mod.migrations:add(since, fn)` upgrades a mod's per-save shape | `src/core/SaveData.lua:SaveData.runMigrations` |
-| Events | `map.entered/exited`, `player.warped`, `world.trainer_engaged`, `battle.started/turn_started/turn_ended/ended`, `script.started/ended`, save and screen events | wiki `Reference-Events.md`; emit sites in `src/` |
+| Events | `map.entered/exited`, `player.warped`, `world.trainer_engaged`, `battle.started/turn_started/turn_ended/ended`, `script.started/ended`, save and screen events; draft PR #993 adds success-only `checkpoint.restored` | wiki `Reference-Events.md`; emit sites in `src/`; PR #993 |
 | Input | `input.step` hook and `mod.input` can inject the eight Game Boy buttons safely | `src/core/Game.lua:Game:step`; `src/mods/Loader.lua:Loader:_api` |
 | World | `mod.world:current`, `warpTo`, flags, object toggles, scripts, and NPC helpers | `src/world/WorldAPI.lua`; wiki `Reference-Mod-Object.md` |
 | Files | `mod:read` reads packaged files. Direct filesystem writes are permission-disclosed with `filesystem`; permissions are disclosure, not a sandbox | `src/mods/Manifest.lua`; wiki `Reference-Manifest.md` |
@@ -139,26 +141,53 @@ capture must be deferred until the new public capability reports a safe boundary
 
 ## Battle and RNG
 
-`BattleState` is a large mutable state machine. Its stable player decision phase is
-`phase == "menu"` with an empty action/message pipeline, but that phase and its
-many fields are private implementation, not a public import/export contract.
-Battle events expose observations and modification hooks; none exports or restores
-a battle snapshot.
+Merged PR #986 extends the opaque public checkpoint facade to settled ordinary
+wild/trainer player-decision menus. The engine captures only data-only semantic
+battle progress, reconstructs a fresh controller and continuation, restores the
+LÖVE gameplay RNG stream, validates supported content/origin/phase, verifies by
+differential recapture, and rolls back failures. Scripts, active queues,
+animations, forced choices, link/Safari/ghost/demo battles, and unsupported
+origins remain rejected. The complete field classification remains in
+`docs/battle-state-map.md`.
 
-Battle logic injects `self.rng`, but it currently wraps global
-`love.math.random`. Encounters and multiple overworld systems also call
-`love.math.random` directly; trainer ID creation and OT stamping also use
-`math.random`/global random sources. Link battles have a separate deterministic
-Park-Miller stream. No public serializable gameplay RNG state exists.
+The public mod never imports `BattleState` or the RNG implementation. The engine
+owns both reconstruction and deterministic replay.
 
-Battle restoration still depends on two proven upstream needs not present in
-official `dev`:
+## Cross-mod checkpoint ownership
 
-1. a generic battle safe-point export/import contract;
-2. one engine-owned serializable gameplay RNG stream, with no-mod parity tests.
+The indexed `masterwebx@SHINY_POKEMON` implementation was inspected directly at
+`masterwebx/gen1recomp-shiny-pokemon` commit
+`2141b2ed35f4261d7306d8bb4d66a8c50e87125f`. Its authoritative shiny identity is
+the Gen 2 predicate over plain Pokémon `mon.dvs`; `mon.shiny` is a redundant
+data-only marker. `applyShinyToMon` updates DVs, recalculates stats/HP, and writes
+that marker. It stores no shiny identity in `mod.save` or `mod.storage`.
 
-The completed battle-state inventory and implementation are submitted as focused
-upstream PR #986.
+Canonical party/box/daycare and battle Pokémon records are copied wholesale by
+the checkpoint formats, and `SaveData.validate` preserves extra data-only fields.
+Shiny-style DVs/metadata therefore roundtrip generically with their Pokémon and
+game progress in overworld and supported battles. No mod-id special case is
+needed. The optional Wilds of Kanto integration was also inspected at
+`masterwebx/overworld-spawn-mod` commit
+`866bbdf5afa771bfeacbb3bb639cddd9b5c171cd`; its overworld encounter entities are
+runtime-only and should rebuild, not become canonical save payloads.
+
+The resulting ownership contract is:
+
+- `game.save`, including every loaded mod's `save.modData`, rewinds;
+- `mod.storage` and current global/per-mod options do not rewind;
+- mod-added data-only fields on canonical progress records rewind with them;
+- arbitrary mod runtime state is never serialized;
+- derived runtime/cache state rebuilds from restored public canonical state.
+
+Existing restore code rebinds loaded mods' `mod.save` tables but suppresses normal
+save/map/battle lifecycle side effects. A progress-derived in-memory cache can
+therefore remain at B after its authoritative `mod.save` returns to A, and no
+current public event can observe that successful restore. The public-API-only
+`checkpoint_cross_mod` suite proves this gap and the minimal correction: draft PR
+#993 emits `checkpoint.restored` only after final differential verification, with
+`{ game, kind }`, and never on validation/reconstruction failure or rollback.
+Independent storage/options remain unchanged. Full user/mod-author rules are in
+`docs/cross-mod-compatibility.md`.
 
 ## Input, UI, and notifications
 
@@ -194,11 +223,12 @@ upstream PR #986.
 | `SAVESTATES-SP-02` | Safe Level A capture/restore | **Merged:** overworld `mod.checkpoints` | `OverworldState:captureSave`, checkpoint reconstruction, `SaveData.validate` | Implemented as semantic capability/capture/restore facade | 34/34 public checks, differential equivalence, rollback/content rejection |
 | `SAVESTATES-SP-03` | Stable profile identity | **Merged:** opaque `playthroughId` in storage/checkpoint context | private slot registry remains hidden | Implemented lazy opaque identity | new/load/switch/delete isolation and 1,000-process regression |
 | `SAVESTATES-SP-04` | Rebindable quick actions | GB-button injection only | core `Input`/`BindingsMenu` fixed action list | Additive mod action registry integrated with bindings UI | keyboard/pad/rebind/conflict/no-mod tests |
-| `SAVESTATES-SP-05` | Deterministic battle restore | overworld-only checkpoint API in official `dev` | `BattleState` mutable fields; global random use | Implemented battle safe-point/RNG extension in PR #986 | 137/137 engine, 7/7 modkit, differential/RNG/rollback suites |
+| `SAVESTATES-SP-05` | Deterministic battle restore | **Merged:** ordinary wild/trainer decision-menu `mod.checkpoints` with engine-owned RNG | `BattleState` mutable fields; global random use | Implemented as opaque battle safe-point/RNG extension in PR #986 | differential/RNG/rollback suites plus current 139/139 engine and 7/7 modkit baseline |
+| `SAVESTATES-SP-07` | Let another mod reconcile progress-derived runtime state after restore | no checkpoint lifecycle event in official `dev`; restore already rebinds `mod.save` | `Checkpoint.restore` suppresses ordinary load/map/battle events; runtime caches remain private | Success-only `checkpoint.restored { game, kind }` after differential verification; no storage rewind or checkpoint payload | 46/46 public cross-mod checks, existing checkpoint 53/53, 139/139 engine and 8/8 modkit suites |
 
-The table records both landed and remaining seams. Only custom actions and the
-battle/RNG extension remain candidates for further upstream action; Level A and
-packaging are merged public behavior.
+The table records both landed and remaining seams. Only optional custom actions
+and the proven cross-mod restore lifecycle remain candidates for further upstream
+action; Level A, Level B, and packaging are merged public behavior.
 
 ## Merged and proposed public extensions
 
@@ -206,12 +236,13 @@ packaging are merged public behavior.
   settled-overworld `mod.checkpoints` are now official `dev` APIs. Storage context
   is `{ engineVersion, gameVersion, playthroughId }`; engine version is advisory,
   while game/playthrough remain hard isolation boundaries.
-- `feat/mod-battle-checkpoints` through `12b6ef6` extends that opaque checkpoint
-  facade at settled ordinary wild/trainer decision menus, including semantic
-  continuation reconstruction and exact LÖVE RNG restoration. It is submitted as
-  official upstream PR #986. The rebased quick suite passes 137/137 engine and
-  7/7 modkit suites; battle restore passes 43/43 and the public checkpoint facade
-  passes 53/53. All upstream CI checks currently pass.
+- PR #986 is merged at `983bea6`: the opaque checkpoint facade supports settled
+  ordinary wild/trainer decision menus, semantic continuation reconstruction,
+  and exact LÖVE RNG restoration.
+- `feat/checkpoint-restore-event` at `aa3b2a1` is draft upstream PR #993. It adds
+  only the success-only generic lifecycle described above. Its public cross-mod
+  suite passes 46/46; the existing checkpoint suite passes 53/53; the complete
+  quick gate passes 139/139 engine and 8/8 modkit suites.
 - `SAVESTATES-SP-04` custom actions remains unimplemented and non-blocking. The
   complete product remains operable through native START-menu rows; no global key
   is intercepted.
@@ -220,5 +251,6 @@ packaging are merged public behavior.
   byte-identical archives.
 
 Merged `dev` is still not a released compatibility target. The manifest remains
-experimental until PR #986 lands, the complete public APIs ship in an upstream
-release, and the final range can name that version honestly.
+experimental until the cross-mod lifecycle contract lands, the complete public
+APIs ship in an upstream release, and the final range can name that version
+honestly.

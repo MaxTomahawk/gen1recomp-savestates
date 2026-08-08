@@ -39,6 +39,9 @@ Version headings match `manifest.json`.
   tag declared by the manifest rather than a moving development branch.
 - Source-date package verification that rejects wall-clock metadata and proves
   byte-identical ZIP output across repeated builds.
+- A documented generic cross-mod ownership contract, real shiny-Pokémon
+  roundtrip audit, and public-API integration tests proving canonical mod progress
+  rewinds while independent storage, options, and arbitrary runtime state do not.
 
 ### Changed
 

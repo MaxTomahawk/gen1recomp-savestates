@@ -8,7 +8,7 @@ VERSION := $(shell $(PYTHON) -c 'import json; print(json.load(open("manifest.jso
 PACKAGE := .artifacts/savestates-$(VERSION).zip
 PACKAGE_SOURCES := manifest.json mod.card main.lua README.md CHANGELOG.md LICENSE \
 	src .modkitignore docs/architecture.md docs/battle-state-map.md \
-	docs/compatibility.md docs/state-format.md
+	docs/compatibility.md docs/cross-mod-compatibility.md docs/state-format.md
 PACK_EPOCH ?= $(shell git -c safe.directory="$(CURDIR)" log -1 --format=%ct \
 	-- $(PACKAGE_SOURCES) 2>/dev/null || printf '0')
 TEST_FILES := $(sort $(wildcard tests/*_test.lua))
@@ -46,6 +46,7 @@ package-check: pack
 	@test "$$(unzip -Z1 $(PACKAGE) | grep -c '^manifest.json$$')" -eq 1
 	@test "$$(unzip -Z1 $(PACKAGE) | grep -c '/manifest.json$$')" -eq 0
 	@test "$$(unzip -Z1 $(PACKAGE) | grep -c '^tests/')" -eq 0
+	@test "$$(unzip -Z1 $(PACKAGE) | grep -c '^docs/cross-mod-compatibility.md$$')" -eq 1
 	@test "$$(unzip -Z1 $(PACKAGE) | grep -Ec '^(AGENTS.md|Makefile|docs/project-plan.md)$$')" -eq 0
 	@echo "Verified installable archive root: $(PACKAGE)"
 

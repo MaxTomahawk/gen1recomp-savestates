@@ -26,7 +26,8 @@ Status vocabulary:
 | Game/playthrough isolation | Verified | Hard wrapper/checkpoint validation plus upstream active-slot/new-game/playthrough storage tests. |
 | Corrupt and incompatible records never mutate runtime | Verified | Data-only/schema/migration/store tests; unavailable-row cleanup; upstream content/map/position validation and rollback tests. |
 | Settled overworld restoration | Verified and merged upstream | Public facade differential recapture includes coordinates/facing, party, inventory/PC items/boxes, money, Pokédex, flags, trainers, and object toggles; upstream PR #952 is merged. |
-| Deterministic supported battle restoration | Verified on upstream branch | Ordinary wild/trainer player-decision reconstruction, switched/fainted party fidelity, rollback, and exact damage/crit/accuracy/AI/escape/encounter RNG replay. |
+| Deterministic supported battle restoration | Verified and merged upstream | Ordinary wild/trainer player-decision reconstruction, switched/fainted party fidelity, rollback, and exact damage/crit/accuracy/AI/escape/encounter RNG replay; PR #986 is merged. |
+| Cross-mod canonical progress remains consistent | Verified on upstream branch | Real shiny implementation audit plus public fake/cooperating mods: core progress, `mod.save`, and shiny-style Pokémon metadata rewind in overworld/battle; independent storage/options do not; subscriber cache rebuilds after verified restore. |
 | Unsafe scripts/transitions/menus/animations/battle phases rejected | Verified | Public checkpoint capability and exclusion tests; compatibility docs name every supported boundary. |
 | Manual battle quicksave UX | Accurately limited | No public custom action or battle-menu decorator exists. Default battle-start autosaves are user-accessible; cooperating mods may call the public export at later safe decisions. |
 | No private engine dependency in distributed mod | Verified | Source boundary inspection found no private `src.*` require, raw filesystem, state-stack, process, package, or debug access; sibling source loads use public `mod:read`, and real modkit load/lint passes. |
@@ -38,9 +39,9 @@ Status vocabulary:
 
 ## External release gates
 
-1. Official acceptance of Level B battle/RNG PR #986 and an engine release that
-   contains it. Level A storage/overworld checkpoints and the source-date modkit
-   fix are already merged into `dev`.
+1. Official acceptance of cross-mod lifecycle PR #993 and an engine release that
+   contains the complete checkpoint contract. Level A, Level B, and the
+   source-date modkit fix are already merged into `dev`.
 2. Private clean-runtime acceptance using legally imported game data.
 3. Final non-experimental manifest/version range, reviewed merge, tag, release
    asset verification, then index PR.
