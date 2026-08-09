@@ -10,5 +10,8 @@ T:eq(Time.relative(0, 3600), "1h", "one hour is compact")
 T:eq(Time.relative(0, 86400), "1d", "one day is compact")
 T:eq(Time.relative(200, 100), "NOW", "future clock skew is clamped")
 T:eq(Time.relative(nil, 100), "----", "missing timestamp is unavailable")
+T:eq(Time.playTime(16620), "04:37", "captured play time displays hours and minutes")
+T:eq(Time.playTime(59), "00:00", "play time intentionally omits incomplete minutes")
+T:eq(Time.playTime(nil), "----", "missing play time is unavailable")
 
 T:finish()

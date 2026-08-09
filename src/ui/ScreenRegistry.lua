@@ -41,8 +41,37 @@ return function(deps)
     return truncate(tostring(value or "----"):upper(), maximum or 12)
   end
 
+  local function appendPreview(items, preview)
+    if type(preview) ~= "table" then return end
+    items[#items + 1] = { label = "PLAY TIME", right = Time.playTime(preview.playTime) }
+    items[#items + 1] = { label = "BADGES", right = ("%d/%d"):format(
+      tonumber(preview.badgeCount) or 0, tonumber(preview.badgeTotal) or 0) }
+    for _, mon in ipairs(preview.party or {}) do
+      items[#items + 1] = {
+        label = truncate(mon.name, 12),
+        right = ("L%-2d %d/%d"):format(mon.level, mon.hp, mon.maxHp),
+      }
+    end
+  end
+
   function Registry.install(mod, service, clock)
     clock = clock or os.time
+
+    local function inspect(row, game)
+      local metadata = type(row) == "table" and row.metadata or nil
+      if type(metadata) ~= "table" or type(service.inspectState) ~= "function" then
+        return row or { metadata = {} }
+      end
+      local resolved, code, message = service:inspectState(game, metadata.id)
+      if resolved then return resolved end
+      return {
+        metadata = metadata,
+        available = false,
+        status = code,
+        message = message,
+        preview = metadata.preview,
+      }
+    end
 
     local function refreshRoot(game, root)
       if type(root) ~= "table" or type(root.items) ~= "table" then return false end
@@ -118,7 +147,7 @@ return function(deps)
           for _, row in ipairs(rows) do
             items[#items + 1] = {
               label = stateLabel(row.metadata),
-              right = row.available and Time.relative(row.metadata.createdAt, clock()) or "BAD",
+              right = row.available == false and "BAD" or Time.relative(row.metadata.createdAt, clock()),
               value = row,
               onSelect = function(item)
                 mod.ui.push(game, IDS.actions, {
@@ -141,7 +170,7 @@ return function(deps)
     mod.content.screens:register(IDS.actions, {
       new = function(game, opts)
         opts = opts or {}
-        local row = opts.row or { metadata = {} }
+        local row = inspect(opts.row, game)
         local metadata = row.metadata or {}
         local menu
         local status = row.available and
@@ -156,6 +185,7 @@ return function(deps)
           { label = "KIND", right = upperValue(metadata.stateKind, 12) },
           { label = "STATUS", right = status },
         }
+        appendPreview(items, row.preview or metadata.preview)
         local firstAction = #items + 1
         if row.available then
           items[#items + 1] = { label = "LOAD", onSelect = function()
@@ -268,6 +298,7 @@ return function(deps)
       new = function(game, opts)
         opts = opts or {}
         local row = opts.row or { slot = 1, occupied = false }
+        if row.occupied then row = inspect(row, game) end
         local slot = row.slot
         local menu
         local items = {}
@@ -278,6 +309,7 @@ return function(deps)
         if not row.occupied then
           items[#items + 1] = { label = "SAVE HERE", onSelect = saveHere }
         else
+          appendPreview(items, row.preview or row.metadata.preview)
           if row.available then
             items[#items + 1] = { label = "LOAD", onSelect = function()
               closeMenus(menu, opts.parents)

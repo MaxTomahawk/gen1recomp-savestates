@@ -85,6 +85,13 @@ validated.metadata.preview.party[1].hp = 1
 T:eq(state.metadata.preview.party[1].hp, 45,
   "validation detaches preview metadata from stored input")
 
+local oldState = newSnapshot()
+oldState.metadata.preview = nil
+local validatedOld, oldCode, oldMessage = Validator.validate(oldState, context)
+T:check(validatedOld ~= nil,
+  "format-1 state without later optional preview metadata remains loadable: "
+    .. tostring(oldCode or oldMessage))
+
 local battleCheckpoint = checkpoint()
 battleCheckpoint.kind = "battle"
 battleCheckpoint.runtime.battle = {

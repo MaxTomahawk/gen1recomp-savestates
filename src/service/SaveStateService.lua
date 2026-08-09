@@ -581,12 +581,7 @@ return function(deps)
       local metadata = index:slot(slot)
       local row = { slot = slot, occupied = metadata ~= nil, metadata = metadata }
       if metadata then
-        local snapshot, code, message, warnings = invoke(
-          store, "readSnapshot", metadata.id)
-        row.available = snapshot ~= nil
-        row.status = snapshot and "compatible" or code
-        row.message = message
-        row.warnings = warnings
+        row.status = "unverified"
       end
       rows[slot] = row
     end
@@ -669,17 +664,32 @@ return function(deps)
     if not index then return nil, indexCode, indexMessage end
     local rows = {}
     for _, metadata in ipairs(index:list(class)) do
-      local snapshot, code, message, warnings = invoke(
-        store, "readSnapshot", metadata.id)
       rows[#rows + 1] = {
         metadata = metadata,
-        available = snapshot ~= nil,
-        status = snapshot and "compatible" or code,
-        message = message,
-        warnings = warnings,
+        status = "unverified",
       }
     end
     return rows
+  end
+
+  function Service:inspectState(game, id)
+    local store, storeCode, storeMessage = self:_store(game)
+    if not store then return nil, storeCode, storeMessage end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return nil, indexCode, indexMessage end
+    local metadata = index:get(id)
+    if not metadata then
+      return nil, "not_found", "Savestate is not indexed."
+    end
+    local snapshot, code, message, warnings = invoke(store, "readSnapshot", id)
+    return {
+      metadata = metadata,
+      available = snapshot ~= nil,
+      status = snapshot and "compatible" or code,
+      message = message,
+      warnings = warnings,
+      preview = snapshot and snapshot.metadata.preview or metadata.preview,
+    }
   end
 
   function Service:_captureRecovery(game, store)

@@ -242,11 +242,25 @@ T:eq(#happy.debugMetrics, 0, "performance logging is silent by default")
 
 happy.storage.values["states/q00000001"].identity.engineVersion = "0.8.0"
 happy.storage.values["states/q00000001"].checkpoint.identity.engineVersion = "0.8.0"
+for index = #happy.events, 1, -1 do happy.events[index] = nil end
 local versionRows = happy.service:listStates(happy.game, "quick")
-T:eq(versionRows[1].available, true,
-  "engine-version mismatch remains available as a soft compatibility warning")
-T:eq(versionRows[1].warnings[1], "engine_version_mismatch",
-  "history exposes engine-version mismatch before a load")
+T:eq(versionRows[1].metadata.preview.party[1].name, "SPARKY",
+  "history browsing reads rich capture preview from the index")
+T:eq(versionRows[1].available, nil,
+  "history browsing does not claim payload compatibility before inspection")
+for _, event in ipairs(happy.events) do
+  T:check(event ~= "read:states/q00000001",
+    "history browsing does not decode its checkpoint payload")
+end
+local versionDetail, versionDetailCode, versionDetailMessage = happy.service:inspectState(
+  happy.game, "q00000001")
+T:check(versionDetail ~= nil,
+  "opening a selected state inspects its payload: "
+    .. tostring(versionDetailCode or versionDetailMessage))
+T:eq(versionDetail.available, true,
+  "engine-version mismatch remains available after selected-state inspection")
+T:eq(versionDetail.warnings[1], "engine_version_mismatch",
+  "selected-state inspection exposes engine-version compatibility warning")
 
 local performanceNow = 10
 local performance = environment({
@@ -334,8 +348,9 @@ T:check(slotSaved.metadata.id:match("^s03_%d%d%d%d%d%d%d%d$") ~= nil,
 local firstSlotId = slotSaved.metadata.id
 local listedSlots = slots.service:listSlots(slots.game)
 T:eq(listedSlots[3].occupied, true, "saved permanent slot is occupied")
-T:eq(listedSlots[3].available, true, "saved permanent slot is loadable")
 T:eq(listedSlots[3].metadata.label, "SLOT 03", "slot listing exposes saved label")
+T:eq(listedSlots[3].available, nil,
+  "slot browsing remains index-only until the player opens a slot")
 
 slots.game.current = checkpoint(600, "ROUTE_1")
 slots.storage.failWrite.index = true
@@ -556,9 +571,14 @@ T:eq(skipCorrupt.game.current.save.money, 10, "older valid quick restores correc
 local listed = skipCorrupt.service:listStates(skipCorrupt.game, "quick")
 T:eq(#listed, 2, "state listing keeps corrupt entries visible")
 T:eq(listed[1].metadata.id, "q00000002", "state listing stays newest-first")
-T:eq(listed[1].available, false, "corrupt list entry is unavailable")
-T:eq(listed[1].status, "corrupt_metadata", "corrupt list entry explains status")
-T:eq(listed[2].available, true, "older valid list entry remains available")
+T:eq(listed[1].status, "unverified",
+  "index-only history does not decode corrupt payloads while browsing")
+local corruptDetail = skipCorrupt.service:inspectState(skipCorrupt.game, listed[1].metadata.id)
+T:eq(corruptDetail.available, false, "selected corrupt entry is unavailable")
+T:eq(corruptDetail.status, "corrupt_metadata",
+  "selected corrupt entry explains its payload status")
+local validDetail = skipCorrupt.service:inspectState(skipCorrupt.game, listed[2].metadata.id)
+T:eq(validDetail.available, true, "older valid selected entry remains available")
 
 skipCorrupt.game.current = checkpoint(40)
 local explicit, explicitCode, explicitMessage = skipCorrupt.service:loadState(

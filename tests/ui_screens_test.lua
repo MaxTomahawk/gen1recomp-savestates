@@ -54,6 +54,24 @@ function service:listStates(_, class)
   return class == "quick" and self.quickRows or self.autoRows
 end
 function service:listSlots() return self.slotRows end
+function service:inspectState(_, id)
+  calls[#calls + 1] = "inspect:" .. id
+  if self.inspectOverrides and self.inspectOverrides[id] then
+    return self.inspectOverrides[id]
+  end
+  local function find(rows)
+    for _, row in ipairs(rows) do
+      if row.metadata and row.metadata.id == id then return row end
+    end
+  end
+  local row = find(self.quickRows) or find(self.autoRows)
+  if not row then
+    for _, candidate in ipairs(self.slotRows) do
+      if candidate.metadata and candidate.metadata.id == id then row = candidate break end
+    end
+  end
+  return row
+end
 function service:quickSave() calls[#calls + 1] = "quickSave" return true end
 function service:undoLastLoad() calls[#calls + 1] = "undo" return true end
 function service:loadState(_, id) calls[#calls + 1] = "load:" .. id return true end
@@ -121,6 +139,10 @@ service.quickRows = {
   { available = true, status = "compatible", metadata = {
       id = "q00000002", locationName = "CERULEAN GYM", createdAt = 1000,
       trigger = "manual", stateKind = "battle",
+      preview = {
+        playTime = 16620, badgeCount = 1, badgeTotal = 8,
+        party = { { name = "SPARKY", level = 22, hp = 45, maxHp = 57 } },
+      },
     } },
   { available = false, status = "corrupt_metadata", metadata = {
       id = "q00000001", locationName = "PALLET TOWN", createdAt = 900,
@@ -144,15 +166,28 @@ T:eq(action.items[3].label, "CREATED", "state detail shows creation time")
 T:eq(action.items[3].right, "NOW", "state detail uses relative creation time")
 T:eq(action.items[4].right, "BATTLE", "state detail shows runtime kind")
 T:eq(action.items[5].right, "OK", "state detail shows compatibility")
-T:eq(action.items[6].label, "LOAD", "available state offers load after details")
-T:eq(action.items[7].label, "PIN TO SLOT", "available state can pin permanently")
-T:eq(action.index, 6, "state detail cursor starts on the first action")
+T:eq(action.items[6].label, "PLAY TIME", "state detail shows captured play time")
+T:eq(action.items[6].right, "04:37", "state detail keeps captured play time")
+T:eq(action.items[7].right, "1/8", "state detail shows captured badge progress")
+T:eq(action.items[8].label, "SPARKY", "state detail lists captured party member")
+T:eq(action.items[8].right, "L22 45/57", "party preview contains captured level and HP")
+T:eq(action.items[9].label, "LOAD", "available state offers load after preview details")
+T:eq(action.items[10].label, "PIN TO SLOT", "available state can pin permanently")
+T:eq(action.index, 9, "state detail cursor starts on the first action")
 
-local warningAction = registered[ids.actions].new(game, {
-  row = {
+service.inspectOverrides = {
+  qwarn = {
     available = true,
     warnings = { "engine_version_mismatch" },
-    metadata = service.quickRows[1].metadata,
+    metadata = {
+      id = "qwarn", locationName = "CERULEAN GYM", createdAt = 1000,
+      trigger = "manual", stateKind = "battle",
+    },
+  },
+}
+local warningAction = registered[ids.actions].new(game, {
+  row = {
+    metadata = { id = "qwarn" },
   },
   parents = { history, root },
 })
@@ -162,7 +197,7 @@ T:eq(warningAction.items[5].right, "WARN",
 local pinAction = registered[ids.actions].new(game, {
   row = service.quickRows[1], parents = { history, root },
 })
-pinAction.items[7].onSelect()
+pinAction.items[10].onSelect()
 T:eq(pushes[#pushes].id, ids.pinPicker, "pin action opens the permanent-slot picker")
 local pinPicker = registered[ids.pinPicker].new(game, pushes[#pushes].opts)
 pinPicker.items[1].onSelect()
@@ -185,7 +220,7 @@ overwriteConfirm.opts.choice(true)
 T:eq(calls[#calls], "pin:q00000002:2",
   "confirmed occupied-slot pin invokes the requested copy")
 
-action.items[6].onSelect()
+action.items[9].onSelect()
 T:eq(action.closeCount, 1, "load closes action menu")
 T:eq(history.closeCount, 1, "load closes history menu")
 T:eq(root.closeCount, 2, "load closes root menu after history")
