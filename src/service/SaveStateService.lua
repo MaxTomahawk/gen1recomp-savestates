@@ -119,6 +119,7 @@ return function(deps)
       measureSize = args.measureSize,
       debug = args.debug,
       locationLabel = args.locationLabel or defaultLabel,
+      previewFor = args.previewFor,
     }, Service)
   end
 
@@ -245,11 +246,24 @@ return function(deps)
     return capability
   end
 
-  function Service:_snapshot(checkpoint, metadata)
+  function Service:_snapshot(game, checkpoint, metadata, preservePreview)
     local runtime = checkpoint and checkpoint.runtime and checkpoint.runtime.overworld
     local mapId = runtime and runtime.map
     local fingerprint, fingerprintCode, fingerprintMessage = Fingerprint.of(checkpoint)
     if not fingerprint then return nil, fingerprintCode, fingerprintMessage end
+    local preview = preservePreview and metadata.preview or nil
+    if not preservePreview and type(self.previewFor) == "function" then
+      local ok, value, previewCode, previewMessage = pcall(self.previewFor, game, checkpoint)
+      if ok and value ~= nil then
+        preview = value
+      elseif not ok then
+        self:_warn("preview_unavailable", "Could not build checkpoint preview: " .. tostring(value),
+          metadata)
+      else
+        self:_warn(previewCode or "preview_unavailable",
+          previewMessage or "Could not build checkpoint preview.", metadata)
+      end
+    end
     local snapshot, code, message = Snapshot.new({
       id = metadata.id,
       modVersion = self.modVersion,
@@ -263,6 +277,7 @@ return function(deps)
       fingerprint = fingerprint,
       slot = metadata.slot,
       contextKey = metadata.contextKey,
+      preview = preview,
       checkpoint = checkpoint,
     })
     if snapshot then self:_measureSnapshot(snapshot) end
@@ -301,7 +316,7 @@ return function(deps)
     if not id then return self:_failure("save_failed", idCode, idMessage) end
     local createdAt, clockCode, clockMessage = self:_now()
     if not createdAt then return self:_failure("save_failed", clockCode, clockMessage) end
-    local snapshot, snapshotCode, snapshotMessage = self:_snapshot(checkpoint, {
+    local snapshot, snapshotCode, snapshotMessage = self:_snapshot(game, checkpoint, {
       id = id,
       stateClass = "quick",
       trigger = "manual",
@@ -390,7 +405,7 @@ return function(deps)
 
     local id, idCode, idMessage = invoke(index, "allocate", "auto")
     if not id then return self:_failure("save_failed", idCode, idMessage) end
-    local snapshot, snapshotCode, snapshotMessage = self:_snapshot(checkpoint, {
+    local snapshot, snapshotCode, snapshotMessage = self:_snapshot(game, checkpoint, {
       id = id,
       stateClass = "auto",
       trigger = trigger,
@@ -446,7 +461,7 @@ return function(deps)
     return snapshot, commitCode, commitMessage
   end
 
-  function Service:_writeSlot(store, index, checkpoint, slot, label, sourceMetadata)
+  function Service:_writeSlot(game, store, index, checkpoint, slot, label, sourceMetadata)
     if not validSlot(slot) then
       return nil, "invalid_slot", "Permanent slot must be an integer from 1 through 10."
     end
@@ -462,7 +477,7 @@ return function(deps)
       createdAt, clockCode, clockMessage = self:_now()
       if not createdAt then return nil, clockCode, clockMessage end
     end
-    local snapshot, snapshotCode, snapshotMessage = self:_snapshot(checkpoint, {
+    local snapshot, snapshotCode, snapshotMessage = self:_snapshot(game, checkpoint, {
       id = id,
       stateClass = "slot",
       slot = slot,
@@ -471,7 +486,8 @@ return function(deps)
       label = checkedLabel,
       locationName = sourceMetadata and sourceMetadata.locationName,
       contextKey = sourceMetadata and sourceMetadata.contextKey,
-    })
+      preview = sourceMetadata and sourceMetadata.preview,
+    }, sourceMetadata ~= nil)
     if not snapshot then return nil, snapshotCode, snapshotMessage end
     local assigned, assignCode, assignMessage = invoke(
       index, "setSlot", slot, snapshot.metadata)
@@ -507,7 +523,7 @@ return function(deps)
     if not store then return self:_failure("save_failed", storeCode, storeMessage) end
     local index, indexCode, indexMessage = invoke(store, "loadIndex")
     if not index then return self:_failure("save_failed", indexCode, indexMessage) end
-    local snapshot, code, message = self:_writeSlot(store, index, checkpoint, slot, label)
+    local snapshot, code, message = self:_writeSlot(game, store, index, checkpoint, slot, label)
     if not snapshot then return self:_failure("save_failed", code, message) end
     return snapshot, code, message
   end
@@ -527,7 +543,7 @@ return function(deps)
     local source, sourceCode, sourceMessage = invoke(store, "readSnapshot", sourceId)
     if not source then return self:_failure("save_failed", sourceCode, sourceMessage) end
     local snapshot, code, message = self:_writeSlot(
-      store, index, source.checkpoint, slot, label, source.metadata)
+      game, store, index, source.checkpoint, slot, label, source.metadata)
     if not snapshot then return self:_failure("save_failed", code, message) end
     return snapshot, code, message
   end
@@ -550,7 +566,7 @@ return function(deps)
     local source, sourceCode, sourceMessage = invoke(store, "readSnapshot", current.id)
     if not source then return self:_failure("save_failed", sourceCode, sourceMessage) end
     local snapshot, code, message = self:_writeSlot(
-      store, index, source.checkpoint, slot, checkedLabel, source.metadata)
+      game, store, index, source.checkpoint, slot, checkedLabel, source.metadata)
     if not snapshot then return self:_failure("save_failed", code, message) end
     return snapshot, code, message
   end
@@ -671,7 +687,7 @@ return function(deps)
     if not checkpoint then return nil, captureCode, captureMessage end
     local createdAt, clockCode, clockMessage = self:_now()
     if not createdAt then return nil, clockCode, clockMessage end
-    local recovery, snapshotCode, snapshotMessage = self:_snapshot(checkpoint, {
+    local recovery, snapshotCode, snapshotMessage = self:_snapshot(game, checkpoint, {
       id = "recovery",
       stateClass = "recovery",
       trigger = "before_load",

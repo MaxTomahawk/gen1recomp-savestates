@@ -30,6 +30,12 @@ local function checkpoint(money, map)
       meta = { playthroughId = "play-a" },
       player = { map = map, x = 5, y = 6, facing = "down", surfing = false },
       money = money,
+      playTime = 16620,
+      inventory = { BOULDERBADGE = true },
+      party = {
+        { species = "PIKACHU", nickname = "SPARKY", level = 22, hp = 45,
+          stats = { hp = 57 }, status = "PAR" },
+      },
     },
     runtime = { overworld = {
       map = map, x = 5, y = 6, facing = "down", surfing = false,
@@ -148,6 +154,13 @@ local function environment(args)
     clock = function() return now end,
     quickLimit = function() return limit end,
     autoLimit = function() return autoLimit end,
+    previewFor = function(_, captured)
+      return Preview.capture(captured.save, {
+        badgeIds = { "BOULDERBADGE", "CASCADEBADGE", "THUNDERBADGE", "RAINBOWBADGE",
+          "SOULBADGE", "MARSHBADGE", "VOLCANOBADGE", "EARTHBADGE" },
+        speciesName = function(id) return id end,
+      })
+    end,
     modVersion = "0.1.0",
     modApi = 2,
     notify = function(kind, detail)
@@ -205,6 +218,14 @@ T:eq(saved.metadata.locationName, "PALLET TOWN", "fallback map label is readable
 T:eq(saved.metadata.createdAt, 1234, "quicksave uses injected wall clock")
 T:check(type(saved.metadata.fingerprint) == "string"
   and #saved.metadata.fingerprint == 16, "quicksave records semantic fingerprint")
+T:eq(saved.metadata.preview.playTime, 16620,
+  "quicksave captures preview play time from checkpoint progress")
+T:eq(saved.metadata.preview.badgeCount, 1,
+  "quicksave captures checkpoint badge progress")
+T:eq(saved.metadata.preview.party[1].name, "SPARKY",
+  "quicksave captures nickname preview from checkpoint progress")
+T:eq(saved.metadata.preview.party[1].status, nil,
+  "quicksave preview does not carry battle status")
 local happyIndex = happy.storeFactory(happy.game):loadIndex()
 T:eq(happyIndex:list("quick")[1].id, "q00000001", "quicksave publishes history")
 T:check(happy.storage.values["states/q00000001"] ~= nil,
@@ -270,6 +291,8 @@ T:check(battleSaved ~= nil,
     .. tostring(battleSaveCode or battleSaveMessage))
 T:eq(battleSaved.metadata.stateKind, "battle",
   "battle quicksave records its runtime kind")
+T:eq(battleSaved.metadata.preview.party[1].hp, 45,
+  "battle checkpoint preview uses captured canonical party values")
 battleStates.game.current = checkpoint(900, "ROUTE_1")
 battleStates.checkpoints.capability = {
   canCapture = true, canRestore = true, kind = "overworld",
@@ -345,6 +368,9 @@ T:eq(renamed.metadata.label, "ROUTE ONE", "slot rename changes metadata label")
 T:eq(renamed.metadata.createdAt, overwritten.metadata.createdAt,
   "slot rename preserves the checkpoint creation time")
 T:eq(renamed.checkpoint.save.money, 600, "slot rename preserves checkpoint progress")
+T:eq(renamed.metadata.preview.party[1].name,
+  overwritten.metadata.preview.party[1].name,
+  "slot rename preserves capture preview provenance")
 local renamedId = renamed.metadata.id
 local badName, badNameCode = slots.service:renameSlot(slots.game, 3, "BAD/NAME")
 T:eq(badName, nil, "unsupported slot label characters are rejected")
@@ -368,6 +394,8 @@ T:eq(pinned.metadata.label, "PINNED", "pinned state stores selected label")
 T:eq(pinned.checkpoint.save.money, 600, "pin copies source checkpoint, not live runtime")
 T:eq(pinned.metadata.createdAt, pinnedSource.metadata.createdAt,
   "pin preserves the source checkpoint creation time")
+T:eq(pinned.metadata.preview.party[1].name, pinnedSource.metadata.preview.party[1].name,
+  "pin preserves source capture preview provenance")
 
 local deletedSlot, deletedSlotCode, deletedSlotMessage = slots.service:deleteSlot(
   slots.game, 3)

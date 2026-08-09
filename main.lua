@@ -66,6 +66,26 @@ return function(mod)
     local Fingerprint = FingerprintFactory(Canonical)
     local StateStore = StoreFactory({ DataOnly = DataOnly, StateIndex = StateIndex })
     local Screens = ScreenFactory({ Time = Time })
+    local function capturePreview(_, checkpoint)
+      local badgeIds = {}
+      local constants = mod.content and mod.content.constants
+      local badges = constants and constants:get("badges")
+      if type(badges) == "table" then
+        for _, badge in ipairs(badges) do
+          if type(badge) == "table" and type(badge.id) == "string" and badge.id ~= "" then
+            badgeIds[#badgeIds + 1] = badge.id
+          end
+        end
+      end
+      local pokemon = mod.content and mod.content.pokemon
+      return Preview.capture(checkpoint and checkpoint.save, {
+        badgeIds = badgeIds,
+        speciesName = function(id)
+          local definition = pokemon and pokemon:get(id)
+          return type(definition) == "table" and definition.name or nil
+        end,
+      })
+    end
     local function uiClock()
       if love and love.timer and love.timer.getTime then return love.timer.getTime() end
       return os.clock()
@@ -103,6 +123,7 @@ return function(mod)
       autoLimit = function()
         return mod.options:get("auto_history") or 20
       end,
+      previewFor = capturePreview,
       modVersion = mod.version,
       modApi = 2,
       notify = function(kind, detail) notification:show(kind, detail) end,

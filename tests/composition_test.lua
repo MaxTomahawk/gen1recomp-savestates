@@ -44,9 +44,19 @@ local mod = {
     end },
     NamingScreen = { new = function(_, opts) return { opts = opts } end },
   },
-  content = { screens = {
-    register = function(_, id, factory) registeredScreens[id] = factory end,
-  } },
+  content = {
+    screens = {
+      register = function(_, id, factory) registeredScreens[id] = factory end,
+    },
+    constants = {
+      get = function(_, id)
+        if id == "badges" then return { { id = "BOULDERBADGE" } } end
+      end,
+    },
+    pokemon = {
+      get = function(_, id) return { name = id } end,
+    },
+  },
   log = {
     info = function(_, format, ...)
       logs[#logs + 1] = (format):format(...)
