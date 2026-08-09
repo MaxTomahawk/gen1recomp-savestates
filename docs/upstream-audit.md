@@ -53,7 +53,7 @@ requires is unsupported.
 | Independent tool storage | `mod.storage:context/write/read/list/delete` is data-only, verified, portable-aware, and scoped by game/playthrough/mod | `src/mods/Storage.lua`; `docs/modding.md`; RFC 0003 |
 | Runtime checkpoints | `mod.checkpoints:inspect/capture/restore` supports strict settled-overworld and ordinary wild/trainer player-decision reconstruction | `src/core/Checkpoint.lua`; `docs/modding.md`; RFC 0004 and RFC 0005 |
 | Migrations | `mod.migrations:add(since, fn)` upgrades a mod's per-save shape | `src/core/SaveData.lua:SaveData.runMigrations` |
-| Events | `map.entered/exited`, `player.warped`, `world.trainer_engaged`, `battle.started/turn_started/turn_ended/ended`, `script.started/ended`, save and screen events; draft PR #993 adds success-only `checkpoint.restored` | wiki `Reference-Events.md`; emit sites in `src/`; PR #993 |
+| Events | `map.entered/exited`, `player.warped`, `world.trainer_engaged`, `battle.started/turn_started/turn_ended/ended`, `script.started/ended`, save and screen events; ready-for-review PR #993 adds success-only `checkpoint.restored` | wiki `Reference-Events.md`; emit sites in `src/`; PR #993 |
 | Input | `input.step` hook and `mod.input` can inject the eight Game Boy buttons safely | `src/core/Game.lua:Game:step`; `src/mods/Loader.lua:Loader:_api` |
 | World | `mod.world:current`, `warpTo`, flags, object toggles, scripts, and NPC helpers | `src/world/WorldAPI.lua`; wiki `Reference-Mod-Object.md` |
 | Files | `mod:read` reads packaged files. Direct filesystem writes are permission-disclosed with `filesystem`; permissions are disclosure, not a sandbox | `src/mods/Manifest.lua`; wiki `Reference-Manifest.md` |

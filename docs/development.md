@@ -8,7 +8,7 @@ object. Generic engine work stays in separate Gen1Recomp worktrees:
 - official `dev` — merged scoped storage, settled-overworld checkpoints, battle
   safe points/RNG restoration, and source-date reproducible modkit packaging;
 - `feat/checkpoint-restore-event` — success-only generic cross-mod restore
-  lifecycle, submitted as upstream draft PR #993.
+  lifecycle, submitted as upstream ready-for-review PR #993.
 
 Never copy private engine modules into the mod. Never add a ROM, generated import,
 user save, extracted asset, credential, or ROM-derived screenshot.
