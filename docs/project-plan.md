@@ -206,11 +206,14 @@ future tag.
 Latest verification (2026-08-08):
 
 - Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-crossmod` at
-  preview head `5a50d95` — 803/803 Lua checks, 7/7 Python checks, modkit
+  preview handoff `cfb164e` — 803/803 Lua checks, 7/7 Python checks, modkit
   validate/lint, byte-identical source-date package builds, and clean
   extracted-install validation. The archive has 30 distributable files plus
-  `.modkit/pack.json`. The initial package gate correctly caught an accidentally
-  included new test; `.modkitignore` now explicitly excludes it.
+  `.modkit/pack.json`; SHA-256 is
+  `458c2a1ee867a776b92a0b7dd44ef5365a4ad0d517d186cc9e73212a38c18c8b`.
+  GitHub Actions runs `31295564952` and `31295563244` passed that exact head.
+  The initial package gate correctly caught an accidentally included new test;
+  `.modkitignore` now explicitly excludes it.
 
 - Official `dev` baseline `./scripts/test.sh --quick` — 139/139 engine and 7/7
   modkit suites before the cross-mod patch.
