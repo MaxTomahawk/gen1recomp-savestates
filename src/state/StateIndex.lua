@@ -1,4 +1,4 @@
-return function(DataOnly)
+return function(DataOnly, Preview)
   local StateIndex = {}
   StateIndex.__index = StateIndex
 
@@ -21,11 +21,19 @@ return function(DataOnly)
   end
 
   local function metadataOk(id, metadata, expectedClass)
-    return type(id) == "string" and id ~= ""
-      and type(metadata) == "table" and metadata.id == id
-      and CLASSES[metadata.stateClass]
-      and (expectedClass == nil or metadata.stateClass == expectedClass)
-      and type(metadata.createdAt) == "number" and metadata.createdAt >= 0
+    if type(id) ~= "string" or id == "" or type(metadata) ~= "table"
+        or not CLASSES[metadata.stateClass]
+        or (expectedClass ~= nil and metadata.stateClass ~= expectedClass)
+        or type(metadata.createdAt) ~= "number" or metadata.createdAt < 0 then
+      return false
+    end
+    if metadata.preview ~= nil then
+      if not Preview then return false end
+      local preview = Preview.validate(metadata.preview)
+      if not preview then return false end
+      metadata.preview = preview
+    end
+    return metadata.id == id
   end
 
   local function denseList(list)

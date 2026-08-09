@@ -1,7 +1,8 @@
 local Test = dofile("tests/testlib.lua")
 local T = Test.new("state index")
 local DataOnly = dofile("src/util/DataOnly.lua")
-local StateIndex = dofile("src/state/StateIndex.lua")(DataOnly)
+local Preview = dofile("src/state/Preview.lua")(DataOnly)
+local StateIndex = dofile("src/state/StateIndex.lua")(DataOnly, Preview)
 local Retention = dofile("src/state/Retention.lua")
 
 local function metadata(id, class, createdAt, label, slot)
@@ -17,6 +18,15 @@ local function metadata(id, class, createdAt, label, slot)
   }
 end
 
+local function preview()
+  return {
+    playTime = 120,
+    badgeCount = 1,
+    badgeTotal = 8,
+    party = { { name = "PIKACHU", level = 8, hp = 20, maxHp = 20 } },
+  }
+end
+
 local index, code, message = StateIndex.new()
 T:check(index ~= nil, "an empty format-1 index constructs: " .. tostring(code or message))
 
@@ -26,6 +36,18 @@ for n = 1, 6 do
   quickIds[n] = id
   T:check(index:add("quick", metadata(id, "quick", n)), "quick state adds")
 end
+local previewed = metadata(quickIds[1], "quick", 1)
+previewed.preview = preview()
+T:check(index:replace(quickIds[1], previewed),
+  "index retains valid descriptive preview metadata")
+T:eq(index:get(quickIds[1]).preview.party[1].name, "PIKACHU",
+  "index browsing exposes stored preview without a checkpoint payload")
+local corruptPreview = metadata("q99999999", "quick", 999)
+corruptPreview.preview = preview()
+corruptPreview.preview.party[1].status = "PAR"
+local rejectedPreview, rejectedPreviewCode = index:add("quick", corruptPreview)
+T:eq(rejectedPreview, nil, "index rejects malformed stored preview metadata")
+T:eq(rejectedPreviewCode, "bad_metadata", "corrupt index preview has stable rejection")
 T:eq(quickIds[1], "q00000001", "quick ids are deterministic")
 T:eq(quickIds[6], "q00000006", "quick ids advance monotonically")
 local quick = index:list("quick")

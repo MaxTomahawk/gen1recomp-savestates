@@ -1,8 +1,20 @@
 local Test = dofile("tests/testlib.lua")
 local T = Test.new("snapshot")
 local DataOnly = dofile("src/util/DataOnly.lua")
+local Preview = dofile("src/state/Preview.lua")(DataOnly)
 local Snapshot = dofile("src/state/Snapshot.lua")(DataOnly)
-local Validator = dofile("src/state/SnapshotValidator.lua")(DataOnly)
+local Validator = dofile("src/state/SnapshotValidator.lua")(DataOnly, Preview)
+
+local function preview()
+  return {
+    playTime = 16620,
+    badgeCount = 1,
+    badgeTotal = 8,
+    party = {
+      { name = "SPARKY", level = 22, hp = 45, maxHp = 57 },
+    },
+  }
+end
 
 local function checkpoint()
   return {
@@ -30,6 +42,7 @@ local function newSnapshot(overrides)
     createdAt = 100,
     locationId = "PALLET_TOWN",
     locationName = "PALLET TOWN",
+    preview = preview(),
     checkpoint = checkpoint(),
   }
   for key, value in pairs(overrides or {}) do args[key] = value end
@@ -49,6 +62,8 @@ T:eq(state.format, 1, "snapshot format is explicit")
 T:eq(state.identity.modId, "savestates", "snapshot owns a stable mod id")
 T:eq(state.identity.engineVersion, "0.9.0-dev", "engine version comes from checkpoint identity")
 T:eq(state.metadata.stateKind, "overworld", "runtime kind comes from the checkpoint")
+T:eq(state.metadata.preview.playTime, 16620,
+  "snapshot retains detached capture-time preview metadata")
 
 local slotState = newSnapshot({
   id = "s03_00000001", stateClass = "slot", slot = 3, label = "BEFORE MISTY",
@@ -66,6 +81,9 @@ T:check(validated ~= state and validated.checkpoint ~= state.checkpoint,
   "validation returns detached data")
 validated.checkpoint.save.money = 1
 T:eq(state.checkpoint.save.money, 3000, "mutating validated data cannot mutate stored input")
+validated.metadata.preview.party[1].hp = 1
+T:eq(state.metadata.preview.party[1].hp, 45,
+  "validation detaches preview metadata from stored input")
 
 local battleCheckpoint = checkpoint()
 battleCheckpoint.kind = "battle"
@@ -119,6 +137,9 @@ local cases = {
     "corrupt_metadata" },
   { "kind disagreement", function(s) s.metadata.stateKind = "battle" return s end,
     "corrupt_metadata" },
+  { "malformed preview", function(s)
+      s.metadata.preview.party[1].status = "PAR" return s
+    end, "corrupt_preview" },
   { "checkpoint game disagreement", function(s)
       s.checkpoint.identity.gameVersion = "blue" return s
     end, "corrupt_identity" },

@@ -12,6 +12,11 @@ return function(DataOnly)
     end
     local checkpoint, code, message = DataOnly.copy(args.checkpoint)
     if not checkpoint then return nil, code, message end
+    local preview
+    if args.preview ~= nil then
+      preview, code, message = DataOnly.copy(args.preview)
+      if not preview then return nil, code, message end
+    end
     local checkpointIdentity = checkpoint.identity or {}
 
     return {
@@ -36,6 +41,7 @@ return function(DataOnly)
         fingerprint = args.fingerprint,
         slot = args.slot,
         contextKey = args.contextKey,
+        preview = preview,
       },
       checkpoint = checkpoint,
     }

@@ -37,7 +37,8 @@ return function(mod)
   end
 
   local DataOnly = module("src/util/DataOnly.lua")
-  local SnapshotFactory = DataOnly and module("src/state/Snapshot.lua")
+  local PreviewFactory = DataOnly and module("src/state/Preview.lua")
+  local SnapshotFactory = PreviewFactory and module("src/state/Snapshot.lua")
   local ValidatorFactory = SnapshotFactory and module("src/state/SnapshotValidator.lua")
   local MigrationsFactory = ValidatorFactory and module("src/state/StateMigrations.lua")
   local IndexFactory = MigrationsFactory and module("src/state/StateIndex.lua")
@@ -56,10 +57,11 @@ return function(mod)
   if not ServiceFactory then return end
 
   local ok, core = pcall(function()
+    local Preview = PreviewFactory(DataOnly)
     local Snapshot = SnapshotFactory(DataOnly)
-    local Validator = ValidatorFactory(DataOnly)
+    local Validator = ValidatorFactory(DataOnly, Preview)
     local StateMigrations = MigrationsFactory(DataOnly)
-    local StateIndex = IndexFactory(DataOnly)
+    local StateIndex = IndexFactory(DataOnly, Preview)
     local Canonical = CanonicalFactory(DataOnly)
     local Fingerprint = FingerprintFactory(Canonical)
     local StateStore = StoreFactory({ DataOnly = DataOnly, StateIndex = StateIndex })
@@ -130,6 +132,7 @@ return function(mod)
     })
     return {
       DataOnly = DataOnly,
+      Preview = Preview,
       Snapshot = Snapshot,
       Validator = Validator,
       StateMigrations = StateMigrations,

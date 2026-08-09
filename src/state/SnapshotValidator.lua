@@ -1,4 +1,4 @@
-return function(DataOnly)
+return function(DataOnly, Preview)
   local Validator = {}
 
   local CLASSES = { quick = true, auto = true, slot = true, recovery = true }
@@ -57,6 +57,14 @@ return function(DataOnly)
         or not optionalString(metadata.fingerprint)
         or not optionalString(metadata.contextKey) or not slotOk then
       return failure("corrupt_metadata", "Snapshot metadata is missing or corrupt.")
+    end
+    if metadata.preview ~= nil then
+      if not Preview then
+        return failure("corrupt_preview", "Snapshot preview validation is unavailable.")
+      end
+      local preview, previewCode, previewMessage = Preview.validate(metadata.preview)
+      if not preview then return nil, previewCode, previewMessage end
+      metadata.preview = preview
     end
 
     local checkpoint = copy.checkpoint

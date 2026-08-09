@@ -1,10 +1,11 @@
 local Test = dofile("tests/testlib.lua")
 local T = Test.new("state store")
 local DataOnly = dofile("src/util/DataOnly.lua")
+local Preview = dofile("src/state/Preview.lua")(DataOnly)
 local Snapshot = dofile("src/state/Snapshot.lua")(DataOnly)
-local Validator = dofile("src/state/SnapshotValidator.lua")(DataOnly)
+local Validator = dofile("src/state/SnapshotValidator.lua")(DataOnly, Preview)
 local StateMigrations = dofile("src/state/StateMigrations.lua")(DataOnly)
-local StateIndex = dofile("src/state/StateIndex.lua")(DataOnly)
+local StateIndex = dofile("src/state/StateIndex.lua")(DataOnly, Preview)
 local StateStore = dofile("src/state/StateStore.lua")({
   DataOnly = DataOnly,
   StateIndex = StateIndex,
