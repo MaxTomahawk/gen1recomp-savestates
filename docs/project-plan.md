@@ -1,7 +1,7 @@
 # Save States Living Project Plan
 
 Status: active execution; Level A and Level B merged upstream; cross-mod restore
-lifecycle submitted
+lifecycle ready for upstream review; rich previews active mod work
 
 Updated: 2026-08-08
 
@@ -41,7 +41,7 @@ Upstream PR #986 is merged and implements the generic contract selected by the
 Gate D audit: persistent ordinary wild/trainer decision-menu reconstruction plus
 exact LÖVE RNG, while preserving explicit refusal for scripts and unsupported
 variants. The focused cross-mod audit found one remaining public lifecycle gap;
-draft PR #993 adds only a success-only post-restore invalidation event for
+ready-for-review PR #993 adds only a success-only post-restore invalidation event for
 cooperating mods with progress-derived runtime caches.
 
 The approved design is recorded in
@@ -147,8 +147,9 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | M5 — Native UX and slots | START rows, manager screens, ten permanent slots, rename/delete, HUD notifications, options | VERIFIED headlessly: second decorator coexistence, empty/unavailable states, generation-safe slot overwrite, disabled notifications, public widget close chain |
 | M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | IMPLEMENTED: location, ordinary trainer/wild start, optional after-battle deferral, synchronous capability-gated before-warp, stale-event expiry, dedup/retention, corrupt visibility, and opt-in phase timings; broader clean-runtime matrix remains |
 | M7 — Battle beta | MERGED: field/RNG/continuation map plus persistent safe-point capture/restore | PR #986; wild/trainer differential reconstruction; damage/crit/accuracy/AI/escape/encounter RNG replay; rollback and unsupported-phase tests green |
-| M8 — Cross-mod compatibility | Generic rewind ownership, real shiny case, cooperating/passive fake mods, lifecycle proof | PR #993 draft; 46/46 public cross-mod checks; `mod.save` rewinds, storage/options do not, shiny-style metadata roundtrips in overworld/battle |
-| M9 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | byte-identical source-date ZIP builds, clean install, validate/lint/tests, no private requires/ROM content, release asset resolves |
+| M8 — Cross-mod compatibility | Generic rewind ownership, real shiny case, cooperating/passive fake mods, lifecycle proof | PR #993 ready for review at `aa3b2a1`; 46/46 public cross-mod checks; `mod.save` rewinds, storage/options do not, shiny-style metadata roundtrips in overworld/battle |
+| M9 — Rich preview metadata | Capture-time play time, badge, and party summaries in index metadata | ACTIVE MOD WORK: optional format-1 preview, strict validation, lazy detail payload reads, no new engine API |
+| M10 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | byte-identical source-date ZIP builds, clean install, validate/lint/tests, no private requires/ROM content, release asset resolves |
 
 Milestones are sequencing boundaries, not permission to claim incomplete features.
 If an upstream dependency blocks one lane, continue every independent pure-mod,
@@ -177,7 +178,9 @@ test, documentation, or packaging task that remains valid.
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
 | `SAVESTATES-SP-05` battle/RNG | MERGED | `docs/battle-state-map.md`; upstream PR #986 at `983bea6`; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, Level A compatibility |
 | `SAVESTATES-SP-06` reproducible modkit package | MERGED | upstream PR #959 at `5b6dfed`; `SOURCE_DATE_EPOCH`, invalid-input refusal, and byte-identity tests |
-| `SAVESTATES-SP-07` cross-mod restore lifecycle | VERIFIED and submitted | draft PR #993 at `aa3b2a1`; success-only `checkpoint.restored`, 46/46 public fake-mod/shiny-style checks, no storage/options rewind, no event on failure/rollback |
+| `SAVESTATES-SP-07` cross-mod restore lifecycle | VERIFIED and ready for review | PR #993 at `aa3b2a1`; success-only `checkpoint.restored`, 46/46 public fake-mod/shiny-style checks, no storage/options rewind, no event on failure/rollback |
+| `SAVESTATES-SP-08` rich previews | MOD-SIDE, active | Public `checkpoint.save`, public content registries, and index metadata are sufficient; no upstream seam proposed |
+| Generic complete-playthrough transfer | NON-BLOCKING FUTURE WORK | Fresh review found no competing PR; issue #949 is raw `.sav`, #977 is Android sync permissions; not part of Save States 0.1.0 |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
 
@@ -194,7 +197,7 @@ composes its Level A services entirely through `mod:read`, `mod.storage`,
 Gate D and its merged Level B implementation are recorded in
 `docs/battle-state-map.md`. The focused cross-mod audit is complete in
 `docs/cross-mod-compatibility.md`; its minimal lifecycle seam is branch
-`feat/checkpoint-restore-event` at `aa3b2a1`, submitted as draft upstream PR #993.
+`feat/checkpoint-restore-event` at `aa3b2a1`, ready for upstream review as PR #993.
 The mod test workflow pins that exact public-contract branch. The remaining
 external product gate is review, merge, and official release of the complete
 checkpoint contract; the release workflow stays fail-closed against that exact

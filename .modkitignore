@@ -11,6 +11,8 @@ docs/superpowers/plans/2026-08-07-mod-core.md
 docs/superpowers/specs/2026-08-07-native-savestates-design.md
 docs/superpowers/specs/2026-08-08-cross-mod-checkpoint-compatibility-design.md
 docs/superpowers/plans/2026-08-08-cross-mod-checkpoint-compatibility.md
+docs/superpowers/specs/2026-08-09-rich-checkpoint-previews-design.md
+docs/superpowers/plans/2026-08-09-rich-checkpoint-previews.md
 tests/autosave_controller_test.lua
 tests/composition_test.lua
 tests/deduplicator_test.lua
