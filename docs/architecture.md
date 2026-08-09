@@ -48,7 +48,7 @@ package uses the public filesystem facade.
 
 The gameplay service uses this ordered boundary:
 
-`inspect -> capture -> fingerprint -> Snapshot.new -> validate -> write payload -> publish index`
+`inspect -> capture -> preview/fingerprint -> Snapshot.new -> validate -> write payload -> publish index`
 
 `DataOnly` rejects functions, userdata, threads, cycles, behavioral metatables,
 non-finite numbers, excessive depth, and unsupported keys. `Snapshot` copies the
@@ -61,14 +61,21 @@ version mismatch remains warning-grade.
 from checkpoint dynamic progress. The fingerprint is deduplication metadata, not a
 security checksum or a substitute for full validation.
 
+`Preview` derives a small capture-time summary from the public detached checkpoint
+save and public content registries: play time, badges, and up to six party
+name/level/current-HP/maximum-HP rows. It is optional descriptive metadata, never
+restore input; unavailable display data warns without sacrificing a valid
+checkpoint.
+
 ## Index and retention
 
-The index contains metadata and logical payload ids only. Quick and auto histories
-are newest-first; their ids are monotonic. Ten permanent slot numbers point at
-unique `sNN_sequence` payload generations. Overwrite publishes a new generation
-before cleaning the previous one, so a failed publication cannot destroy the
-indexed slot. Recovery uses its own fixed key. Slots/recovery never enter rolling
-retention.
+The index contains metadata and logical payload ids only, including optional
+capture-time previews. Quick and auto histories are newest-first; their ids are
+monotonic. Ten permanent slot numbers point at unique `sNN_sequence` payload
+generations. Overwrite publishes a new generation before cleaning the previous
+one, so a failed publication cannot destroy the indexed slot. Recovery uses its
+own fixed key. Slots/recovery never enter rolling retention. Browsing a list reads
+only this index; opening one detail performs the single payload validation read.
 
 Retention returns oldest rolling ids to remove. Autosave deduplication applies the
 same trigger/context cooldown first, then replaces the newest same-trigger/map/

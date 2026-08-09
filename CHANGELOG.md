@@ -42,6 +42,10 @@ Version headings match `manifest.json`.
 - A documented generic cross-mod ownership contract, real shiny-Pokémon
   roundtrip audit, and public-API integration tests proving canonical mod progress
   rewinds while independent storage, options, and arbitrary runtime state do not.
+- Capture-time previews for play time, badge progress, and up to six party
+  Pokémon with nickname/species fallback and captured level/HP values. Previews
+  are optional Format-1 metadata, browse from the index without payload reads,
+  and preserve source provenance through pin and rename.
 
 ### Changed
 

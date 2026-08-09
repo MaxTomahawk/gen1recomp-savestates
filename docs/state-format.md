@@ -26,6 +26,14 @@ versioned Gen1Recomp checkpoint:
     fingerprint = "0123456789abcdef",
     contextKey = nil,
     slot = nil,
+    preview = {
+      playTime = 16620,
+      badgeCount = 1,
+      badgeTotal = 8,
+      party = {
+        { name = "SPARKY", level = 22, hp = 45, maxHp = 57 },
+      },
+    },
   },
   checkpoint = {
     -- Opaque engine-owned data-only checkpoint.
@@ -64,6 +72,19 @@ capture boundary have been proven.
 progress for semantic duplicate detection and is never trusted for compatibility
 or corruption validation. `contextKey` distinguishes cooldown contexts that share
 a map.
+
+`preview` is optional descriptive capture-time metadata kept in the index as well
+as the payload. It records only play time, badge progress, and zero through six
+party rows with display name, level, current HP, and maximum HP. It never carries
+status, moves, DVs, or other gameplay state; the nested checkpoint remains the
+only restore authority. A present preview is strictly data-only and validated.
+Snapshots written before previews existed may omit it and remain valid Format 1
+records. Histories and slots browse index metadata without decoding every payload;
+the selected detail validates its payload before showing compatibility actions.
+
+Direct slot saves derive a fresh preview. Pinning and rename preserve the source
+preview and original capture provenance exactly, including an absent legacy
+preview. Slot labels remain independently player-authored metadata.
 
 ## Data rules
 

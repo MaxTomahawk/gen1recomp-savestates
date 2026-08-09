@@ -7,7 +7,7 @@ The development package uses the additive Level A APIs merged by upstream PR
 plus the merged Level B battle/RNG extension in upstream PR
 [`bryanthaboi/gen1recomp#986`](https://github.com/bryanthaboi/gen1recomp/pull/986).
 The focused cross-mod audit proved one remaining generic lifecycle need, proposed
-as success-only `checkpoint.restored` in upstream draft PR
+as success-only `checkpoint.restored` in upstream ready-for-review PR
 [`bryanthaboi/gen1recomp#993`](https://github.com/bryanthaboi/gen1recomp/pull/993).
 It is not a supported player release until that complete public contract ships in
 an official engine release and `manifest.json` can name that release as its
@@ -68,6 +68,8 @@ exact source-map boundary.
 | Unknown future wrapper format | rejected: `unsupported_format` |
 | Registered older wrapper format | migrated on a detached copy |
 | Engine version differs | loadable with `engine_version_mismatch` warning |
+| Format-1 snapshot without preview | loadable; legacy detail omits preview rows |
+| Present malformed preview metadata | rejected as `corrupt_preview` before mutation |
 | Missing/corrupt payload | retained and shown unavailable |
 | Unsupported runtime kind | rejected: `unsupported_runtime_kind` |
 

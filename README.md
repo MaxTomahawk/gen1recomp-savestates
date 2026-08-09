@@ -37,8 +37,11 @@ or replace vanilla or other-mod rows.
 `QUICKSAVE` writes a rolling history. The exported quickload command selects the
 newest valid entry; the manager can inspect, load, pin, or delete older entries.
 Each state detail shows location, trigger, relative creation time, runtime kind,
-and current compatibility before presenting mutating actions. State and slot
-deletes use a native confirmation that defaults to NO.
+and current compatibility before presenting mutating actions. New captures also
+show their captured play time, badges, and up to six party names/levels/current
+and maximum HP. These are descriptive previews, not restore data; older states
+without them remain usable. State and slot deletes use a native confirmation that
+defaults to NO.
 
 ## Auto Saves
 
@@ -58,8 +61,10 @@ significant.
 Ten permanent slots with native names up to 12 characters are outside rolling
 retention. Each overwrite uses a new payload generation so failed index
 publication leaves the old slot loadable. Pinning preserves the source
-checkpoint's capture time and semantic trigger. Overwriting directly or pinning
-onto an occupied slot requires an explicit confirmation that defaults to NO.
+checkpoint's capture time, semantic trigger, and preview. Empty slots save
+immediately with their generated `SLOT NN` label; rename is an explicit optional
+action. Overwriting directly or pinning onto an occupied slot requires an explicit
+confirmation that defaults to NO.
 
 ## Undo Last Load
 

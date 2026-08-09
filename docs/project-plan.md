@@ -1,9 +1,9 @@
 # Save States Living Project Plan
 
 Status: active execution; Level A and Level B merged upstream; cross-mod restore
-lifecycle ready for upstream review; rich previews active mod work
+lifecycle ready for upstream review; rich previews implemented and verified
 
-Updated: 2026-08-08
+Updated: 2026-08-09
 
 Product owner: MaxTomahawk
 
@@ -148,7 +148,7 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | IMPLEMENTED: location, ordinary trainer/wild start, optional after-battle deferral, synchronous capability-gated before-warp, stale-event expiry, dedup/retention, corrupt visibility, and opt-in phase timings; broader clean-runtime matrix remains |
 | M7 — Battle beta | MERGED: field/RNG/continuation map plus persistent safe-point capture/restore | PR #986; wild/trainer differential reconstruction; damage/crit/accuracy/AI/escape/encounter RNG replay; rollback and unsupported-phase tests green |
 | M8 — Cross-mod compatibility | Generic rewind ownership, real shiny case, cooperating/passive fake mods, lifecycle proof | PR #993 ready for review at `aa3b2a1`; 46/46 public cross-mod checks; `mod.save` rewinds, storage/options do not, shiny-style metadata roundtrips in overworld/battle |
-| M9 — Rich preview metadata | Capture-time play time, badge, and party summaries in index metadata | ACTIVE MOD WORK: optional format-1 preview, strict validation, lazy detail payload reads, no new engine API |
+| M9 — Rich preview metadata | Capture-time play time, badge, and party summaries in index metadata | VERIFIED locally: optional format-1 preview, strict validation, lazy index browsing, public content capture, and source-provenance pin/rename |
 | M10 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | byte-identical source-date ZIP builds, clean install, validate/lint/tests, no private requires/ROM content, release asset resolves |
 
 Milestones are sequencing boundaries, not permission to claim incomplete features.
@@ -179,7 +179,7 @@ test, documentation, or packaging task that remains valid.
 | `SAVESTATES-SP-05` battle/RNG | MERGED | `docs/battle-state-map.md`; upstream PR #986 at `983bea6`; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, Level A compatibility |
 | `SAVESTATES-SP-06` reproducible modkit package | MERGED | upstream PR #959 at `5b6dfed`; `SOURCE_DATE_EPOCH`, invalid-input refusal, and byte-identity tests |
 | `SAVESTATES-SP-07` cross-mod restore lifecycle | VERIFIED and ready for review | PR #993 at `aa3b2a1`; success-only `checkpoint.restored`, 46/46 public fake-mod/shiny-style checks, no storage/options rewind, no event on failure/rollback |
-| `SAVESTATES-SP-08` rich previews | MOD-SIDE, active | Public `checkpoint.save`, public content registries, and index metadata are sufficient; no upstream seam proposed |
+| `SAVESTATES-SP-08` rich previews | VERIFIED MOD-SIDE | Public `checkpoint.save`, public content registries, and index metadata are sufficient; no upstream seam proposed |
 | Generic complete-playthrough transfer | NON-BLOCKING FUTURE WORK | Fresh review found no competing PR; issue #949 is raw `.sav`, #977 is Android sync permissions; not part of Save States 0.1.0 |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
@@ -204,6 +204,13 @@ checkpoint contract; the release workflow stays fail-closed against that exact
 future tag.
 
 Latest verification (2026-08-08):
+
+- Mod `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-crossmod` at
+  preview head `5a50d95` — 803/803 Lua checks, 7/7 Python checks, modkit
+  validate/lint, byte-identical source-date package builds, and clean
+  extracted-install validation. The archive has 30 distributable files plus
+  `.modkit/pack.json`. The initial package gate correctly caught an accidentally
+  included new test; `.modkitignore` now explicitly excludes it.
 
 - Official `dev` baseline `./scripts/test.sh --quick` — 139/139 engine and 7/7
   modkit suites before the cross-mod patch.
