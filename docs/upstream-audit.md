@@ -1,11 +1,11 @@
 # Upstream Audit
 
-Status: refreshed after merged Level A, Level B, and packaging contributions;
-cross-mod lifecycle audited
+Status: refreshed after merged Level A, Level B, packaging, and cross-mod
+lifecycle contributions
 
-Audited: 2026-08-08
+Audited: 2026-08-10
 
-Engine: `bryanthaboi/gen1recomp` `dev` at `943ba5dcbfa62cf831e881684857ffd4867fe774`
+Engine: `bryanthaboi/gen1recomp` `dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca`
 
 Wiki: `bryanthaboi/gen1recomp.wiki` at `635e1e87d2e3b2e71c2276a60327aee7a24e57c9`
 
@@ -53,7 +53,7 @@ requires is unsupported.
 | Independent tool storage | `mod.storage:context/write/read/list/delete` is data-only, verified, portable-aware, and scoped by game/playthrough/mod | `src/mods/Storage.lua`; `docs/modding.md`; RFC 0003 |
 | Runtime checkpoints | `mod.checkpoints:inspect/capture/restore` supports strict settled-overworld and ordinary wild/trainer player-decision reconstruction | `src/core/Checkpoint.lua`; `docs/modding.md`; RFC 0004 and RFC 0005 |
 | Migrations | `mod.migrations:add(since, fn)` upgrades a mod's per-save shape | `src/core/SaveData.lua:SaveData.runMigrations` |
-| Events | `map.entered/exited`, `player.warped`, `world.trainer_engaged`, `battle.started/turn_started/turn_ended/ended`, `script.started/ended`, save and screen events; ready-for-review PR #993 adds success-only `checkpoint.restored` | wiki `Reference-Events.md`; emit sites in `src/`; PR #993 |
+| Events | `map.entered/exited`, `player.warped`, `world.trainer_engaged`, `battle.started/turn_started/turn_ended/ended`, `script.started/ended`, save and screen events; merged PR #993 adds success-only `checkpoint.restored` | wiki `Reference-Events.md`; emit sites in `src/`; PR #993 |
 | Input | `input.step` hook and `mod.input` can inject the eight Game Boy buttons safely | `src/core/Game.lua:Game:step`; `src/mods/Loader.lua:Loader:_api` |
 | World | `mod.world:current`, `warpTo`, flags, object toggles, scripts, and NPC helpers | `src/world/WorldAPI.lua`; wiki `Reference-Mod-Object.md` |
 | Files | `mod:read` reads packaged files. Direct filesystem writes are permission-disclosed with `filesystem`; permissions are disclosure, not a sandbox | `src/mods/Manifest.lua`; wiki `Reference-Manifest.md` |
@@ -181,11 +181,9 @@ The resulting ownership contract is:
 - derived runtime/cache state rebuilds from restored public canonical state.
 
 Existing restore code rebinds loaded mods' `mod.save` tables but suppresses normal
-save/map/battle lifecycle side effects. A progress-derived in-memory cache can
-therefore remain at B after its authoritative `mod.save` returns to A, and no
-current public event can observe that successful restore. The public-API-only
-`checkpoint_cross_mod` suite proves this gap and the minimal correction: draft PR
-#993 emits `checkpoint.restored` only after final differential verification, with
+save/map/battle lifecycle side effects. The public-API-only
+`checkpoint_cross_mod` suite proved the minimal correction now merged in PR #993:
+`checkpoint.restored` emits only after final differential verification, with
 `{ game, kind }`, and never on validation/reconstruction failure or rollback.
 Independent storage/options remain unchanged. Full user/mod-author rules are in
 `docs/cross-mod-compatibility.md`.
@@ -225,11 +223,11 @@ Independent storage/options remain unchanged. Full user/mod-author rules are in
 | `SAVESTATES-SP-03` | Stable profile identity | **Merged:** opaque `playthroughId` in storage/checkpoint context | private slot registry remains hidden | Implemented lazy opaque identity | new/load/switch/delete isolation and 1,000-process regression |
 | `SAVESTATES-SP-04` | Rebindable quick actions | GB-button injection only | core `Input`/`BindingsMenu` fixed action list | Additive mod action registry integrated with bindings UI | keyboard/pad/rebind/conflict/no-mod tests |
 | `SAVESTATES-SP-05` | Deterministic battle restore | **Merged:** ordinary wild/trainer decision-menu `mod.checkpoints` with engine-owned RNG | `BattleState` mutable fields; global random use | Implemented as opaque battle safe-point/RNG extension in PR #986 | differential/RNG/rollback suites plus current 139/139 engine and 7/7 modkit baseline |
-| `SAVESTATES-SP-07` | Let another mod reconcile progress-derived runtime state after restore | no checkpoint lifecycle event in official `dev`; restore already rebinds `mod.save` | `Checkpoint.restore` suppresses ordinary load/map/battle events; runtime caches remain private | Success-only `checkpoint.restored { game, kind }` after differential verification; no storage rewind or checkpoint payload | 46/46 public cross-mod checks, existing checkpoint 53/53, 139/139 engine and 8/8 modkit suites |
+| `SAVESTATES-SP-07` | Let another mod reconcile progress-derived runtime state after restore | **Merged:** success-only `checkpoint.restored`; restore rebinds `mod.save` | `Checkpoint.restore` suppresses ordinary load/map/battle events; runtime caches remain private | Implemented without storage rewind or checkpoint payload | 46/46 public cross-mod checks; current upstream ROM-free integration 150/150 engine and 10/10 modkit suites |
 
-The table records both landed and remaining seams. Only optional custom actions
-and the proven cross-mod restore lifecycle remain candidates for further upstream
-action; Level A, Level B, and packaging are merged public behavior.
+The table records both landed and remaining seams. Optional custom actions remain
+a future candidate; Level A, Level B, packaging, and the cross-mod lifecycle are
+merged public behavior.
 
 ## Merged and proposed public extensions
 
@@ -240,10 +238,10 @@ action; Level A, Level B, and packaging are merged public behavior.
 - PR #986 is merged at `983bea6`: the opaque checkpoint facade supports settled
   ordinary wild/trainer decision menus, semantic continuation reconstruction,
   and exact LÖVE RNG restoration.
-- `feat/checkpoint-restore-event` at `aa3b2a1` is draft upstream PR #993. It adds
-  only the success-only generic lifecycle described above. Its public cross-mod
-  suite passes 46/46; the existing checkpoint suite passes 53/53; the complete
-  quick gate passes 139/139 engine and 8/8 modkit suites.
+- PR #993 is merged as `ee891fb8` from head `aa3b2a1`. It adds only the
+  success-only generic lifecycle described above. Its public cross-mod suite
+  passes 46/46; current upstream integration passes 150/150 engine and 10/10
+  modkit suites.
 - `SAVESTATES-SP-04` custom actions remains unimplemented and non-blocking. The
   complete product remains operable through native START-menu rows; no global key
   is intercepted.
@@ -252,6 +250,6 @@ action; Level A, Level B, and packaging are merged public behavior.
   byte-identical archives.
 
 Merged `dev` is still not a released compatibility target. The manifest remains
-experimental until the cross-mod lifecycle contract lands, the complete public
-APIs ship in an upstream release, and the final range can name that version
-honestly.
+experimental until the title-resume and battle auxiliary contracts, together with
+the complete public APIs, ship in an upstream release and the final range can name
+that version honestly.

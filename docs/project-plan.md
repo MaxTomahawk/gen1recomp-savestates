@@ -1,7 +1,7 @@
 # Save States Living Project Plan
 
-Status: active execution; Level A and Level B merged upstream; cross-mod restore
-lifecycle ready for upstream review; rich previews implemented and verified
+Status: active execution; Level A, Level B, and cross-mod restore lifecycle
+merged upstream; rich previews implemented and verified
 
 Updated: 2026-08-10
 
@@ -40,9 +40,9 @@ commits named there. Key conclusions:
 Upstream PR #986 is merged and implements the generic contract selected by the
 Gate D audit: persistent ordinary wild/trainer decision-menu reconstruction plus
 exact LÖVE RNG, while preserving explicit refusal for scripts and unsupported
-variants. The focused cross-mod audit found one remaining public lifecycle gap;
-ready-for-review PR #993 adds only a success-only post-restore invalidation event for
-cooperating mods with progress-derived runtime caches.
+variants. The focused cross-mod audit found and upstream merged the minimal
+success-only post-restore invalidation event for cooperating mods with
+progress-derived runtime caches through PR #993.
 
 The approved design is recorded in
 `docs/superpowers/specs/2026-08-07-native-savestates-design.md`. Completed focused
@@ -147,7 +147,7 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | M5 — Native UX and slots | START rows, manager screens, ten permanent slots, rename/delete, HUD notifications, options | VERIFIED headlessly: second decorator coexistence, empty/unavailable states, generation-safe slot overwrite, disabled notifications, public widget close chain |
 | M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | IMPLEMENTED: location, ordinary trainer/wild start, optional after-battle deferral, synchronous capability-gated before-warp, stale-event expiry, dedup/retention, corrupt visibility, and opt-in phase timings; broader clean-runtime matrix remains |
 | M7 — Battle beta | MERGED: field/RNG/continuation map plus persistent safe-point capture/restore | PR #986; wild/trainer differential reconstruction; damage/crit/accuracy/AI/escape/encounter RNG replay; rollback and unsupported-phase tests green |
-| M8 — Cross-mod compatibility | Generic rewind ownership, real shiny case, cooperating/passive fake mods, lifecycle proof | PR #993 ready for review at `aa3b2a1`; 46/46 public cross-mod checks; `mod.save` rewinds, storage/options do not, shiny-style metadata roundtrips in overworld/battle |
+| M8 — Cross-mod compatibility | Generic rewind ownership, real shiny case, cooperating/passive fake mods, lifecycle proof | MERGED: PR #993 as `ee891fb8`; 46/46 public cross-mod checks; `mod.save` rewinds, storage/options do not, shiny-style metadata roundtrips in overworld/battle |
 | M9 — Rich preview metadata | Capture-time play time, badge, and party summaries in index metadata | VERIFIED locally: optional format-1 preview, strict validation, lazy index browsing, public content capture, and source-provenance pin/rename |
 | M10 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | byte-identical source-date ZIP builds, clean install, validate/lint/tests, no private requires/ROM content, release asset resolves |
 
@@ -178,7 +178,7 @@ test, documentation, or packaging task that remains valid.
 | `SAVESTATES-SP-04` custom actions | CANDIDATE, non-blocking | START menu remains fully functional; propose only after Level A |
 | `SAVESTATES-SP-05` battle/RNG | MERGED | `docs/battle-state-map.md`; upstream PR #986 at `983bea6`; persistent ordinary wild/trainer safe points, semantic continuations, exact RNG, Level A compatibility |
 | `SAVESTATES-SP-06` reproducible modkit package | MERGED | upstream PR #959 at `5b6dfed`; `SOURCE_DATE_EPOCH`, invalid-input refusal, and byte-identity tests |
-| `SAVESTATES-SP-07` cross-mod restore lifecycle | VERIFIED and ready for review | PR #993 at `aa3b2a1`; success-only `checkpoint.restored`, 46/46 public fake-mod/shiny-style checks, no storage/options rewind, no event on failure/rollback |
+| `SAVESTATES-SP-07` cross-mod restore lifecycle | MERGED | PR #993 as `ee891fb8`; success-only `checkpoint.restored`, 46/46 public fake-mod/shiny-style checks, no storage/options rewind, no event on failure/rollback |
 | `SAVESTATES-SP-08` rich previews | VERIFIED MOD-SIDE | Public `checkpoint.save`, public content registries, and index metadata are sufficient; no upstream seam proposed |
 | Generic complete-playthrough transfer | NON-BLOCKING FUTURE WORK | Fresh review found no competing PR; issue #949 is raw `.sav`, #977 is Android sync permissions; not part of Save States 0.1.0 |
 | HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
@@ -187,7 +187,7 @@ test, documentation, or packaging task that remains valid.
 ## Current execution boundary
 
 The active product goal authorizes autonomous implementation. Official upstream
-`dev` is pinned at `f225f8a6e7c9682bc7b67fea057148001ff7fb55`; index `main` is
+`dev` is pinned at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca`; index `main` is
 pinned at `6f7eb4ad249bb6ca3080ce485be6a8053861a624`. Level A
 storage/overworld checkpoints, Level B battle/RNG checkpoints, and reproducible
 modkit packages are merged through PRs #952, #986, and #959. The distributable mod
@@ -270,18 +270,19 @@ no hidden normal save.
 
 ### Current integration branches — 2026-08-10
 
-- Save States `feat/initial-savestates` is at `3d5619a`; it adds default-ON
+- Save States `feat/initial-savestates` is at `143786a`; it adds default-ON
   `CONTINUE LATEST`, battle-manager entry through the proposed generic safe
-  decision-boundary action, and optional public Modern UI notification
-  presentation with a native fallback.
-- Generic title resume is independently rebased on `dev` at `5392b3a`
-  (`feat/mod-title-checkpoint-resume`): 145/145 engine and 10/10 modkit suites
-  passed; Tier 3 was skipped because no legal generated data is present. It
-  intentionally does not require PR #993.
+  decision-boundary action, optional public Modern UI notification presentation
+  with a native fallback, and captured play-time/date/age history presentation
+  with metric-safe two-row details.
+- Generic title resume is independently rebased on `dev` at `4e20f45`
+  (`feat/mod-title-checkpoint-resume`): 149/149 engine and 10/10 modkit suites
+  passed; Tier 3 was skipped because no legal generated data is present. Its
+  title resume publishes the merged #993 lifecycle only after final verification.
 - Generic battle auxiliary action is independently based on `dev` at
-  `9633b6e` (`feat/battle-menu-auxiliary`): 146/146 engine and 9/9 modkit
+  `59725c0` (`feat/battle-menu-auxiliary`): 150/150 engine and 9/9 modkit
   suites passed; Tier 3 was skipped for the same reason.
-- Fresh audit pins `dev` at `f225f8a`; #993 is merged as `ee891fb8` (PR head
+- Fresh audit pins `dev` at `79ed376`; #993 is merged as `ee891fb8` (PR head
   `aa3b2a1`). #1023 provides
   battle render visibility only, not a command-boundary input seam.
 - Both engine branches are pushed to the MaxTomahawk fork. Attempts to open
@@ -316,16 +317,16 @@ no hidden normal save.
 
 ### Current coherent development integration — 2026-08-10
 
-- The private integration worktree is at `4234411` over current `dev` `f225f8a`,
-  with merged #993 `ee891fb8`, title resume `5392b3a`, and battle auxiliary
-  action `9633b6e`. Title `Checkpoint.resume` now emits
+- The private integration worktree is at `db53287` over current `dev` `79ed376`,
+  with merged #993 `ee891fb8`, title resume `4e20f45`, and battle auxiliary
+  action `59725c0`. Title `Checkpoint.resume` now emits
   `checkpoint.restored` exactly once only after final verified installation,
   directly in the title-resume contribution because the lifecycle contract is
   part of its merged base; no integration-only lifecycle patch remains.
 - Fresh evidence against that exact stack: `./scripts/test.sh --quick` passes
-  146/146 engine and 10/10 modkit suites (including 46/46 cross-mod, 33/33 title
+  150/150 engine and 10/10 modkit suites (including 46/46 cross-mod, 33/33 title
   context, and 10/10 battle-menu suites); Tier 3 is correctly skipped without
-  imported/generated data. `make check` at Save States `3d5619a` passes 912 Lua
+  imported/generated data. `make check` at Save States `143786a` passes 912 Lua
   behavior checks, 7 Python release/package checks, validation/lint, two
   byte-identical 32-file package builds plus `.modkit/pack.json`, and a clean
   extracted-install validation.

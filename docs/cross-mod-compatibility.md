@@ -70,7 +70,7 @@ shiny identity, so it needs no mod-specific migration or adapter.
 
 ## Restore lifecycle for cooperating mods
 
-Upstream draft PR
+Merged upstream PR
 [`bryanthaboi/gen1recomp#993`](https://github.com/bryanthaboi/gen1recomp/pull/993)
 adds the minimal generic event proven necessary by the audit:
 

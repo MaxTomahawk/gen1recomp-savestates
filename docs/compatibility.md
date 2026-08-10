@@ -6,8 +6,8 @@ The development package uses the additive Level A APIs merged by upstream PR
 [`bryanthaboi/gen1recomp#952`](https://github.com/bryanthaboi/gen1recomp/pull/952)
 plus the merged Level B battle/RNG extension in upstream PR
 [`bryanthaboi/gen1recomp#986`](https://github.com/bryanthaboi/gen1recomp/pull/986).
-The focused cross-mod audit proved one remaining generic lifecycle need, proposed
-as success-only `checkpoint.restored` in upstream ready-for-review PR
+The focused cross-mod audit proved the need for the success-only
+`checkpoint.restored` lifecycle, now merged through upstream PR
 [`bryanthaboi/gen1recomp#993`](https://github.com/bryanthaboi/gen1recomp/pull/993).
 Title browsing/resume additionally depends on the unpublished generic
 selected-playthrough/title-checkpoint contract under local engine review. It is
@@ -45,10 +45,10 @@ The manager closes its known native widget chain before a load or live slot save
 Manual requests made through exports while a phase is unsafe return a structured
 reason and leave runtime/storage untouched.
 
-There is no public rebindable mod action or battle-command decoration hook. Manual
-quicksave is therefore an overworld START-menu action. Default battle-start
-autosaves provide the native player path into supported battle restoration; the
-public export can also capture later decision points for cooperating mods.
+There is no public rebindable mod action. The development battle manager uses the
+review-ready generic `battle.menu_auxiliary` branch to open from START only at
+supported ordinary player-decision boundaries; it is not yet an official release
+compatibility promise. Default battle-start autosaves remain available without it.
 
 ## Autosave trigger support
 

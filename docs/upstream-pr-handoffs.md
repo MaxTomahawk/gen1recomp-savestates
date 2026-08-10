@@ -12,8 +12,8 @@ provides exact titles, bases, bodies, and compare URLs for manual publication.
 | Field | Value |
 | --- | --- |
 | Fork branch | `MaxTomahawk/gen1recomp:feat/mod-title-checkpoint-resume` |
-| Head | `5392b3a503cbabd487c086b387bb2d5db0fc5a99` |
-| Base | `bryanthaboi/gen1recomp:dev` at `f225f8a6e7c9682bc7b67fea057148001ff7fb55` |
+| Head | `4e20f4585f6ad634c55b2661f294c5843b6c7f99` |
+| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
 | Title | `feat(mods): resume selected checkpoints from title` |
 | Open PR | <https://github.com/bryanthaboi/gen1recomp/compare/dev...MaxTomahawk:feat/mod-title-checkpoint-resume?expand=1> |
 
@@ -38,7 +38,7 @@ exactly once after the same final verification boundary as live restore.
 
 ## Verification
 
-- `./scripts/test.sh --quick` — 145/145 engine suites, 10/10 modkit suites.
+- `./scripts/test.sh --quick` — 149/149 engine suites, 10/10 modkit suites.
 - Title selected-context, no-first-normal-save, corruption, recovery, cross-slot,
   cross-game, mod-save rebinding, and no-mod parity coverage are included.
 - ROM-derived Tier 3 is skipped because no generated/imported game data is in
@@ -50,8 +50,8 @@ exactly once after the same final verification boundary as live restore.
 | Field | Value |
 | --- | --- |
 | Fork branch | `MaxTomahawk/gen1recomp:feat/battle-menu-auxiliary` |
-| Head | `9633b6ebb2a54000a172f26501d4981df3afb4af` |
-| Base | `bryanthaboi/gen1recomp:dev` at `f225f8a6e7c9682bc7b67fea057148001ff7fb55` |
+| Head | `59725c0ead3c761b7e6c4fbf977e15531819f285` |
+| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
 | Title | `feat(mods): add battle menu auxiliary action` |
 | Open PR | <https://github.com/bryanthaboi/gen1recomp/compare/dev...MaxTomahawk:feat/battle-menu-auxiliary?expand=1> |
 
@@ -76,7 +76,7 @@ serialization behavior.
 - `luajit tests/engine/battle_menu_auxiliary.lua` — 10/10.
 - `luajit tests/engine/battle_checkpoint_boundary.lua` — 13/13.
 - `luajit tests/modkit/cases/checkpoints.lua` — 58/58.
-- `./scripts/test.sh --quick` — 146/146 engine suites, 9/9 modkit suites.
+- `./scripts/test.sh --quick` — 150/150 engine suites, 9/9 modkit suites.
 - ROM-derived Tier 3 is skipped because no generated/imported game data is in
   the public worktree.
 ```

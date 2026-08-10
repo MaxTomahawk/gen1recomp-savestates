@@ -15,7 +15,7 @@ Status vocabulary:
 | Rolling manual quicksaves and configured retention | Verified | Service, retention, index, and transaction failure tests. |
 | Newest valid quickload; corrupt newest falls back safely | Verified | Service tests cover empty, valid, corrupt-newest, all-invalid, and identity cases. |
 | Browse/load/pin/delete quick and auto histories | Verified | Native screen tests keep load/pin/delete immediately reachable; a separately paged detail screen covers preview/status, empty/unavailable rows, confirmation, and count refresh. |
-| Rich capture-time state previews | Verified | Strict data-only preview tests cover time, badges, 0–6 party members, nickname/species fallback, HP/fainted state, no status, battle/overworld capture, legacy absence, malformed metadata, source-provenance pin/rename, lazy index browsing, and native detail rendering. |
+| Rich capture-time state previews | Verified | Strict data-only preview tests cover time, badges, 0–6 party members, nickname/species fallback, HP/fainted state, no status, battle/overworld capture, legacy absence, malformed metadata, source-provenance pin/rename, lazy index browsing, default play-time history plus date/age modes, absolute creation time, metric-safe detail rows, and two-row party rendering. |
 | Event-based location/trainer/wild autosaves | Verified | Public event composition plus runtime-kind deferral/stale-request tests; no timer autosave. |
 | Optional after-battle and synchronous before-warp saves | Verified | Controller/service tests; `player.warped` timing is documented from the public emit site. |
 | Cooldown, semantic duplicate replacement, retention | Verified | Fingerprint/deduplicator/service tests; presentation-only counters are excluded. |
@@ -28,11 +28,11 @@ Status vocabulary:
 | Corrupt and incompatible records never mutate runtime | Verified | Data-only/schema/migration/store tests; unavailable-row cleanup; upstream content/map/position validation and rollback tests. |
 | Settled overworld restoration | Verified and merged upstream | Public facade differential recapture includes coordinates/facing, party, inventory/PC items/boxes, money, Pokédex, flags, trainers, and object toggles; upstream PR #952 is merged. |
 | Deterministic supported battle restoration | Verified and merged upstream | Ordinary wild/trainer player-decision reconstruction, switched/fainted party fidelity, rollback, and exact damage/crit/accuracy/AI/escape/encounter RNG replay; PR #986 is merged. |
-| Cross-mod canonical progress remains consistent | Verified on upstream branch | Real shiny implementation audit plus public fake/cooperating mods: core progress, `mod.save`, and shiny-style Pokémon metadata rewind in overworld/battle; independent storage/options do not; subscriber cache rebuilds after verified restore. |
+| Cross-mod canonical progress remains consistent | Verified on merged upstream `dev` | Real shiny implementation audit plus public fake/cooperating mods: core progress, `mod.save`, and shiny-style Pokémon metadata rewind in overworld/battle; independent storage/options do not; subscriber cache rebuilds after verified restore. |
 | Unsafe scripts/transitions/menus/animations/battle phases rejected | Verified | Public checkpoint capability and exclusion tests; compatibility docs name every supported boundary. |
-| Manual battle quicksave UX | Accurately limited | No public custom action or battle-menu decorator exists. Default battle-start autosaves are user-accessible; cooperating mods may call the public export at later safe decisions. |
+| Manual battle quicksave UX | Prepared on review branch | Generic `battle.menu_auxiliary` provides START entry only at proven ordinary battle decision boundaries; 10/10 focused checks and 150/150 ROM-free engine suites pass on current development base. Official release remains gated on merge/release. |
 | No private engine dependency in distributed mod | Verified | Source boundary inspection found no private `src.*` require, raw filesystem, state-stack, process, package, or debug access; sibling source loads use public `mod:read`, and real modkit load/lint passes. |
-| ROM-free CI, tests, lint, reproducible package | Verified | `make check GEN1RECOMP=/home/max/src/gen1recomp-savestates-crossmod` at `cfb164e`: 803/803 Lua checks, 7/7 Python release/package-gate checks, modkit validate/lint, two byte-identical 30-file ZIP builds plus pack manifest, and clean extracted-install validation. GitHub Actions runs `31295564952` and `31295563244` passed that exact head. |
+| ROM-free CI, tests, lint, reproducible package | Verified | CI now checks current upstream `dev`, not the obsolete #993 candidate. Fresh current-dev integration proves 150/150 engine and 10/10 modkit suites; Save States proves 912 Lua behavior checks, 7 Python release/package checks, validate/lint, byte-identical 32-file ZIP builds plus pack manifest, and clean extracted-install validation. |
 | Exact released-engine compatibility | Prepared | Release gate derives/checks out the manifest's exact minimum official tag. Manifest intentionally remains experimental/dev until upstream APIs ship. |
 | Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
 | Installable GitHub Release | Blocked externally | Tag workflow intentionally refuses preview metadata; requires official upstream API release and final manifest range. |
@@ -40,9 +40,9 @@ Status vocabulary:
 
 ## External release gates
 
-1. Official acceptance of cross-mod lifecycle PR #993 and an engine release that
-   contains the complete checkpoint contract. Level A, Level B, and the
-   source-date modkit fix are already merged into `dev`.
+1. Merge and official release of the title-resume and battle auxiliary contracts.
+   The cross-mod lifecycle (#993), Level A, Level B, and source-date modkit fix
+   are already merged into `dev`.
 2. Private clean-runtime acceptance using legally imported game data.
 3. Final non-experimental manifest/version range, reviewed merge, tag, release
    asset verification, then index PR.

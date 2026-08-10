@@ -24,8 +24,9 @@ runtime state is read.
 
 ## Installation
 
-No public release is available yet. Development validation currently targets the
-focused Gen1Recomp public-API branch linked from the project plan.
+No public release is available yet. ROM-free CI validates current upstream
+`dev`; the Android development bundle additionally combines the review-ready
+title-resume and battle-menu branches recorded in the project plan.
 
 ## Quick Start
 
@@ -63,12 +64,14 @@ implausibly future-dated checkpoints are skipped. Turning it OFF leaves vanilla
 
 `QUICKSAVE` writes a rolling history. The exported quickload command selects the
 newest valid entry; the manager can inspect, load, pin, or delete older entries.
-Each state detail shows location, trigger, relative creation time, runtime kind,
-and current compatibility before presenting mutating actions. New captures also
-show their captured play time, badges, and up to six party names/levels/current
-and maximum HP. These are descriptive previews, not restore data; older states
-without them remain usable. State and slot deletes use a native confirmation that
-defaults to NO.
+History defaults to captured `PLAY TIME`; `DATE/TIME` and relative `AGE` are
+available in settings. Previewless legacy records fall back to age. Each state
+detail shows location, trigger, absolute captured date/time, runtime kind, and
+current compatibility before presenting mutating actions. New captures also show
+their captured play time, badges, and up to six party members as a name row plus
+a level/current-HP/maximum-HP row. These are descriptive previews, not restore
+data; older states without them remain usable. State and slot deletes use a
+native confirmation that defaults to NO.
 
 ## Auto Saves
 
@@ -100,9 +103,10 @@ checkpoint. Undo restores it without overwriting it.
 
 ## Settings
 
-History limits, autosave triggers, `CONTINUE LATEST`, save/load notification toggles, and opt-in
-debug timings use the native MODS manager. The STATES settings screen reports
-current values and points to that public edit path. Debug timing logs report
+History limits, history-time presentation, autosave triggers, `CONTINUE LATEST`,
+save/load notification toggles, and opt-in debug timings use the native MODS
+manager. The STATES settings screen reports current values and points to that
+public edit path. Debug timing logs report
 capture, deterministic serialization/size, persistence, recovery-write, and
 restore costs without doing the extra size serialization while disabled.
 
@@ -125,6 +129,8 @@ how cooperating mods rebuild derived state is documented in
 - Battle checkpoints support ordinary single-player wild/trainer player-decision
   menus. Link, Safari, ghost, demo, fishing/static-origin, scripted, forced-action,
   message, queue, and animation phases are rejected.
+- The development battle manager needs the review-ready generic
+  `battle.menu_auxiliary` engine branch until it is merged and released.
 - Other mods' canonical `mod.save` progress rewinds, while independent
   `mod.storage`, options, and arbitrary runtime state do not. Progress-derived
   runtime caches require the generic post-restore cooperation contract.
