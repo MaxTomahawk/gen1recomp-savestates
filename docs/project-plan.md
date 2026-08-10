@@ -187,7 +187,7 @@ test, documentation, or packaging task that remains valid.
 ## Current execution boundary
 
 The active product goal authorizes autonomous implementation. Official upstream
-`dev` is pinned at `0b7ecf159949372581a779be041e8fc45802c46d`; index `main` is
+`dev` is pinned at `f225f8a6e7c9682bc7b67fea057148001ff7fb55`; index `main` is
 pinned at `6f7eb4ad249bb6ca3080ce485be6a8053861a624`. Level A
 storage/overworld checkpoints, Level B battle/RNG checkpoints, and reproducible
 modkit packages are merged through PRs #952, #986, and #959. The distributable mod
@@ -197,8 +197,8 @@ composes its Level A services entirely through `mod:read`, `mod.storage`,
 Gate D and its merged Level B implementation are recorded in
 `docs/battle-state-map.md`. The focused cross-mod audit is complete in
 `docs/cross-mod-compatibility.md`; its minimal lifecycle seam is branch
-`feat/checkpoint-restore-event` at `aa3b2a1`, ready for upstream review as PR #993.
-The mod test workflow pins that exact public-contract branch. The remaining
+`feat/checkpoint-restore-event` at `aa3b2a1`, merged as `ee891fb8` through PR #993.
+The mod test workflow now uses the merged public contract. The remaining
 external product gate is review, merge, and official release of the complete
 checkpoint contract; the release workflow stays fail-closed against that exact
 future tag.
@@ -274,16 +274,15 @@ no hidden normal save.
   `CONTINUE LATEST`, battle-manager entry through the proposed generic safe
   decision-boundary action, and optional public Modern UI notification
   presentation with a native fallback.
-- Generic title resume is independently rebased on `dev` at `dbade88`
-  (`feat/mod-title-checkpoint-resume`): 145/145 engine and 9/9 modkit suites
+- Generic title resume is independently rebased on `dev` at `5392b3a`
+  (`feat/mod-title-checkpoint-resume`): 145/145 engine and 10/10 modkit suites
   passed; Tier 3 was skipped because no legal generated data is present. It
   intentionally does not require PR #993.
 - Generic battle auxiliary action is independently based on `dev` at
-  `2d9be21` (`feat/battle-menu-auxiliary`): 146/146 engine and 8/8 modkit
+  `9633b6e` (`feat/battle-menu-auxiliary`): 146/146 engine and 9/9 modkit
   suites passed; Tier 3 was skipped for the same reason.
-- Fresh audit pins `dev` at `0b7ecf1`; #993 remains open, non-draft, at
-  `aa3b2a1`; GitHub's final mergeability computation is external and must be
-  refreshed immediately before publication. #1023 provides
+- Fresh audit pins `dev` at `f225f8a`; #993 is merged as `ee891fb8` (PR head
+  `aa3b2a1`). #1023 provides
   battle render visibility only, not a command-boundary input seam.
 - Both engine branches are pushed to the MaxTomahawk fork. Attempts to open
   upstream PRs through the connected GitHub integration return HTTP 403
@@ -317,16 +316,14 @@ no hidden normal save.
 
 ### Current coherent development integration — 2026-08-10
 
-- The private integration worktree is at `2ff8bb0` over current `dev` `0b7ecf1`,
-  with #993 `aa3b2a1`, title resume `dbade88`, and battle auxiliary action
-  `2d9be21`. Its only integration-only change proves lifecycle composition:
-  title `Checkpoint.resume` emits `checkpoint.restored` exactly once only after
-  final verified installation when #993 is present. The standalone title branch
-  stays independent of #993. Carry this tiny composition follow-up only after
-  both focused upstream contributions land; do not broaden either PR solely to
-  form the local Android stack.
+- The private integration worktree is at `4234411` over current `dev` `f225f8a`,
+  with merged #993 `ee891fb8`, title resume `5392b3a`, and battle auxiliary
+  action `9633b6e`. Title `Checkpoint.resume` now emits
+  `checkpoint.restored` exactly once only after final verified installation,
+  directly in the title-resume contribution because the lifecycle contract is
+  part of its merged base; no integration-only lifecycle patch remains.
 - Fresh evidence against that exact stack: `./scripts/test.sh --quick` passes
-  146/146 engine and 10/10 modkit suites (including 46/46 cross-mod, 32/32 title
+  146/146 engine and 10/10 modkit suites (including 46/46 cross-mod, 33/33 title
   context, and 10/10 battle-menu suites); Tier 3 is correctly skipped without
   imported/generated data. `make check` at Save States `3d5619a` passes 912 Lua
   behavior checks, 7 Python release/package checks, validation/lint, two

@@ -12,8 +12,8 @@ provides exact titles, bases, bodies, and compare URLs for manual publication.
 | Field | Value |
 | --- | --- |
 | Fork branch | `MaxTomahawk/gen1recomp:feat/mod-title-checkpoint-resume` |
-| Head | `dbade88f3ed7cb5a468d2841875cdcbc6f680d53` |
-| Base | `bryanthaboi/gen1recomp:dev` at `0b7ecf159949372581a779be041e8fc45802c46d` |
+| Head | `5392b3a503cbabd487c086b387bb2d5db0fc5a99` |
+| Base | `bryanthaboi/gen1recomp:dev` at `f225f8a6e7c9682bc7b67fea057148001ff7fb55` |
 | Title | `feat(mods): resume selected checkpoints from title` |
 | Open PR | <https://github.com/bryanthaboi/gen1recomp/compare/dev...MaxTomahawk:feat/mod-title-checkpoint-resume?expand=1> |
 
@@ -32,13 +32,13 @@ checkpoint that belongs to the launcher-selected existing playthrough.
   mods can make policy decisions without reading canonical save data.
 
 No normal Pokémon save is created. NEW GAME stays a fresh identity, options stay
-current, and failures leave a usable title session. This branch deliberately
-remains independent of `checkpoint.restored`; the combined integration stack
-proves the existing lifecycle is emitted exactly once when PR #993 is present.
+current, and failures leave a usable title session. Because `checkpoint.restored`
+is now merged in the base, a title resume emits that success-only lifecycle event
+exactly once after the same final verification boundary as live restore.
 
 ## Verification
 
-- `./scripts/test.sh --quick` — 145/145 engine suites, 9/9 modkit suites.
+- `./scripts/test.sh --quick` — 145/145 engine suites, 10/10 modkit suites.
 - Title selected-context, no-first-normal-save, corruption, recovery, cross-slot,
   cross-game, mod-save rebinding, and no-mod parity coverage are included.
 - ROM-derived Tier 3 is skipped because no generated/imported game data is in
@@ -50,8 +50,8 @@ proves the existing lifecycle is emitted exactly once when PR #993 is present.
 | Field | Value |
 | --- | --- |
 | Fork branch | `MaxTomahawk/gen1recomp:feat/battle-menu-auxiliary` |
-| Head | `2d9be2173ab0a0def6a6df5a381a72f16c344529` |
-| Base | `bryanthaboi/gen1recomp:dev` at `0b7ecf159949372581a779be041e8fc45802c46d` |
+| Head | `9633b6ebb2a54000a172f26501d4981df3afb4af` |
+| Base | `bryanthaboi/gen1recomp:dev` at `f225f8a6e7c9682bc7b67fea057148001ff7fb55` |
 | Title | `feat(mods): add battle menu auxiliary action` |
 | Open PR | <https://github.com/bryanthaboi/gen1recomp/compare/dev...MaxTomahawk:feat/battle-menu-auxiliary?expand=1> |
 
@@ -76,7 +76,7 @@ serialization behavior.
 - `luajit tests/engine/battle_menu_auxiliary.lua` — 10/10.
 - `luajit tests/engine/battle_checkpoint_boundary.lua` — 13/13.
 - `luajit tests/modkit/cases/checkpoints.lua` — 58/58.
-- `./scripts/test.sh --quick` — 146/146 engine suites, 8/8 modkit suites.
+- `./scripts/test.sh --quick` — 146/146 engine suites, 9/9 modkit suites.
 - ROM-derived Tier 3 is skipped because no generated/imported game data is in
   the public worktree.
 ```
