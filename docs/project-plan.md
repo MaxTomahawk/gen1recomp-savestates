@@ -3,7 +3,7 @@
 Status: active execution; Level A and Level B merged upstream; cross-mod restore
 lifecycle ready for upstream review; rich previews implemented and verified
 
-Updated: 2026-08-09
+Updated: 2026-08-10
 
 Product owner: MaxTomahawk
 
@@ -202,6 +202,54 @@ The mod test workflow pins that exact public-contract branch. The remaining
 external product gate is review, merge, and official release of the complete
 checkpoint contract; the release workflow stays fail-closed against that exact
 future tag.
+
+### Fresh title/resume and mobile UX pass — 2026-08-10
+
+Fresh upstream audit: official `dev` remains
+`943ba5dcbfa62cf831e881684857ffd4867fe774`; candidate PR #993 remains open,
+non-draft, mergeable, and pinned at
+`aa3b2a18ec06d844f42be873278c5232628376fa`. The only overlapping public UI PR
+found, #1023, exposes battle render-visibility predicates only; it does not
+provide a safe battle auxiliary action or command-boundary input hook. The
+separate lifecycle PR #1037 does not provide title/playthrough resolution or
+checkpoint bootstrapping.
+
+The title hook `ui.title_menu.items` is public and sufficient to add a native
+`SAVE STATES` row. It is intentionally insufficient to browse or load history:
+`mod.storage` binds only to the active `game.save`, and its first call can
+allocate an identity. At title, `Game:load` creates a fresh save skeleton;
+`SaveData.ensurePlaythroughId` deliberately treats that object as fresh and
+must not reuse the selected slot's former identity. In addition,
+`mod.checkpoints:restore` deliberately requires a live supported overworld or
+battle runtime and rejects title as `not_overworld`. Therefore a title manager
+implemented only in mod code would either mint/select the wrong identity or
+need private persistence/checkpoint internals. It is not an acceptable route.
+
+Next ordered work is:
+
+1. Add a minimal public-facing engine regression that reproduces a registered
+   New Game playthrough with durable tool storage/checkpoint data but no normal
+   Pokémon save, then proves that title has no non-mutating way to resolve and
+   resume it today.
+2. From that proof, design and test the narrowest generic selected-playthrough
+   title context plus validated checkpoint bootstrap transaction. It must keep
+   explicit New Game fresh, preserve current options, reject corrupt data before
+   live mutation, and leave a usable title state on failure. This is an engine
+   responsibility; the mod will own title rows, history browsing, and the
+   `CONTINUE LATEST` policy only after the generic public mechanism exists.
+3. Independently improve the mod's logical-viewport UI: compact/paged preview
+   details, a capture-time/relative-time display choice only if it improves
+   browsing, and a HUD banner geometry that avoids touch-control overlap using
+   the public logical viewport. These do not wait for title bootstrap.
+4. Re-audit battle entry only after the title primitive is proven. If no public
+   command-boundary auxiliary action exists then, open a separate focused
+   generic engine seam; #1023 is not that seam.
+
+Verification for this pass is new evidence, not inherited counts: focused
+title/playthrough/bootstrap and battle-entry tests, affected mod behavior tests,
+the full public engine quick suite, the complete mod gate, and a rebuilt Android
+bundle only after these features form one coherent stack. Physical Android
+geometry and ROM-backed behavior remain explicit manual acceptance gates.
 
 Latest verification (2026-08-08):
 
