@@ -267,6 +267,30 @@ quick/auto/slot capture times, rejects implausibly future metadata, skips corrup
 or incompatible records, gives native normal SAVE exact-time ties, and performs
 no hidden normal save.
 
+### Current integration branches — 2026-08-10
+
+- Save States `feat/initial-savestates` is at `e741170`; it adds default-ON
+  `CONTINUE LATEST` and battle-manager entry through the proposed generic safe
+  decision-boundary action.
+- Generic title resume is independently rebased on `dev` at `3f25dde`
+  (`feat/mod-title-checkpoint-resume`): 139/139 engine and 8/8 modkit suites
+  passed; Tier 3 was skipped because no legal generated data is present. It
+  intentionally does not require PR #993.
+- Generic battle auxiliary action is independently based on `dev` at
+  `016b0b9` (`feat/battle-menu-auxiliary`): 140/140 engine and 7/7 modkit
+  suites passed; Tier 3 was skipped for the same reason.
+- Fresh audit pins `dev` at `943ba5d`; #993 remains open, non-draft,
+  `mergeable=true`, `mergeable_state=clean`, at `aa3b2a1`. #1023 provides
+  battle render visibility only, not a command-boundary input seam.
+- Both engine branches are pushed to the MaxTomahawk fork. Attempts to open
+  upstream PRs through the connected GitHub integration return HTTP 403
+  `Resource not accessible by integration`; this is an external publication
+  permission blocker, not a test or merge conflict.
+- Gen1 Modern UI was freshly cloned at `847e7b9` (0.8.4). Its public v1
+  screen-adapter contract covers standard ListMenu/OptionsMenu screens, but it
+  has no public data-only transient notification surface. Modern notifications
+  need a focused Modern UI extension, never private theme access or an engine patch.
+
 Verification for this pass is new evidence, not inherited counts: focused
 title/playthrough/bootstrap and battle-entry tests, affected mod behavior tests,
 the full public engine quick suite, the complete mod gate, and a rebuilt Android
