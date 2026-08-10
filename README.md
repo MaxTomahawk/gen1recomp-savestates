@@ -25,12 +25,24 @@ focused Gen1Recomp public-API branch linked from the project plan.
 
 Open START after overworld movement has settled. `QUICKSAVE` captures immediately;
 `STATES` opens histories, slots, undo, and current settings. Vanilla `SAVE` is
-unchanged.
+unchanged. The development stack also adds `SAVE STATES` to the title menu: it
+browses only the selected existing playthrough and can resume a compatible saved
+state without silently creating a normal Pokémon save.
 
 ## START Menu
 
 The mod decorates the existing menu through the public hook; it does not rebuild
 or replace vanilla or other-mod rows.
+
+## Title Menu
+
+`SAVE STATES` is inserted before `NEW GAME` on the native title menu. It reuses
+the same quick, auto, and slot histories but does not offer live capture,
+overwrite, or undo: title has no safe live runtime to snapshot. Loading delegates
+to the engine's validated title-resume transaction; pinning, renaming, and
+deleting remain durable operations inside the selected Save States namespace.
+This currently requires the unpublished development engine contract described in
+the project plan and is not yet part of a released compatibility promise.
 
 ## Quick Saves
 

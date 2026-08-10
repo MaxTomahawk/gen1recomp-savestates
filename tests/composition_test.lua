@@ -4,15 +4,33 @@ local T = Test.new("core composition")
 local logs = {}
 local registeredScreens = {}
 local startMenuWrapper
+local titleMenuWrapper
 local renderHudWrapper
 local inputStepWrapper
 local eventHandlers = {}
+local selectedStorageCalls = 0
 local mod = {
   id = "savestates",
   version = "0.1.0",
   path = "mods/savestates",
   exports = {},
-  storage = {},
+  storage = {
+    selected = function(_, game)
+      selectedStorageCalls = selectedStorageCalls + 1
+      T:eq(game.save.meta.playthroughId, nil,
+        "title storage resolution receives the unbound fresh title skeleton")
+      return {
+        context = function()
+          return { engineVersion = "0.9.0-dev", gameVersion = "red",
+            playthroughId = "selected-playthrough" }
+        end,
+        read = function(_, key) return nil, "not_found", "missing " .. key end,
+        write = function() return true end,
+        list = function() return {} end,
+        delete = function() return true end,
+      }
+    end,
+  },
   checkpoints = {},
   options = {
     get = function() return nil end,
@@ -21,6 +39,7 @@ local mod = {
   hooks = {
     wrap = function(_, name, callback)
       if name == "ui.start_menu.items" then startMenuWrapper = callback end
+      if name == "ui.title_menu.items" then titleMenuWrapper = callback end
       if name == "render.hud" then renderHudWrapper = callback end
       if name == "input.step" then inputStepWrapper = callback end
       return function() end
@@ -89,6 +108,7 @@ T:eq(type(mod.exports.quickLoad), "function", "composition publishes quickload c
 T:eq(type(mod.exports.undoLastLoad), "function", "composition publishes undo command")
 T:eq(#(mod.options.schema or {}), 10, "composition registers the full options schema")
 T:eq(type(startMenuWrapper), "function", "composition installs START decoration")
+T:eq(type(titleMenuWrapper), "function", "composition installs title decoration")
 T:eq(type(renderHudWrapper), "function", "composition installs non-modal HUD overlay")
 T:eq(type(inputStepWrapper), "function", "composition installs deferred autosave boundary")
 T:eq(type(eventHandlers["map.entered"]), "function",
@@ -108,6 +128,18 @@ local menu = startMenuWrapper(function(_, items) return items end, {}, {
 })
 T:eq(menu[2].label, "QUICKSAVE", "composed START menu exposes quicksave")
 T:eq(menu[3].label, "STATES", "composed START menu exposes manager")
+local titleMenu = titleMenuWrapper(function(_, items) return items end, {}, {
+  { label = "CONTINUE" }, { label = "NEW GAME" }, { label = "OPTION" },
+})
+T:eq(titleMenu[2].label, "SAVE STATES",
+  "composed title menu exposes selected-playthrough manager")
+local titleRoot = registeredScreens[mod.exports.screenIds.root].new({
+  save = { version = "red", meta = {} },
+}, { context = "title" })
+T:eq(selectedStorageCalls, 1,
+  "title manager resolves only the engine-selected storage facade")
+T:eq(titleRoot.items[1].label, "QUICK SAVES",
+  "empty selected title history remains natively browsable")
 T:check(type(logs[#logs]) == "string" and logs[#logs]:find("core ready", 1, true),
   "successful composition logs one ready lifecycle message")
 for _, message in ipairs(logs) do

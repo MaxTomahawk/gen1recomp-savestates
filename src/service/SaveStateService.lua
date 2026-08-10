@@ -208,8 +208,8 @@ return function(deps)
     return nil, code, message
   end
 
-  function Service:_store(game)
-    local ok, store, code, message = pcall(self.storeFactory, game)
+  function Service:_store(game, scope)
+    local ok, store, code, message = pcall(self.storeFactory, game, scope)
     if not ok then
       return nil, "unexpected_error", "Could not initialize state storage: " .. tostring(store)
     end
@@ -528,12 +528,12 @@ return function(deps)
     return snapshot, code, message
   end
 
-  function Service:pinToSlot(game, sourceId, slot, label)
+  function Service:_pinToSlot(game, sourceId, slot, label, scope)
     if not validSlot(slot) then
       return self:_failure("save_failed", "invalid_slot",
         "Permanent slot must be an integer from 1 through 10.")
     end
-    local store, storeCode, storeMessage = self:_store(game)
+    local store, storeCode, storeMessage = self:_store(game, scope)
     if not store then return self:_failure("save_failed", storeCode, storeMessage) end
     local index, indexCode, indexMessage = invoke(store, "loadIndex")
     if not index then return self:_failure("save_failed", indexCode, indexMessage) end
@@ -548,14 +548,22 @@ return function(deps)
     return snapshot, code, message
   end
 
-  function Service:renameSlot(game, slot, label)
+  function Service:pinToSlot(game, sourceId, slot, label)
+    return self:_pinToSlot(game, sourceId, slot, label)
+  end
+
+  function Service:titlePinToSlot(game, sourceId, slot, label)
+    return self:_pinToSlot(game, sourceId, slot, label, "selected")
+  end
+
+  function Service:_renameSlot(game, slot, label, scope)
     if not validSlot(slot) then
       return self:_failure("save_failed", "invalid_slot",
         "Permanent slot must be an integer from 1 through 10.")
     end
     local checkedLabel, labelCode, labelMessage = slotLabel(slot, label)
     if not checkedLabel then return self:_failure("save_failed", labelCode, labelMessage) end
-    local store, storeCode, storeMessage = self:_store(game)
+    local store, storeCode, storeMessage = self:_store(game, scope)
     if not store then return self:_failure("save_failed", storeCode, storeMessage) end
     local index, indexCode, indexMessage = invoke(store, "loadIndex")
     if not index then return self:_failure("save_failed", indexCode, indexMessage) end
@@ -571,8 +579,16 @@ return function(deps)
     return snapshot, code, message
   end
 
-  function Service:listSlots(game)
-    local store, storeCode, storeMessage = self:_store(game)
+  function Service:renameSlot(game, slot, label)
+    return self:_renameSlot(game, slot, label)
+  end
+
+  function Service:titleRenameSlot(game, slot, label)
+    return self:_renameSlot(game, slot, label, "selected")
+  end
+
+  function Service:_listSlots(game, scope)
+    local store, storeCode, storeMessage = self:_store(game, scope)
     if not store then return nil, storeCode, storeMessage end
     local index, indexCode, indexMessage = invoke(store, "loadIndex")
     if not index then return nil, indexCode, indexMessage end
@@ -586,6 +602,14 @@ return function(deps)
       rows[slot] = row
     end
     return rows
+  end
+
+  function Service:listSlots(game)
+    return self:_listSlots(game)
+  end
+
+  function Service:titleListSlots(game)
+    return self:_listSlots(game, "selected")
   end
 
   function Service:loadSlot(game, slot)
@@ -632,17 +656,20 @@ return function(deps)
       "No valid Quick Save is available in this history."
   end
 
-  function Service:summary(game)
-    local store, storeCode, storeMessage = self:_store(game)
+  function Service:_summary(game, scope)
+    local store, storeCode, storeMessage = self:_store(game, scope)
     if not store then return nil, storeCode, storeMessage end
     local index, indexCode, indexMessage = invoke(store, "loadIndex")
     if not index then return nil, indexCode, indexMessage end
     local record = index:record()
     local slotCount = 0
     for _ in pairs(record.slots or {}) do slotCount = slotCount + 1 end
-    local recovery, recoveryCode, recoveryMessage = invoke(store, "loadRecovery")
-    if not recovery and recoveryCode ~= "no_recovery" then
-      self:_warn(recoveryCode, recoveryMessage, { id = "recovery" })
+    local recovery, recoveryCode, recoveryMessage
+    if scope ~= "selected" then
+      recovery, recoveryCode, recoveryMessage = invoke(store, "loadRecovery")
+      if not recovery and recoveryCode ~= "no_recovery" then
+        self:_warn(recoveryCode, recoveryMessage, { id = "recovery" })
+      end
     end
     return {
       quickCount = #index:list("quick"),
@@ -654,11 +681,19 @@ return function(deps)
     }
   end
 
-  function Service:listStates(game, class)
+  function Service:summary(game)
+    return self:_summary(game)
+  end
+
+  function Service:titleSummary(game)
+    return self:_summary(game, "selected")
+  end
+
+  function Service:_listStates(game, class, scope)
     if class ~= "quick" and class ~= "auto" then
       return nil, "invalid_class", "Only rolling state histories can be listed."
     end
-    local store, storeCode, storeMessage = self:_store(game)
+    local store, storeCode, storeMessage = self:_store(game, scope)
     if not store then return nil, storeCode, storeMessage end
     local index, indexCode, indexMessage = invoke(store, "loadIndex")
     if not index then return nil, indexCode, indexMessage end
@@ -672,8 +707,16 @@ return function(deps)
     return rows
   end
 
-  function Service:inspectState(game, id)
-    local store, storeCode, storeMessage = self:_store(game)
+  function Service:listStates(game, class)
+    return self:_listStates(game, class)
+  end
+
+  function Service:titleListStates(game, class)
+    return self:_listStates(game, class, "selected")
+  end
+
+  function Service:_inspectState(game, id, scope)
+    local store, storeCode, storeMessage = self:_store(game, scope)
     if not store then return nil, storeCode, storeMessage end
     local index, indexCode, indexMessage = invoke(store, "loadIndex")
     if not index then return nil, indexCode, indexMessage end
@@ -690,6 +733,14 @@ return function(deps)
       warnings = warnings,
       preview = snapshot and snapshot.metadata.preview or metadata.preview,
     }
+  end
+
+  function Service:inspectState(game, id)
+    return self:_inspectState(game, id)
+  end
+
+  function Service:titleInspectState(game, id)
+    return self:_inspectState(game, id, "selected")
   end
 
   function Service:_captureRecovery(game, store)
@@ -759,8 +810,37 @@ return function(deps)
     return self:_restoreTarget(game, store, target, warnings)
   end
 
-  function Service:deleteState(game, id)
-    local store, storeCode, storeMessage = self:_store(game)
+  -- Title has no live gameplay runtime from which a recovery checkpoint can
+  -- be captured. The engine-owned resume transaction validates and rebuilds
+  -- the selected checkpoint instead. Its separate selected scope is crucial:
+  -- resolving title history must never bind the fresh title skeleton as a New
+  -- Game playthrough.
+  function Service:resumeTitleState(game, id)
+    local store, storeCode, storeMessage = self:_store(game, "selected")
+    if not store then return self:_failure("load_failed", storeCode, storeMessage) end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return self:_failure("load_failed", indexCode, indexMessage) end
+    if not index:get(id) then
+      return self:_failure("load_failed", "not_found", "Savestate is not indexed.")
+    end
+    local target, targetCode, targetMessage, warnings = invoke(store, "readSnapshot", id)
+    if not target then return self:_failure("load_failed", targetCode, targetMessage) end
+    local resumed, resumeCode, resumeMessage = invoke(
+      self.checkpoints, "resume", game, target.checkpoint)
+    if not resumed then
+      return self:_failure("load_failed", resumeCode, resumeMessage,
+        { id = target.metadata.id })
+    end
+    self:_notify("state_loaded", {
+      id = target.metadata.id,
+      locationName = target.metadata.locationName,
+      warnings = warnings,
+    })
+    return target, nil, nil, warnings
+  end
+
+  function Service:_deleteState(game, id, scope)
+    local store, storeCode, storeMessage = self:_store(game, scope)
     if not store then return self:_failure("save_failed", storeCode, storeMessage) end
     local index, indexCode, indexMessage = invoke(store, "loadIndex")
     if not index then return self:_failure("save_failed", indexCode, indexMessage) end
@@ -773,6 +853,14 @@ return function(deps)
     if deleteCode then self:_warn(deleteCode, deleteMessage, metadata) end
     self:_notify("state_deleted", { id = id, warning = deleteCode })
     return true, deleteCode, deleteMessage
+  end
+
+  function Service:deleteState(game, id)
+    return self:_deleteState(game, id)
+  end
+
+  function Service:titleDeleteState(game, id)
+    return self:_deleteState(game, id, "selected")
   end
 
   function Service:quickLoad(game)

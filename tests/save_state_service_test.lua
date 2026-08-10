@@ -125,9 +125,20 @@ local function environment(args)
     targetGame.current = assert(DataOnly.copy(target))
     return true
   end
+  function checkpoints:resume(targetGame, target)
+    events[#events + 1] = "resume:" .. tostring(target.save.money)
+    if self.resumeFailure then
+      return false, self.resumeFailure, "injected title resume failure"
+    end
+    targetGame.current = assert(DataOnly.copy(target))
+    return true
+  end
 
   local migrations = StateMigrations.new(1)
-  local function storeFactory(targetGame)
+  local storeScopes = {}
+  local function storeFactory(targetGame, scope)
+    storeScopes[#storeScopes + 1] = scope or "active"
+    if scope == "selected" then events[#events + 1] = "selected_store" end
     return StateStore.new({
       storage = storage,
       game = targetGame,
@@ -187,6 +198,7 @@ local function environment(args)
     warnings = warnings,
     errors = errors,
     events = events,
+    storeScopes = storeScopes,
     storeFactory = storeFactory,
     setNow = function(value) now = value end,
     setLimit = function(value) limit = value end,
@@ -604,6 +616,82 @@ allCorrupt.storage.values["states/q00000001"].metadata.createdAt = -1
 local noValid, noValidCode = allCorrupt.service:quickLoad(allCorrupt.game)
 T:eq(noValid, nil, "history with no valid payload cannot load")
 T:eq(noValidCode, "no_valid_quick_save", "all-invalid history has distinct error code")
+
+-- A title session has no live runtime to protect with a recovery snapshot.
+-- It must use the engine's separate validated resume transaction and the
+-- selected-playthrough storage scope, never ordinary active-game restore.
+local titleResume = environment({ money = 100 })
+local titleTarget = titleResume.service:quickSave(titleResume.game)
+T:check(titleTarget ~= nil, "title-resume fixture has a durable quicksave")
+titleResume.game.current = checkpoint(900)
+local eventCount = #titleResume.events
+T:eq(type(titleResume.service.resumeTitleState), "function",
+  "service exposes a distinct title checkpoint resume operation")
+if type(titleResume.service.resumeTitleState) == "function" and titleTarget then
+  local resumed, resumeCode, resumeMessage = titleResume.service:resumeTitleState(
+    titleResume.game, titleTarget.metadata.id)
+  T:check(resumed ~= nil,
+    "title resume installs a validated selected state: " .. tostring(resumeCode or resumeMessage))
+  T:eq(titleResume.game.current.save.money, 100,
+    "title resume reconstructs the selected checkpoint progress")
+  T:eq(titleResume.events[eventCount + 1], "selected_store",
+    "title resume resolves storage through the selected playthrough scope")
+  T:eq(titleResume.events[#titleResume.events], "resume:100",
+    "title resume uses the engine bootstrap operation instead of live restore")
+  for index = eventCount + 1, #titleResume.events do
+    T:check(titleResume.events[index] ~= "capture"
+        and titleResume.events[index] ~= "write:recovery",
+      "title resume never captures a recovery checkpoint")
+  end
+end
+T:eq(type(titleResume.service.titleSummary), "function",
+  "title manager exposes a selected-playthrough summary")
+T:eq(type(titleResume.service.titleListStates), "function",
+  "title manager exposes selected quick and auto history")
+T:eq(type(titleResume.service.titleInspectState), "function",
+  "title manager inspects selected state payloads")
+T:eq(type(titleResume.service.titleListSlots), "function",
+  "title manager exposes selected permanent slots")
+T:eq(type(titleResume.service.titlePinToSlot), "function",
+  "title manager can make a durable slot copy without live capture")
+T:eq(type(titleResume.service.titleRenameSlot), "function",
+  "title manager can rename a selected permanent slot")
+T:eq(type(titleResume.service.titleDeleteState), "function",
+  "title manager can delete selected durable state data")
+if titleTarget and type(titleResume.service.titleSummary) == "function"
+    and type(titleResume.service.titleListStates) == "function"
+    and type(titleResume.service.titleInspectState) == "function"
+    and type(titleResume.service.titleListSlots) == "function"
+    and type(titleResume.service.titlePinToSlot) == "function"
+    and type(titleResume.service.titleRenameSlot) == "function"
+    and type(titleResume.service.titleDeleteState) == "function" then
+  local titleSummary = titleResume.service:titleSummary(titleResume.game)
+  T:eq(titleSummary.quickCount, 1, "title summary reads selected quick history")
+  T:eq(titleSummary.undoAvailable, false,
+    "title summary never presents recovery as an automatic resume choice")
+  local titleRows = titleResume.service:titleListStates(titleResume.game, "quick")
+  T:eq(titleRows[1].metadata.id, titleTarget.metadata.id,
+    "title history exposes the selected quick metadata")
+  local titleDetail = titleResume.service:titleInspectState(
+    titleResume.game, titleTarget.metadata.id)
+  T:eq(titleDetail.available, true, "title inspection validates the selected payload")
+  local pinned = titleResume.service:titlePinToSlot(
+    titleResume.game, titleTarget.metadata.id, 2)
+  T:check(pinned ~= nil, "title pin copies a selected state without live capture")
+  T:eq(pinned.metadata.createdAt, titleTarget.metadata.createdAt,
+    "title pin preserves original capture chronology")
+  local renamed = titleResume.service:titleRenameSlot(titleResume.game, 2, "BEFORE TEST")
+  T:check(renamed ~= nil, "title slot rename is a selected durable operation")
+  T:eq(renamed.metadata.createdAt, titleTarget.metadata.createdAt,
+    "title rename preserves original capture chronology")
+  local titleSlots = titleResume.service:titleListSlots(titleResume.game)
+  T:eq(titleSlots[2].metadata.label, "BEFORE TEST",
+    "title slot list reflects renamed selected metadata")
+  T:check(titleResume.service:titleDeleteState(titleResume.game, titleTarget.metadata.id),
+    "title delete removes the selected history entry")
+  T:eq(#titleResume.service:titleListStates(titleResume.game, "quick"), 0,
+    "title delete does not require a live checkpoint runtime")
+end
 
 local recoveryCaptureFailure = environment({ money = 100 })
 T:check(recoveryCaptureFailure.service:quickSave(recoveryCaptureFailure.game),

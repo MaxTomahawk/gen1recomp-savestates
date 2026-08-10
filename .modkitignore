@@ -29,6 +29,7 @@ tests/state_index_test.lua
 tests/state_store_test.lua
 tests/testlib.lua
 tests/time_test.lua
+tests/title_menu_test.lua
 tests/ui_screens_test.lua
 tests/release_gate_test.py
 tools/package_gate.py

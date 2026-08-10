@@ -51,7 +51,8 @@ return function(mod)
   local StoreFactory = AutoSaveController and module("src/state/StateStore.lua")
   local Options = StoreFactory and module("src/config/Options.lua")
   local StartMenu = Options and module("src/ui/StartMenuIntegration.lua")
-  local ScreenFactory = StartMenu and module("src/ui/ScreenRegistry.lua")
+  local TitleMenu = StartMenu and module("src/ui/TitleMenuIntegration.lua")
+  local ScreenFactory = TitleMenu and module("src/ui/ScreenRegistry.lua")
   local Notification = ScreenFactory and module("src/ui/Notification.lua")
   local ServiceFactory = Notification and module("src/service/SaveStateService.lua")
   if not ServiceFactory then return end
@@ -107,9 +108,28 @@ return function(mod)
     })
     local service = Service.new({
       checkpoints = mod.checkpoints,
-      storeFactory = function(game)
+      storeFactory = function(game, scope)
+        local storage = mod.storage
+        if scope == "selected" then
+          if type(storage.selected) ~= "function" then
+            return nil, "api_unavailable",
+              "Selected-playthrough storage is unavailable in this engine build."
+          end
+          local selected, selectedCode, selectedMessage = storage:selected(game)
+          if not selected then return nil, selectedCode, selectedMessage end
+          -- StateStore uses the regular public storage calling convention. This
+          -- adapter deliberately closes over the engine-selected facade, so no
+          -- mod-local caller can substitute a game, id, or storage namespace.
+          storage = {
+            context = function() return selected:context() end,
+            read = function(_, _, key) return selected:read(key) end,
+            write = function(_, _, key, value) return selected:write(key, value) end,
+            list = function(_, _, prefix) return selected:list(prefix) end,
+            delete = function(_, _, key) return selected:delete(key) end,
+          }
+        end
         return StateStore.new({
-          storage = mod.storage,
+          storage = storage,
           game = game,
           validator = Validator,
           migrations = migrations,
@@ -167,6 +187,7 @@ return function(mod)
       StateStore = StateStore,
       Options = Options,
       StartMenu = StartMenu,
+      TitleMenu = TitleMenu,
       Screens = Screens,
       Notification = Notification,
       notification = notification,
@@ -182,6 +203,7 @@ return function(mod)
   mod.options:define(core.Options.schema())
   core.screenIds = core.Screens.install(mod, core.service, os.time)
   core.StartMenu.install(mod, core.service, core.screenIds.root)
+  core.TitleMenu.install(mod, core.screenIds.root)
   core.autosaves = core.AutoSaveController.new({
     service = core.service,
     checkpoints = mod.checkpoints,

@@ -9,9 +9,10 @@ plus the merged Level B battle/RNG extension in upstream PR
 The focused cross-mod audit proved one remaining generic lifecycle need, proposed
 as success-only `checkpoint.restored` in upstream ready-for-review PR
 [`bryanthaboi/gen1recomp#993`](https://github.com/bryanthaboi/gen1recomp/pull/993).
-It is not a supported player release until that complete public contract ships in
-an official engine release and `manifest.json` can name that release as its
-minimum.
+Title browsing/resume additionally depends on the unpublished generic
+selected-playthrough/title-checkpoint contract under local engine review. It is
+not a supported player release until every required public contract ships in an
+official engine release and `manifest.json` can name that release as its minimum.
 
 ## Supported now
 
@@ -35,7 +36,10 @@ minimum.
 - Battle intro/messages/queues, HP tweens, animations, forced player actions,
   faint processing, link/Safari/ghost/demo variants, fishing/static origins,
   mod-defined completion closures, and battles suspending a script coroutine.
-- Title/new-game states without an identified active playthrough.
+- Arbitrary title/new-game capture. The development title manager can only
+  browse the engine-selected existing playthrough and resume a validated stored
+  checkpoint through the dedicated engine transaction; it never captures a
+  title screen or turns a fresh New Game skeleton into progress.
 
 The manager closes its known native widget chain before a load or live slot save.
 Manual requests made through exports while a phase is unsafe return a structured
@@ -72,6 +76,8 @@ exact source-map boundary.
 | Present malformed preview metadata | rejected as `corrupt_preview` before mutation |
 | Missing/corrupt payload | retained and shown unavailable |
 | Unsupported runtime kind | rejected: `unsupported_runtime_kind` |
+| Title history with no selected existing playthrough | browsable only as a clean unavailable/empty state; no identity is minted |
+| Title load on the development engine contract | validated selected-playthrough bootstrap; no recovery or normal SAVE is created |
 
 Suspended script and arbitrary-frame support require separate future contracts.
 

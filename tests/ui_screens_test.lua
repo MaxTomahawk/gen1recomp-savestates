@@ -104,6 +104,35 @@ function service:pinToSlot(_, id, slot)
   }
   return true
 end
+function service:titleSummary()
+  return {
+    quickCount = self.summaryValue.quickCount,
+    autoCount = self.summaryValue.autoCount,
+    slotCount = self.summaryValue.slotCount,
+    slotCapacity = self.summaryValue.slotCapacity,
+    undoAvailable = false,
+  }
+end
+function service:titleListStates(_, class) return self:listStates(nil, class) end
+function service:titleListSlots() return self:listSlots() end
+function service:titleInspectState(_, id) return self:inspectState(nil, id) end
+function service:resumeTitleState(_, id)
+  calls[#calls + 1] = "titleResume:" .. id
+  return true
+end
+function service:titlePinToSlot(_, id, slot)
+  calls[#calls + 1] = "titlePin:" .. id .. ":" .. slot
+  return true
+end
+function service:titleRenameSlot(_, slot, name)
+  calls[#calls + 1] = "titleRename:" .. slot .. ":" .. name
+  return { metadata = { id = "s02_title", slot = slot, label = name,
+    locationName = "CERULEAN GYM", createdAt = 1000 } }
+end
+function service:titleDeleteState(_, id)
+  calls[#calls + 1] = "titleDelete:" .. id
+  return true
+end
 
 local ids = ScreenFactory.install(mod, service, function() return 1000 end)
 T:eq(type(ids), "table", "screen installation returns stable ids")
@@ -123,6 +152,15 @@ T:eq(root.items[4].label, "SETTINGS", "root omits unavailable undo cleanly")
 root.items[1].onSelect()
 T:eq(pushes[#pushes].id, ids.history, "quick row opens registered history screen")
 T:eq(pushes[#pushes].opts.class, "quick", "quick row passes history class")
+
+local titleRoot = registered[ids.root].new(game, { context = "title" })
+T:eq(titleRoot.items[1].label, "QUICK SAVES",
+  "title manager reuses the normal history root")
+T:eq(titleRoot.items[4].label, "SETTINGS",
+  "title manager never offers runtime-only undo recovery")
+titleRoot.items[1].onSelect()
+T:eq(pushes[#pushes].opts.context, "title",
+  "title history remains in the selected-playthrough context")
 
 service.summaryValue.undoAvailable = true
 root = registered[ids.root].new(game)
@@ -180,6 +218,16 @@ if type(action.items[3].onSelect) == "function" then
   T:eq(detail.items[8].label, "SPARKY", "detail screen lists captured party member")
   T:eq(detail.items[8].right, "L22 45/57", "party preview contains captured level and HP")
 end
+
+local titleHistory = { close = function(self) self.closeCount = (self.closeCount or 0) + 1 end }
+local titleAction = registered[ids.actions].new(game, {
+  row = service.quickRows[1], parents = { titleHistory, titleRoot }, context = "title",
+})
+T:eq(titleAction.items[1].label, "LOAD", "title action exposes compatible load")
+T:eq(titleAction.items[2].label, "PIN TO SLOT", "title action retains durable pinning")
+titleAction.items[1].onSelect()
+T:eq(calls[#calls], "titleResume:q00000002",
+  "title load uses checkpoint resume rather than live restore")
 
 service.inspectOverrides = {
   qwarn = {
@@ -283,6 +331,12 @@ T:eq(emptySlotAction.items[1].label, "SAVE HERE", "empty slot offers save")
 emptySlotAction.items[1].onSelect()
 T:eq(calls[#calls], "saveSlot:3", "empty slot invokes stable save action")
 
+local titleEmptySlotAction = registered[ids.slotActions].new(game, {
+  row = service.slotRows[3], parents = { slotsScreen, titleRoot }, context = "title",
+})
+T:eq(titleEmptySlotAction.items[1].label, "CANCEL",
+  "title empty slots never offer a live checkpoint capture")
+
 local occupiedSlotAction = registered[ids.slotActions].new(game, {
   row = service.slotRows[2], parents = { slotsScreen, root }, slotMenu = slotsScreen,
 })
@@ -293,6 +347,22 @@ T:eq(occupiedLabels[2], "OVERWRITE", "occupied slot can overwrite")
 T:eq(occupiedLabels[3], "RENAME", "occupied slot can rename")
 T:eq(occupiedLabels[4], "DETAILS", "occupied slot exposes capture preview separately")
 T:eq(occupiedLabels[5], "DELETE", "occupied slot can delete")
+local titleOccupiedSlotAction = registered[ids.slotActions].new(game, {
+  row = service.slotRows[2], parents = { slotsScreen, titleRoot }, slotMenu = slotsScreen,
+  context = "title",
+})
+local titleOccupiedLabels = {}
+for i, item in ipairs(titleOccupiedSlotAction.items) do
+  titleOccupiedLabels[i] = item.label
+end
+T:eq(titleOccupiedLabels[1], "LOAD", "title occupied slot can resume")
+T:eq(titleOccupiedLabels[2], "RENAME", "title occupied slot keeps rename")
+T:eq(titleOccupiedLabels[3], "DETAILS", "title occupied slot keeps details")
+T:eq(titleOccupiedLabels[4], "DELETE", "title occupied slot keeps deletion")
+T:eq(titleOccupiedLabels[5], "CANCEL", "title occupied slot remains dismissible")
+titleOccupiedSlotAction.items[1].onSelect()
+T:eq(calls[#calls], "titleResume:" .. service.slotRows[2].metadata.id,
+  "title slot load delegates to selected checkpoint resume")
 local callsBeforeOverwrite = #calls
 occupiedSlotAction.items[2].onSelect()
 T:eq(pushes[#pushes].id, ids.overwriteConfirm,

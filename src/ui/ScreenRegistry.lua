@@ -26,6 +26,10 @@ return function(deps)
     if item and item.onSelect then item.onSelect(item, menu) end
   end
 
+  local function isTitleContext(opts)
+    return type(opts) == "table" and opts.context == "title"
+  end
+
   local function closeMenus(current, parents)
     if current and current.close then current:close() end
     for _, menu in ipairs(parents or {}) do
@@ -58,12 +62,17 @@ return function(deps)
   function Registry.install(mod, service, clock)
     clock = clock or os.time
 
-    local function inspect(row, game)
+    local function method(opts, activeName, titleName)
+      return service[isTitleContext(opts) and titleName or activeName]
+    end
+
+    local function inspect(row, game, opts)
       local metadata = type(row) == "table" and row.metadata or nil
-      if type(metadata) ~= "table" or type(service.inspectState) ~= "function" then
+      local inspectState = method(opts, "inspectState", "titleInspectState")
+      if type(metadata) ~= "table" or type(inspectState) ~= "function" then
         return row or { metadata = {} }
       end
-      local resolved, code, message = service:inspectState(game, metadata.id)
+      local resolved, code, message = inspectState(service, game, metadata.id)
       if resolved then return resolved end
       return {
         metadata = metadata,
@@ -74,9 +83,10 @@ return function(deps)
       }
     end
 
-    local function refreshRoot(game, root)
+    local function refreshRoot(game, root, opts)
       if type(root) ~= "table" or type(root.items) ~= "table" then return false end
-      local summary = service:summary(game)
+      local summaryFor = method(opts, "summary", "titleSummary")
+      local summary = type(summaryFor) == "function" and summaryFor(service, game) or nil
       if not summary then return false end
       for _, item in ipairs(root.items) do
         if item.label == "QUICK SAVES" then
@@ -91,8 +101,11 @@ return function(deps)
     end
 
     mod.content.screens:register(IDS.root, {
-      new = function(game)
-        local summary, code = service:summary(game)
+      new = function(game, opts)
+        opts = opts or {}
+        local summaryFor = method(opts, "summary", "titleSummary")
+        local summary, code
+        if type(summaryFor) == "function" then summary, code = summaryFor(service, game) end
         local menu
         if not summary then
           return mod.ui.ListMenu.new(game, "SAVE STATES", {
@@ -102,16 +115,20 @@ return function(deps)
         local items = {
           { label = "QUICK SAVES", right = tostring(summary.quickCount),
             onSelect = function()
-              mod.ui.push(game, IDS.history, { class = "quick", parent = menu })
+              mod.ui.push(game, IDS.history, {
+                class = "quick", parent = menu, context = opts.context,
+              })
             end },
           { label = "AUTO SAVES", right = tostring(summary.autoCount),
             onSelect = function()
-              mod.ui.push(game, IDS.history, { class = "auto", parent = menu })
+              mod.ui.push(game, IDS.history, {
+                class = "auto", parent = menu, context = opts.context,
+              })
             end },
           { label = "SAVE SLOTS",
             right = ("%d/%d"):format(summary.slotCount, summary.slotCapacity),
             onSelect = function()
-              mod.ui.push(game, IDS.slots, { parent = menu })
+              mod.ui.push(game, IDS.slots, { parent = menu, context = opts.context })
             end },
         }
         if summary.undoAvailable then
@@ -121,7 +138,7 @@ return function(deps)
           end }
         end
         items[#items + 1] = { label = "SETTINGS", onSelect = function()
-          mod.ui.push(game, IDS.settings, { parent = menu })
+          mod.ui.push(game, IDS.settings, { parent = menu, context = opts.context })
         end }
         menu = mod.ui.ListMenu.new(game, "SAVE STATES", items, {
           onChoose = dispatch,
@@ -135,7 +152,9 @@ return function(deps)
       new = function(game, opts)
         opts = opts or {}
         local class = opts.class == "auto" and "auto" or "quick"
-        local rows, code = service:listStates(game, class)
+        local listStates = method(opts, "listStates", "titleListStates")
+        local rows, code
+        if type(listStates) == "function" then rows, code = listStates(service, game, class) end
         local title = class == "auto" and "AUTO SAVES" or "QUICK SAVES"
         local menu
         local items = {}
@@ -154,6 +173,7 @@ return function(deps)
                 mod.ui.push(game, IDS.actions, {
                   row = item.value,
                   parents = { menu, opts.parent },
+                  context = opts.context,
                 })
               end,
             }
@@ -171,25 +191,29 @@ return function(deps)
     mod.content.screens:register(IDS.actions, {
       new = function(game, opts)
         opts = opts or {}
-        local row = inspect(opts.row, game)
+        local row = inspect(opts.row, game, opts)
         local metadata = row.metadata or {}
         local menu
         local items = {}
         if row.available then
           items[#items + 1] = { label = "LOAD", onSelect = function()
             closeMenus(menu, opts.parents)
-            service:loadState(game, metadata.id)
+            local loadState = method(opts, "loadState", "resumeTitleState")
+            if type(loadState) == "function" then loadState(service, game, metadata.id) end
           end }
           items[#items + 1] = { label = "PIN TO SLOT", onSelect = function()
             mod.ui.push(game, IDS.pinPicker, {
               sourceId = metadata.id,
               action = menu,
               root = opts.parents and opts.parents[2],
+              context = opts.context,
             })
           end }
         end
         items[#items + 1] = { label = "DETAILS", onSelect = function()
-          mod.ui.push(game, IDS.details, { row = row, parent = menu })
+          mod.ui.push(game, IDS.details, {
+            row = row, parent = menu, context = opts.context,
+          })
         end }
         items[#items + 1] = { label = "DELETE", onSelect = function()
           mod.ui.push(game, IDS.deleteConfirm, {
@@ -198,6 +222,7 @@ return function(deps)
             action = menu,
             history = opts.parents and opts.parents[1],
             root = opts.parents and opts.parents[2],
+            context = opts.context,
           })
         end }
         items[#items + 1] = { label = "CANCEL", onSelect = function()
@@ -215,7 +240,7 @@ return function(deps)
     mod.content.screens:register(IDS.details, {
       new = function(game, opts)
         opts = opts or {}
-        local row = inspect(opts.row, game)
+        local row = inspect(opts.row, game, opts)
         local metadata = row.metadata or {}
         local status = row.available and
           ((type(row.warnings) == "table" and next(row.warnings)) and "WARN" or "OK")
@@ -241,15 +266,18 @@ return function(deps)
     mod.content.screens:register(IDS.pinPicker, {
       new = function(game, opts)
         opts = opts or {}
-        local rows = service:listSlots(game) or {}
+        local listSlots = method(opts, "listSlots", "titleListSlots")
+        local rows = type(listSlots) == "function" and listSlots(service, game) or {}
         local menu
         local items = {}
         for slot = 1, 10 do
           local row = rows[slot] or { slot = slot, occupied = false }
           local function pin()
-            local pinned = service:pinToSlot(game, opts.sourceId, slot)
+            local pinToSlot = method(opts, "pinToSlot", "titlePinToSlot")
+            local pinned = type(pinToSlot) == "function"
+              and pinToSlot(service, game, opts.sourceId, slot)
             if pinned then
-              refreshRoot(game, opts.root)
+              refreshRoot(game, opts.root, opts)
               menu:close()
               if opts.action and opts.action.close then opts.action:close() end
             end
@@ -278,7 +306,9 @@ return function(deps)
     mod.content.screens:register(IDS.slots, {
       new = function(game, opts)
         opts = opts or {}
-        local rows, code = service:listSlots(game)
+        local listSlots = method(opts, "listSlots", "titleListSlots")
+        local rows, code
+        if type(listSlots) == "function" then rows, code = listSlots(service, game) end
         if not rows then
           return mod.ui.ListMenu.new(game, "SAVE SLOTS", {
             { label = "STATE DATA ERROR", right = truncate(code, 6) },
@@ -298,6 +328,7 @@ return function(deps)
                 row = item.value,
                 parents = { menu, opts.parent },
                 slotMenu = menu,
+                context = opts.context,
               })
             end,
           }
@@ -315,43 +346,56 @@ return function(deps)
       new = function(game, opts)
         opts = opts or {}
         local row = opts.row or { slot = 1, occupied = false }
-        if row.occupied then row = inspect(row, game) end
+        if row.occupied then row = inspect(row, game, opts) end
         local slot = row.slot
         local menu
         local items = {}
+        local title = isTitleContext(opts)
         local function saveHere()
           closeMenus(menu, opts.parents)
           service:saveSlot(game, slot)
         end
         if not row.occupied then
-          items[#items + 1] = { label = "SAVE HERE", onSelect = saveHere }
+          if not title then
+            items[#items + 1] = { label = "SAVE HERE", onSelect = saveHere }
+          end
         else
           if row.available then
             items[#items + 1] = { label = "LOAD", onSelect = function()
               closeMenus(menu, opts.parents)
-              service:loadSlot(game, slot)
+              local loadSlot = title and service.resumeTitleState or service.loadSlot
+              if type(loadSlot) == "function" then
+                loadSlot(service, game, title and row.metadata.id or slot)
+              end
             end }
           end
-          items[#items + 1] = { label = "OVERWRITE", onSelect = function()
-            mod.ui.push(game, IDS.overwriteConfirm, { confirm = saveHere })
-          end }
+          if not title then
+            items[#items + 1] = { label = "OVERWRITE", onSelect = function()
+              mod.ui.push(game, IDS.overwriteConfirm, { confirm = saveHere })
+            end }
+          end
           items[#items + 1] = { label = "RENAME", onSelect = function()
             mod.ui.push(game, IDS.rename, {
               slot = slot,
               action = menu,
               slotMenu = opts.slotMenu,
+              context = opts.context,
             })
           end }
           items[#items + 1] = { label = "DETAILS", onSelect = function()
-            mod.ui.push(game, IDS.details, { row = row, parent = menu })
+            mod.ui.push(game, IDS.details, {
+              row = row, parent = menu, context = opts.context,
+            })
           end }
           items[#items + 1] = { label = "DELETE", onSelect = function()
             mod.ui.push(game, IDS.deleteConfirm, {
               target = "slot",
               slot = slot,
+              id = row.metadata and row.metadata.id,
               action = menu,
               slotMenu = opts.slotMenu,
               root = opts.parents and opts.parents[2],
+              context = opts.context,
             })
           end }
         end
@@ -373,7 +417,9 @@ return function(deps)
           maxLen = 12,
           onDone = function(name)
             if name == "" then return end
-            local renamed = service:renameSlot(game, opts.slot, name)
+            local renameSlot = method(opts, "renameSlot", "titleRenameSlot")
+            local renamed = type(renameSlot) == "function"
+              and renameSlot(service, game, opts.slot, name)
             if renamed and opts.slotMenu and opts.slotMenu.items[opts.slot] then
               local item = opts.slotMenu.items[opts.slot]
               item.right = truncate(renamed.metadata.label, 12)
@@ -414,9 +460,15 @@ return function(deps)
               if not yes then return end
               local deleted
               if isSlot then
-                deleted = service:deleteSlot(game, opts.slot)
+                if isTitleContext(opts) then
+                  deleted = service:titleDeleteState(game, opts.id)
+                else
+                  deleted = service:deleteSlot(game, opts.slot)
+                end
               else
-                deleted = service:deleteState(game, opts.id)
+                local deleteState = method(opts, "deleteState", "titleDeleteState")
+                deleted = type(deleteState) == "function"
+                  and deleteState(service, game, opts.id)
               end
               if not deleted then return end
               if opts.action and opts.action.close then opts.action:close() end
@@ -429,7 +481,7 @@ return function(deps)
               elseif opts.history and opts.history.removeCurrent then
                 opts.history:removeCurrent()
               end
-              refreshRoot(game, opts.root)
+              refreshRoot(game, opts.root, opts)
             end,
           })
       end,
