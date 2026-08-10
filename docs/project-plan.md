@@ -187,7 +187,7 @@ test, documentation, or packaging task that remains valid.
 ## Current execution boundary
 
 The active product goal authorizes autonomous implementation. Official upstream
-`dev` is pinned at `943ba5dcbfa62cf831e881684857ffd4867fe774`; index `main` is
+`dev` is pinned at `0b7ecf159949372581a779be041e8fc45802c46d`; index `main` is
 pinned at `6f7eb4ad249bb6ca3080ce485be6a8053861a624`. Level A
 storage/overworld checkpoints, Level B battle/RNG checkpoints, and reproducible
 modkit packages are merged through PRs #952, #986, and #959. The distributable mod
@@ -205,9 +205,9 @@ future tag.
 
 ### Fresh title/resume and mobile UX pass — 2026-08-10
 
-Fresh upstream audit: official `dev` remains
-`943ba5dcbfa62cf831e881684857ffd4867fe774`; candidate PR #993 remains open,
-non-draft, mergeable, and pinned at
+Historical freshness note: the then-current official `dev` was
+`943ba5dcbfa62cf831e881684857ffd4867fe774`; candidate PR #993 remained open,
+non-draft, and pinned at
 `aa3b2a18ec06d844f42be873278c5232628376fa`. The only overlapping public UI PR
 found, #1023, exposes battle render-visibility predicates only; it does not
 provide a safe battle auxiliary action or command-boundary input hook. The
@@ -251,7 +251,8 @@ Next ordered work is:
    generic engine seam; #1023 is not that seam.
 
 The first title-resume implementation is now on the separate engine branch
-`feat/mod-title-checkpoint-resume` at `b66e452` (above the #993 candidate). It
+`feat/mod-title-checkpoint-resume` (subsequently independently rebased on
+current `dev`). It
 adds only a non-allocating selected-playthrough storage facade and a separate,
 validated title checkpoint bootstrap transaction. Its 29-check public mod SDK
 test covers a no-normal-SAVE restart, successful event emission, post-install
@@ -269,19 +270,20 @@ no hidden normal save.
 
 ### Current integration branches — 2026-08-10
 
-- Save States `feat/initial-savestates` is at `cd5d89c`; it adds default-ON
+- Save States `feat/initial-savestates` is at `3d5619a`; it adds default-ON
   `CONTINUE LATEST`, battle-manager entry through the proposed generic safe
   decision-boundary action, and optional public Modern UI notification
   presentation with a native fallback.
-- Generic title resume is independently rebased on `dev` at `3f25dde`
-  (`feat/mod-title-checkpoint-resume`): 139/139 engine and 8/8 modkit suites
+- Generic title resume is independently rebased on `dev` at `dbade88`
+  (`feat/mod-title-checkpoint-resume`): 145/145 engine and 9/9 modkit suites
   passed; Tier 3 was skipped because no legal generated data is present. It
   intentionally does not require PR #993.
 - Generic battle auxiliary action is independently based on `dev` at
-  `016b0b9` (`feat/battle-menu-auxiliary`): 140/140 engine and 7/7 modkit
+  `2d9be21` (`feat/battle-menu-auxiliary`): 146/146 engine and 8/8 modkit
   suites passed; Tier 3 was skipped for the same reason.
-- Fresh audit pins `dev` at `943ba5d`; #993 remains open, non-draft,
-  `mergeable=true`, `mergeable_state=clean`, at `aa3b2a1`. #1023 provides
+- Fresh audit pins `dev` at `0b7ecf1`; #993 remains open, non-draft, at
+  `aa3b2a1`; GitHub's final mergeability computation is external and must be
+  refreshed immediately before publication. #1023 provides
   battle render visibility only, not a command-boundary input seam.
 - Both engine branches are pushed to the MaxTomahawk fork. Attempts to open
   upstream PRs through the connected GitHub integration return HTTP 403
@@ -312,6 +314,24 @@ no hidden normal save.
   adapter fallback, composition registration, and all repository behavior tests
   pass against the local combined engine stack. The Modern UI upstream PR still
   requires external publication permission, like the engine PRs.
+
+### Current coherent development integration — 2026-08-10
+
+- The private integration worktree is at `2ff8bb0` over current `dev` `0b7ecf1`,
+  with #993 `aa3b2a1`, title resume `dbade88`, and battle auxiliary action
+  `2d9be21`. Its only integration-only change proves lifecycle composition:
+  title `Checkpoint.resume` emits `checkpoint.restored` exactly once only after
+  final verified installation when #993 is present. The standalone title branch
+  stays independent of #993. Carry this tiny composition follow-up only after
+  both focused upstream contributions land; do not broaden either PR solely to
+  form the local Android stack.
+- Fresh evidence against that exact stack: `./scripts/test.sh --quick` passes
+  146/146 engine and 10/10 modkit suites (including 46/46 cross-mod, 32/32 title
+  context, and 10/10 battle-menu suites); Tier 3 is correctly skipped without
+  imported/generated data. `make check` at Save States `3d5619a` passes 912 Lua
+  behavior checks, 7 Python release/package checks, validation/lint, two
+  byte-identical 32-file package builds plus `.modkit/pack.json`, and a clean
+  extracted-install validation.
 
 Verification for this pass is new evidence, not inherited counts: focused
 title/playthrough/bootstrap and battle-entry tests, affected mod behavior tests,
