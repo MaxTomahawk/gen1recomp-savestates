@@ -269,9 +269,10 @@ no hidden normal save.
 
 ### Current integration branches — 2026-08-10
 
-- Save States `feat/initial-savestates` is at `e741170`; it adds default-ON
-  `CONTINUE LATEST` and battle-manager entry through the proposed generic safe
-  decision-boundary action.
+- Save States `feat/initial-savestates` is at `cd5d89c`; it adds default-ON
+  `CONTINUE LATEST`, battle-manager entry through the proposed generic safe
+  decision-boundary action, and optional public Modern UI notification
+  presentation with a native fallback.
 - Generic title resume is independently rebased on `dev` at `3f25dde`
   (`feat/mod-title-checkpoint-resume`): 139/139 engine and 8/8 modkit suites
   passed; Tier 3 was skipped because no legal generated data is present. It
