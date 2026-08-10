@@ -30,6 +30,10 @@ return function(deps)
     return type(opts) == "table" and opts.context == "title"
   end
 
+  local function isBattleContext(opts)
+    return type(opts) == "table" and opts.context == "battle"
+  end
+
   local function closeMenus(current, parents)
     if current and current.close then current:close() end
     for _, menu in ipairs(parents or {}) do
@@ -131,6 +135,15 @@ return function(deps)
               mod.ui.push(game, IDS.slots, { parent = menu, context = opts.context })
             end },
         }
+        if isBattleContext(opts) then
+          table.insert(items, 1, { label = "QUICKSAVE", onSelect = function()
+            -- The engine opened this manager only at its auxiliary decision
+            -- boundary. Close it before capture so the public checkpoint
+            -- capability sees the battle, never this menu, as stack top.
+            menu:close()
+            service:quickSave(game)
+          end })
+        end
         if summary.undoAvailable then
           items[#items + 1] = { label = "UNDO LAST LOAD", onSelect = function()
             menu:close()

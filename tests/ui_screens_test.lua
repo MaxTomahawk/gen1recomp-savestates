@@ -149,6 +149,12 @@ T:eq(root.items[2].label, "AUTO SAVES", "root includes auto history")
 T:eq(root.items[3].label, "SAVE SLOTS", "root includes permanent slots")
 T:eq(root.items[3].right, "1/10", "root reports occupied slot capacity")
 T:eq(root.items[4].label, "SETTINGS", "root omits unavailable undo cleanly")
+
+local battleRoot = registered[ids.root].new(game, { context = "battle" })
+T:eq(battleRoot.items[1].label, "QUICKSAVE",
+  "battle manager exposes an explicit safe-boundary quicksave action")
+battleRoot.items[1].onSelect()
+T:eq(calls[#calls], "quickSave", "battle quicksave remains source-owned")
 root.items[1].onSelect()
 T:eq(pushes[#pushes].id, ids.history, "quick row opens registered history screen")
 T:eq(pushes[#pushes].opts.class, "quick", "quick row passes history class")
