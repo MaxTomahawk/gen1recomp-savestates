@@ -140,6 +140,18 @@ banner uses the complete logical top row rather than physical Android coordinate
 region. Headless geometry tests cover that contract; portrait/landscape device
 presentation remains a manual release-acceptance check.
 
+`gen1_modern_ui` is an optional ordering dependency only. Save States publishes
+its `gen1ModernUi` v1 contract with a single source-owned `transient.model` and
+registers it through the other mod's public export when available. The model
+contains only the active notification id/title/detail/severity. Modern UI owns
+theme, responsive safe-area layout, and drawing; Save States keeps content,
+replacement, expiry, and all gameplay actions. Its classic banner is skipped
+only while the public presenter explicitly claims the source, so absence,
+disablement, incompatibility, or presenter failure falls back cleanly. The
+native classic banner uses the logical top edge while Modern UI's QOL location
+banner remains a separate bottom card; neither mod reads the other's private
+state.
+
 The autosave fingerprint hashes canonical progress but deliberately removes only
 `playTime` and `startMenuIndex`. Those presentation counters would otherwise make
 two gameplay-equivalent states different on every capture; coordinates, party,

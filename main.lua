@@ -54,7 +54,8 @@ return function(mod)
   local TitleMenu = StartMenu and module("src/ui/TitleMenuIntegration.lua")
   local ScreenFactory = TitleMenu and module("src/ui/ScreenRegistry.lua")
   local Notification = ScreenFactory and module("src/ui/Notification.lua")
-  local ServiceFactory = Notification and module("src/service/SaveStateService.lua")
+  local ModernUiIntegration = Notification and module("src/ui/ModernUiIntegration.lua")
+  local ServiceFactory = ModernUiIntegration and module("src/service/SaveStateService.lua")
   if not ServiceFactory then return end
 
   local ok, core = pcall(function()
@@ -99,6 +100,7 @@ return function(mod)
           and "load_notifications" or "save_notifications") ~= false
       end,
     })
+    local modernUi = ModernUiIntegration.new(mod, notification)
     local migrations = StateMigrations.new(Snapshot.FORMAT)
     local Service = ServiceFactory({
       Snapshot = Snapshot,
@@ -190,7 +192,9 @@ return function(mod)
       TitleMenu = TitleMenu,
       Screens = Screens,
       Notification = Notification,
+      ModernUiIntegration = ModernUiIntegration,
       notification = notification,
+      modernUi = modernUi,
       Service = Service,
       service = service,
     }
@@ -206,6 +210,11 @@ return function(mod)
   core.TitleMenu.install(mod, core.service, core.screenIds.root, function()
     return mod.options:get("continue_latest") ~= false
   end)
+  -- This optional public adapter is presentation-only. It never exposes a
+  -- checkpoint payload or service object to Gen1 Modern UI, and registration
+  -- failure simply preserves the native notification path below.
+  mod.exports.gen1ModernUi = core.modernUi:contract()
+  core.modernUi:register()
   mod.hooks:wrap("battle.menu_auxiliary", function(next, game, context)
     -- This generic engine hook is emitted only at a settled ordinary
     -- wild/trainer decision. Re-inspection makes a stale/re-entrant request
@@ -228,7 +237,9 @@ return function(mod)
   }):install(mod)
   mod.hooks:wrap("render.hud", function(next, game, viewport)
     local result = next(game, viewport)
-    core.notification:draw(viewport, mod.ui.Font)
+    if not core.modernUi:claimsPresentation() then
+      core.notification:draw(viewport, mod.ui.Font)
+    end
     return result
   end)
 

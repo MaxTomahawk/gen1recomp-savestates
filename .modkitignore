@@ -17,6 +17,7 @@ tests/autosave_controller_test.lua
 tests/composition_test.lua
 tests/deduplicator_test.lua
 tests/migrations_test.lua
+tests/modern_ui_integration_test.lua
 tests/module_loader_test.lua
 tests/notification_test.lua
 tests/options_test.lua

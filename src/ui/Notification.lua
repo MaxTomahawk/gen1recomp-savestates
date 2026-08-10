@@ -109,6 +109,24 @@ function Notification:current()
   return active
 end
 
+-- A public Modern UI adapter reads this descriptive model only. The active
+-- notification remains source-owned, including replacement and expiration;
+-- no checkpoint/runtime data crosses the presentation seam.
+function Notification:modernModel()
+  local active = self:current()
+  if not active then return nil end
+  local severity = (SAVE_SUCCESSES[active.kind] or LOAD_SUCCESSES[active.kind])
+      and "success"
+    or (active.kind == "save_failed" or active.kind == "load_failed")
+      and "error" or "warning"
+  return {
+    id = "savestates:notification",
+    title = active.title,
+    detail = active.detail,
+    severity = severity,
+  }
+end
+
 local function dropLastCharacter(text)
   local first = #text
   while first > 1 do

@@ -17,6 +17,17 @@ T:eq(notice:show("quick_saved", {
 local current = notice:current()
 T:eq(current.title, "QUICK SAVED · 5/5", "quicksave title includes rolling count")
 T:eq(current.detail, "CERULEAN GYM", "quicksave detail includes location")
+local modern = notice:modernModel()
+T:eq(modern.id, "savestates:notification",
+  "modern presentation uses a stable source-owned replacement key")
+T:eq(modern.title, "QUICK SAVED · 5/5",
+  "modern presentation retains the captured notification title")
+T:eq(modern.detail, "CERULEAN GYM",
+  "modern presentation retains the captured notification detail")
+T:eq(modern.severity, "success",
+  "successful saves expose a presentation-only success severity")
+T:eq(modern.status, nil,
+  "modern presentation deliberately excludes gameplay status metadata")
 
 now = 10.5
 notice:show("state_loaded", { locationName = "PALLET TOWN" })

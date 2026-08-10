@@ -16,6 +16,12 @@ durable undo-load recovery, native START and manager screens, configurable
 history/notification options, and non-modal notifications. Storage is isolated
 by game and opaque playthrough identity.
 
+When the optional Gen1 Modern UI compatibility extension is installed and
+enabled, Save States keeps its own notification timing and content but lets that
+mod present the banner in its active theme and touch-safe layout. Without it,
+Save States uses the native Gen1-style banner. No other mod's private theme or
+runtime state is read.
+
 ## Installation
 
 No public release is available yet. Development validation currently targets the

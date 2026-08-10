@@ -9,7 +9,7 @@
   "category": "TOOL",
   "priority": 100,
   "dependencies": [],
-  "optional_dependencies": [],
+  "optional_dependencies": ["gen1_modern_ui"],
   "conflicts": [],
   "incompatible": [],
   "experimental": true,

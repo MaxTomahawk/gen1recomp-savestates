@@ -9,11 +9,27 @@ local renderHudWrapper
 local inputStepWrapper
 local eventHandlers = {}
 local selectedStorageCalls = 0
+local modernRegistration
+local modernActive = false
 local mod = {
   id = "savestates",
   version = "0.1.0",
   path = "mods/savestates",
   exports = {},
+  find = function(id)
+    if id ~= "gen1_modern_ui" then return nil end
+    return {
+      exports = {
+        registerAdapter = function(spec)
+          modernRegistration = spec
+          return true
+        end,
+        isTransientPresentationActive = function(owner)
+          return modernActive and owner == "savestates"
+        end,
+      },
+    }
+  end,
   storage = {
     selected = function(_, game)
       selectedStorageCalls = selectedStorageCalls + 1
@@ -99,6 +115,14 @@ local ok, err = pcall(entry, mod)
 T:check(ok, "entry composes without throwing: " .. tostring(err))
 T:eq(mod.exports.snapshotFormat, 1, "composition publishes snapshot format compatibility")
 T:eq(mod.exports.apiVersion, 1, "composition publishes its inter-mod API version")
+T:eq(mod.exports.gen1ModernUi.apiVersion, 1,
+  "composition publishes the optional Modern UI presentation contract")
+T:eq(type(mod.exports.gen1ModernUi.transient.model), "function",
+  "Modern UI receives only the source-owned notification model")
+T:eq(modernRegistration.owner, "savestates",
+  "composition registers the optional Modern UI adapter through public exports")
+T:eq(modernRegistration.contract, mod.exports.gen1ModernUi,
+  "composition registers the same public data-only adapter it exports")
 T:eq((mod.exports.supportedStateKinds or {})[1], "overworld",
   "composition advertises overworld checkpoints")
 T:eq((mod.exports.supportedStateKinds or {})[2], "battle",

@@ -291,6 +291,27 @@ no hidden normal save.
   has no public data-only transient notification surface. Modern notifications
   need a focused Modern UI extension, never private theme access or an engine patch.
 
+### Modern UI transient compatibility — 2026-08-10
+
+- The required public presentation seam is implemented in the isolated Gen1
+  Modern UI branch `feat/source-transient-notifications` at `62642c4`.
+  It extends the existing v1 adapter contract with an optional data-only
+  `transient.model`, a bounded deterministic presenter, and the public
+  `isTransientPresentationActive(owner)` fallback signal. It introduces no
+  engine dependency and exposes no source draw callback, checkpoint payload,
+  writable storage, or private theme state.
+- Save States now publishes/explicitly registers that optional adapter, declares
+  `gen1_modern_ui` as an optional ordering dependency, and draws its native
+  banner only when Modern UI does not publicly claim presentation. The current
+  QOL location banner remains independently composed: native Save States stays
+  at the logical top, Modern UI source transients use its touch-safe top panel,
+  and Modern UI's QOL location card stays at the lower safe region.
+- Focused evidence: Modern UI `compose_suppression` LÖVE smoke test passes;
+  syntax plus modkit validate/lint pass. Save States notification model,
+  adapter fallback, composition registration, and all repository behavior tests
+  pass against the local combined engine stack. The Modern UI upstream PR still
+  requires external publication permission, like the engine PRs.
+
 Verification for this pass is new evidence, not inherited counts: focused
 title/playthrough/bootstrap and battle-entry tests, affected mod behavior tests,
 the full public engine quick suite, the complete mod gate, and a rebuilt Android
