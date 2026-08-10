@@ -50,21 +50,66 @@ return function(deps)
     return truncate(tostring(value or "----"):upper(), maximum or 12)
   end
 
-  local function appendPreview(items, preview)
+  local function appendPreview(items, preview, addDetail, fit)
     if type(preview) ~= "table" then return end
-    items[#items + 1] = { label = "PLAY TIME", right = Time.playTime(preview.playTime) }
-    items[#items + 1] = { label = "BADGES", right = ("%d/%d"):format(
-      tonumber(preview.badgeCount) or 0, tonumber(preview.badgeTotal) or 0) }
+    addDetail(items, "PLAY TIME", Time.playTime(preview.playTime))
+    addDetail(items, "BADGES", ("%d/%d"):format(
+      tonumber(preview.badgeCount) or 0, tonumber(preview.badgeTotal) or 0))
     for _, mon in ipairs(preview.party or {}) do
       items[#items + 1] = {
-        label = truncate(mon.name, 12),
-        right = ("L%-2d %d/%d"):format(mon.level, mon.hp, mon.maxHp),
+        label = fit(mon.name),
+      }
+      items[#items + 1] = {
+        label = fit(("LV%d %d/%d HP"):format(mon.level, mon.hp, mon.maxHp)),
       }
     end
   end
 
   function Registry.install(mod, service, clock)
     clock = clock or os.time
+
+    local function fontWidth(text)
+      local font = mod.ui and mod.ui.Font
+      if type(font) == "table" and type(font.width) == "function" then
+        local ok, width = pcall(font.width, tostring(text or ""))
+        if ok and type(width) == "number" and width >= 0 then return width end
+      end
+      return #tostring(text or "") * 8
+    end
+
+    local function fit(text, maximum)
+      maximum = maximum or 136
+      text = tostring(text or "----")
+      if fontWidth(text) <= maximum then return text end
+      local suffix, out = ".", ""
+      for index = 1, #text do
+        local candidate = text:sub(1, index) .. suffix
+        if fontWidth(candidate) > maximum then break end
+        out = candidate
+      end
+      return out ~= "" and out or suffix
+    end
+
+    local function addDetail(items, label, value)
+      label, value = fit(label), fit(value)
+      if fontWidth(label) + 8 + fontWidth(value) <= 136 then
+        items[#items + 1] = { label = label, right = value }
+      else
+        items[#items + 1] = { label = label }
+        items[#items + 1] = { label = value }
+      end
+    end
+
+    local function historyTime(row)
+      local metadata = type(row) == "table" and row.metadata or {}
+      local mode = mod.options and mod.options:get("history_time") or "play_time"
+      if mode == "date_time" then return Time.historyDate(metadata.createdAt) end
+      if mode == "age" then return Time.relative(metadata.createdAt, clock()) end
+      local preview = row.preview or metadata.preview
+      local captured = type(preview) == "table" and Time.playTime(preview.playTime) or "----"
+      if captured ~= "----" then return captured end
+      return Time.relative(metadata.createdAt, clock())
+    end
 
     local function method(opts, activeName, titleName)
       return service[isTitleContext(opts) and titleName or activeName]
@@ -180,7 +225,7 @@ return function(deps)
           for _, row in ipairs(rows) do
             items[#items + 1] = {
               label = stateLabel(row.metadata),
-              right = row.available == false and "BAD" or Time.relative(row.metadata.createdAt, clock()),
+              right = row.available == false and "BAD" or historyTime(row),
               value = row,
               onSelect = function(item)
                 mod.ui.push(game, IDS.actions, {
@@ -258,16 +303,14 @@ return function(deps)
         local status = row.available and
           ((type(row.warnings) == "table" and next(row.warnings)) and "WARN" or "OK")
           or upperValue(row.status, 10)
-        local items = {
-          { label = "LOCATION", right = truncate(
-              metadata.locationName or metadata.locationId, 12) },
-          { label = "TRIGGER", right = upperValue(
-              metadata.trigger and metadata.trigger:gsub("_", " "), 12) },
-          { label = "CREATED", right = Time.relative(metadata.createdAt, clock()) },
-          { label = "KIND", right = upperValue(metadata.stateKind, 12) },
-          { label = "STATUS", right = status },
-        }
-        appendPreview(items, row.preview or metadata.preview)
+        local items = {}
+        addDetail(items, "LOCATION", metadata.locationName or metadata.locationId)
+        addDetail(items, "TRIGGER", upperValue(
+          metadata.trigger and metadata.trigger:gsub("_", " "), 12))
+        addDetail(items, "CREATED", Time.absolute(metadata.createdAt))
+        addDetail(items, "KIND", upperValue(metadata.stateKind, 12))
+        addDetail(items, "STATUS", status)
+        appendPreview(items, row.preview or metadata.preview, addDetail, fit)
         return mod.ui.ListMenu.new(game, "STATE DETAILS", items, {
           onChoose = dispatch,
           pageJump = true,
@@ -503,9 +546,15 @@ return function(deps)
     mod.content.screens:register(IDS.settings, {
       new = function(game)
         local function onOff(value) return value and "ON" or "OFF" end
+        local function historyTime(value)
+          if value == "date_time" then return "DATE/TIME" end
+          if value == "age" then return "AGE" end
+          return "PLAY TIME"
+        end
         local items = {
           { label = "QUICK HISTORY", right = tostring(mod.options:get("quick_history")) },
           { label = "AUTO HISTORY", right = tostring(mod.options:get("auto_history")) },
+          { label = "HISTORY TIME", right = historyTime(mod.options:get("history_time")) },
           { label = "LOCATION ENTRY", right = onOff(mod.options:get("auto_location")) },
           { label = "TRAINER BATTLE", right = onOff(
               mod.options:get("auto_trainer_battle")) },

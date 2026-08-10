@@ -18,4 +18,21 @@ function Time.playTime(seconds)
   return ("%02d:%02d"):format(math.floor(minutes / 60), minutes % 60)
 end
 
+local function formatDate(seconds, format)
+  if type(seconds) ~= "number" or seconds ~= seconds
+      or seconds == math.huge or seconds == -math.huge or seconds < 0 then
+    return "----"
+  end
+  local ok, value = pcall(os.date, format, math.floor(seconds))
+  return ok and type(value) == "string" and value or "----"
+end
+
+function Time.absolute(seconds)
+  return formatDate(seconds, "%Y-%m-%d %H:%M")
+end
+
+function Time.historyDate(seconds)
+  return formatDate(seconds, "%m-%d %H:%M")
+end
+
 return Time

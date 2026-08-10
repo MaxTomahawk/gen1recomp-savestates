@@ -130,7 +130,7 @@ T:eq((mod.exports.supportedStateKinds or {})[2], "battle",
 T:eq(type(mod.exports.quickSave), "function", "composition publishes quicksave command")
 T:eq(type(mod.exports.quickLoad), "function", "composition publishes quickload command")
 T:eq(type(mod.exports.undoLastLoad), "function", "composition publishes undo command")
-T:eq(#(mod.options.schema or {}), 11, "composition registers the full options schema")
+T:eq(#(mod.options.schema or {}), 12, "composition registers the full options schema")
 T:eq(type(startMenuWrapper), "function", "composition installs START decoration")
 T:eq(type(titleMenuWrapper), "function", "composition installs title decoration")
 T:eq(type(renderHudWrapper), "function", "composition installs non-modal HUD overlay")

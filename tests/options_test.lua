@@ -24,6 +24,9 @@ choices("quick_history", { 1, 3, 5, 10, 20 })
 T:eq(rows.quick_history.default, 5, "quick history defaults to five")
 choices("auto_history", { 5, 10, 20, 30, 50 })
 T:eq(rows.auto_history.default, 20, "auto history defaults to twenty")
+choices("history_time", { "play_time", "date_time", "age" })
+T:eq(rows.history_time.default, "play_time",
+  "history time defaults to captured play time")
 
 local toggles = {
   auto_location = true,

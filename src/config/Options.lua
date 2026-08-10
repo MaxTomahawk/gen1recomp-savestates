@@ -9,6 +9,10 @@ local ROWS = {
     default = 20, choices = {
       { "5", 5 }, { "10", 10 }, { "20", 20 }, { "30", 30 }, { "50", 50 },
     } },
+  { key = "history_time", label = "HISTORY TIME", type = "choice",
+    default = "play_time", choices = {
+      { "PLAY TIME", "play_time" }, { "DATE/TIME", "date_time" }, { "AGE", "age" },
+    } },
   { key = "auto_location", label = "AUTO: LOCATION ENTRY", type = "toggle",
     default = true },
   { key = "auto_trainer_battle", label = "AUTO: TRAINER BATTLE", type = "toggle",

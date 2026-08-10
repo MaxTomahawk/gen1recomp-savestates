@@ -6,16 +6,22 @@ local ScreenFactory = dofile("src/ui/ScreenRegistry.lua")({ Time = Time })
 local registered, pushes = {}, {}
 local mod = {
   content = { screens = {} },
-  ui = { ListMenu = {}, NamingScreen = {}, TextBox = {} },
+  ui = { ListMenu = {}, NamingScreen = {}, TextBox = {}, Font = {} },
   options = { values = {
     quick_history = 5, auto_history = 20,
     auto_location = true, auto_trainer_battle = true,
     auto_wild_battle = true, auto_after_battle = false,
     auto_before_warp = false,
     save_notifications = true, load_notifications = false,
+    history_time = "play_time",
     debug_logging = false,
   } },
 }
+local fontMetricCalls = 0
+function mod.ui.Font.width(text)
+  fontMetricCalls = fontMetricCalls + 1
+  return #tostring(text or "") * 8
+end
 function mod.content.screens:register(id, factory) registered[id] = factory end
 function mod.ui.ListMenu.new(game, title, items, opts)
   local menu = { game = game, title = title, items = items, opts = opts or {}, closeCount = 0 }
@@ -33,6 +39,12 @@ function mod.ui.push(game, id, opts)
   pushes[#pushes + 1] = { game = game, id = id, opts = opts }
 end
 function mod.options:get(key) return self.values[key] end
+
+local function rightFor(menu, label)
+  for _, item in ipairs(menu.items or {}) do
+    if item.label == label then return item.right end
+  end
+end
 
 local calls = {}
 local service = {
@@ -194,8 +206,40 @@ service.quickRows = {
 }
 local history = registered[ids.history].new(game, { class = "quick", parent = root })
 T:eq(history.title, "QUICK SAVES", "quick history has native title")
-T:eq(history.items[1].right, "NOW", "valid state displays relative age")
+T:eq(history.items[1].right, "04:37", "default history displays captured play time")
 T:eq(history.items[2].right, "BAD", "unavailable state stays visible and marked")
+mod.options.values.history_time = "date_time"
+local dateHistory = registered[ids.history].new(game, { class = "quick", parent = root })
+T:eq(dateHistory.items[1].right, Time.historyDate(1000),
+  "history DATE/TIME mode uses captured timestamp")
+mod.options.values.history_time = "age"
+local ageHistory = registered[ids.history].new(game, { class = "quick", parent = root })
+T:eq(ageHistory.items[1].right, "NOW", "history AGE mode remains available")
+mod.options.values.history_time = "play_time"
+local legacyHistory = registered[ids.history].new(game, {
+  class = "quick", parent = root,
+})
+service.quickRows = {
+  { available = true, metadata = {
+      id = "qlegacy", locationName = "PALLET TOWN", createdAt = 900,
+    } },
+}
+legacyHistory = registered[ids.history].new(game, { class = "quick", parent = root })
+T:eq(legacyHistory.items[1].right, "1m",
+  "previewless legacy states fall back to capture age in PLAY TIME mode")
+service.quickRows = {
+  { available = true, status = "compatible", metadata = {
+      id = "q00000002", locationName = "CERULEAN GYM", createdAt = 1000,
+      trigger = "manual", stateKind = "battle",
+      preview = {
+        playTime = 16620, badgeCount = 1, badgeTotal = 8,
+        party = { { name = "SPARKY", level = 22, hp = 45, maxHp = 57 } },
+      },
+    } },
+  { available = false, status = "corrupt_metadata", metadata = {
+      id = "q00000001", locationName = "PALLET TOWN", createdAt = 900,
+    } },
+}
 history.items[1].onSelect(history.items[1], history)
 T:eq(pushes[#pushes].id, ids.actions, "state row opens action menu")
 
@@ -213,16 +257,28 @@ if type(action.items[3].onSelect) == "function" then
   action.items[3].onSelect()
   T:eq(pushes[#pushes].id, ids.details, "details action opens a registered native detail screen")
   detail = registered[ids.details].new(game, pushes[#pushes].opts)
-  T:eq(detail.items[1].label, "LOCATION", "detail screen shows location")
-  T:eq(detail.items[1].right, "CERULEAN GYM", "detail screen keeps location value")
-  T:eq(detail.items[2].right, "MANUAL", "detail screen formats trigger")
-  T:eq(detail.items[3].right, "NOW", "detail screen shows capture age")
-  T:eq(detail.items[4].right, "BATTLE", "detail screen shows runtime kind")
-  T:eq(detail.items[5].right, "OK", "detail screen shows compatibility")
-  T:eq(detail.items[6].right, "04:37", "detail screen keeps captured play time")
-  T:eq(detail.items[7].right, "1/8", "detail screen shows captured badge progress")
-  T:eq(detail.items[8].label, "SPARKY", "detail screen lists captured party member")
-  T:eq(detail.items[8].right, "L22 45/57", "party preview contains captured level and HP")
+  local function itemIndex(label)
+    for index, item in ipairs(detail.items) do
+      if item.label == label then return index end
+    end
+  end
+  local location = itemIndex("LOCATION")
+  T:eq(detail.items[location].right, nil,
+    "public font metrics split a colliding location detail into logical rows")
+  T:eq(detail.items[location + 1].label, "CERULEAN GYM",
+    "split location value stays readable on its own row")
+  local created = itemIndex("CREATED")
+  T:eq(detail.items[created].right, nil,
+    "absolute CREATED value splits instead of colliding with its label")
+  T:eq(detail.items[created + 1].label, Time.absolute(1000),
+    "detail screen shows useful absolute creation date and time")
+  local party = itemIndex("SPARKY")
+  T:eq(detail.items[party].right, nil,
+    "each party member has a dedicated name row")
+  T:eq(detail.items[party + 1].label, "LV22 45/57 HP",
+    "each party member always has a second level and HP row")
+  T:check(fontMetricCalls > 0,
+    "detail layout uses the public Font.width metric instead of character guesses")
 end
 
 local titleHistory = { close = function(self) self.closeCount = (self.closeCount or 0) + 1 end }
@@ -254,7 +310,7 @@ local warningAction = registered[ids.actions].new(game, {
 if type(warningAction.items[3].onSelect) == "function" then
   warningAction.items[3].onSelect()
   detail = registered[ids.details].new(game, pushes[#pushes].opts)
-  T:eq(detail.items[5].right, "WARN",
+  T:eq(rightFor(detail, "STATUS"), "WARN",
     "detail screen marks soft engine compatibility warnings before load")
 end
 
@@ -298,7 +354,7 @@ T:eq(unavailableAction.items[1].label, "DETAILS",
 if type(unavailableAction.items[1].onSelect) == "function" then
   unavailableAction.items[1].onSelect()
   detail = registered[ids.details].new(game, pushes[#pushes].opts)
-  T:eq(detail.items[5].right, "CORRUPT_M.",
+  T:eq(rightFor(detail, "STATUS"), "CORRUPT_M.",
     "unavailable detail exposes a conservative compatibility code")
 end
 T:eq(unavailableAction.items[2].label, "DELETE",
@@ -408,13 +464,15 @@ T:eq(calls[#calls], "rename:2:MISTY", "naming result updates selected slot")
 local settings = registered[ids.settings].new(game, { parent = root })
 T:eq(settings.title, "STATE SETTINGS", "settings screen is native")
 T:eq(settings.items[1].right, "5", "settings shows current quick limit")
-T:eq(#settings.items, 10, "settings reports every product option")
-T:eq(settings.items[3].label, "LOCATION ENTRY", "settings shows location autosaves")
-T:eq(settings.items[3].right, "ON", "settings shows trigger value")
-T:eq(settings.items[7].label, "BEFORE WARP", "settings shows warp autosaves")
-T:eq(settings.items[7].right, "OFF", "settings shows disabled trigger value")
-T:eq(settings.items[9].right, "OFF", "settings shows load notification toggle")
-T:eq(settings.items[10].label, "DEBUG TIMINGS", "settings shows diagnostics option")
+T:eq(#settings.items, 11, "settings reports every product option")
+T:eq(settings.items[3].label, "HISTORY TIME", "settings exposes history time mode")
+T:eq(settings.items[3].right, "PLAY TIME", "settings names the default history time mode")
+T:eq(settings.items[4].label, "LOCATION ENTRY", "settings shows location autosaves")
+T:eq(settings.items[4].right, "ON", "settings shows trigger value")
+T:eq(settings.items[8].label, "BEFORE WARP", "settings shows warp autosaves")
+T:eq(settings.items[8].right, "OFF", "settings shows disabled trigger value")
+T:eq(settings.items[10].right, "OFF", "settings shows load notification toggle")
+T:eq(settings.items[11].label, "DEBUG TIMINGS", "settings shows diagnostics option")
 T:check(settings.opts.footer:find("MODS", 1, true) ~= nil,
   "settings explains the public manager edit path")
 
