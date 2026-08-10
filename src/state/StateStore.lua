@@ -63,6 +63,14 @@ return function(deps)
     return detached
   end
 
+  -- Title policy needs only the engine-provided selected-playthrough summary
+  -- (not a canonical normal-save payload).  Keep the same data-only context
+  -- validation used by all snapshot reads so callers cannot observe storage
+  -- implementation details or mutate the returned table.
+  function StateStore:context()
+    return self:_context()
+  end
+
   function StateStore:loadIndex()
     local record, code, message = self.storage:read(self.game, "index")
     if not record then

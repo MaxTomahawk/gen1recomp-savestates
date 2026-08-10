@@ -106,7 +106,7 @@ T:eq((mod.exports.supportedStateKinds or {})[2], "battle",
 T:eq(type(mod.exports.quickSave), "function", "composition publishes quicksave command")
 T:eq(type(mod.exports.quickLoad), "function", "composition publishes quickload command")
 T:eq(type(mod.exports.undoLastLoad), "function", "composition publishes undo command")
-T:eq(#(mod.options.schema or {}), 10, "composition registers the full options schema")
+T:eq(#(mod.options.schema or {}), 11, "composition registers the full options schema")
 T:eq(type(startMenuWrapper), "function", "composition installs START decoration")
 T:eq(type(titleMenuWrapper), "function", "composition installs title decoration")
 T:eq(type(renderHudWrapper), "function", "composition installs non-modal HUD overlay")
@@ -136,8 +136,8 @@ T:eq(titleMenu[2].label, "SAVE STATES",
 local titleRoot = registeredScreens[mod.exports.screenIds.root].new({
   save = { version = "red", meta = {} },
 }, { context = "title" })
-T:eq(selectedStorageCalls, 1,
-  "title manager resolves only the engine-selected storage facade")
+T:eq(selectedStorageCalls, 2,
+  "title policy and manager resolve only the engine-selected storage facade")
 T:eq(titleRoot.items[1].label, "QUICK SAVES",
   "empty selected title history remains natively browsable")
 T:check(type(logs[#logs]) == "string" and logs[#logs]:find("core ready", 1, true),

@@ -78,6 +78,9 @@ exact source-map boundary.
 | Unsupported runtime kind | rejected: `unsupported_runtime_kind` |
 | Title history with no selected existing playthrough | browsable only as a clean unavailable/empty state; no identity is minted |
 | Title load on the development engine contract | validated selected-playthrough bootstrap; no recovery or normal SAVE is created |
+| Title `CONTINUE LATEST` ON | newest valid quick/auto/slot capture competes with normal `savedAt`; normal save wins an exact tie |
+| Title `CONTINUE LATEST` OFF | exact native normal-save CONTINUE behavior; title history remains explicitly loadable |
+| Recovery checkpoint | never an automatic title-CONTINUE candidate |
 
 Suspended script and arbitrary-frame support require separate future contracts.
 

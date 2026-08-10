@@ -68,6 +68,7 @@ local function environment(args)
       engineVersion = "0.9.0-dev",
       gameVersion = "red",
       playthroughId = "play-a",
+      normalSavedAt = args.normalSavedAt,
     }
   end
   function storage:write(_, key, value)
@@ -781,5 +782,39 @@ unsafeUndo.checkpoints.capability = {
 local rejectedUndo, rejectedUndoCode = unsafeUndo.service:undoLastLoad(unsafeUndo.game)
 T:eq(rejectedUndo, nil, "unsafe undo is rejected before reading/mutation")
 T:eq(rejectedUndoCode, "screen_busy", "unsafe undo preserves capability reason")
+
+-- Title CONTINUE policy reads only the engine-selected facade.  It never
+-- captures or mutates a normal save; it selects an already validated durable
+-- checkpoint only when it is newer than the engine-provided normal-save
+-- chronology.
+local titleLatest = environment({ money = 100, now = 1000, normalSavedAt = 900 })
+local firstLatest = titleLatest.service:quickSave(titleLatest.game)
+titleLatest.setNow(1100)
+titleLatest.game.current = checkpoint(200)
+local secondLatest = titleLatest.service:quickSave(titleLatest.game)
+T:eq(type(titleLatest.service.titleLatestResumeCandidate), "function",
+  "title latest policy is exposed by the service")
+if type(titleLatest.service.titleLatestResumeCandidate) == "function" then
+  local newest, newestCode = titleLatest.service:titleLatestResumeCandidate(titleLatest.game)
+  T:eq(newestCode, nil, "newer checkpoint is a valid title candidate")
+  T:eq(newest and newest.metadata.id, secondLatest and secondLatest.metadata.id,
+    "title selects the newest original capture")
+  T:eq(titleLatest.events[#titleLatest.events], "read:states/" .. secondLatest.metadata.id,
+    "title candidate validation reads only the selected payload")
+
+  titleLatest.storage.values["states/" .. secondLatest.metadata.id] = { malformed = true }
+  local fallback, fallbackCode = titleLatest.service:titleLatestResumeCandidate(titleLatest.game)
+  T:eq(fallbackCode, nil, "a corrupt newest candidate is skipped")
+  T:eq(fallback and fallback.metadata.id, firstLatest and firstLatest.metadata.id,
+    "title falls back to the next valid checkpoint")
+
+  local normalNewer = environment({ money = 100, now = 1000, normalSavedAt = 1200 })
+  local older = normalNewer.service:quickSave(normalNewer.game)
+  local ordinary, ordinaryCode = normalNewer.service:titleLatestResumeCandidate(normalNewer.game)
+  T:eq(ordinary, nil, "a newer ordinary save remains the title target")
+  T:eq(ordinaryCode, "normal_save_newer",
+    "the ordinary-save chronology wins equal-or-newer ties")
+  T:check(older ~= nil, "ordinary-save comparison fixture was persisted")
+end
 
 T:finish()

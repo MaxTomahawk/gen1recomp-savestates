@@ -250,17 +250,22 @@ Next ordered work is:
    command-boundary auxiliary action exists then, open a separate focused
    generic engine seam; #1023 is not that seam.
 
-The first title-resume implementation is now on the separate local engine branch
-`feat/mod-title-checkpoint-resume` at `be2f0b8` (above the #993 candidate). It
+The first title-resume implementation is now on the separate engine branch
+`feat/mod-title-checkpoint-resume` at `b66e452` (above the #993 candidate). It
 adds only a non-allocating selected-playthrough storage facade and a separate,
 validated title checkpoint bootstrap transaction. Its 29-check public mod SDK
 test covers a no-normal-SAVE restart, successful event emission, post-install
 failure recovery to title, option preservation, and explicit-New-Game identity
 separation; the full public quick suite is 139/139 engine and 9/9 modkit suites.
-It is deliberately unpushed/unreviewed while the mod title-manager integration
-and broader failure matrix are completed. The mod routes title screens through
-the selected facade, never shows recovery as a title target, and exposes only
-durable pin/rename/delete operations alongside validated loads.
+It is pushed to the MaxTomahawk fork but deliberately not yet submitted while
+the mod title-manager integration and broader failure matrix are completed. The
+mod routes title screens through the selected facade, never shows recovery as a
+title target, and exposes only durable pin/rename/delete operations alongside
+validated loads. `CONTINUE LATEST` is now mod-side policy with default ON: it
+compares only the selected facade's normal-save timestamp with original valid
+quick/auto/slot capture times, rejects implausibly future metadata, skips corrupt
+or incompatible records, gives native normal SAVE exact-time ties, and performs
+no hidden normal save.
 
 Verification for this pass is new evidence, not inherited counts: focused
 title/playthrough/bootstrap and battle-entry tests, affected mod behavior tests,

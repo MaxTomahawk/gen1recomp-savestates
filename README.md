@@ -44,6 +44,15 @@ deleting remain durable operations inside the selected Save States namespace.
 This currently requires the unpublished development engine contract described in
 the project plan and is not yet part of a released compatibility promise.
 
+`CONTINUE LATEST` defaults to ON. When enabled, the existing title `CONTINUE`
+row selects the newest valid progress point for that selected playthrough: a
+normal Pokémon save or an eligible quick, auto, or permanent-slot checkpoint.
+The original capture time decides; pinning and renaming never make an older
+checkpoint newer, and recovery is never selected automatically. An exact-time
+tie intentionally keeps the native normal save. Invalid, wrong-playthrough, and
+implausibly future-dated checkpoints are skipped. Turning it OFF leaves vanilla
+`CONTINUE` unchanged while explicit title `SAVE STATES` loading remains available.
+
 ## Quick Saves
 
 `QUICKSAVE` writes a rolling history. The exported quickload command selects the
@@ -85,7 +94,7 @@ checkpoint. Undo restores it without overwriting it.
 
 ## Settings
 
-History limits, autosave triggers, save/load notification toggles, and opt-in
+History limits, autosave triggers, `CONTINUE LATEST`, save/load notification toggles, and opt-in
 debug timings use the native MODS manager. The STATES settings screen reports
 current values and points to that public edit path. Debug timing logs report
 capture, deterministic serialization/size, persistence, recovery-write, and

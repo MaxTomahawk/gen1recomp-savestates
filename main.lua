@@ -203,7 +203,9 @@ return function(mod)
   mod.options:define(core.Options.schema())
   core.screenIds = core.Screens.install(mod, core.service, os.time)
   core.StartMenu.install(mod, core.service, core.screenIds.root)
-  core.TitleMenu.install(mod, core.screenIds.root)
+  core.TitleMenu.install(mod, core.service, core.screenIds.root, function()
+    return mod.options:get("continue_latest") ~= false
+  end)
   core.autosaves = core.AutoSaveController.new({
     service = core.service,
     checkpoints = mod.checkpoints,

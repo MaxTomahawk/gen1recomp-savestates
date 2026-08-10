@@ -25,6 +25,7 @@ return function(deps)
     wrong_game = true,
     wrong_playthrough = true,
   }
+  local MAX_FUTURE_CAPTURE_SKEW = 24 * 60 * 60
   local AUTO_TRIGGERS = {
     location_enter = true,
     trainer_battle_start = true,
@@ -687,6 +688,68 @@ return function(deps)
 
   function Service:titleSummary(game)
     return self:_summary(game, "selected")
+  end
+
+  local function validTimestamp(value)
+    return type(value) == "number" and value >= 0 and value == value
+      and value ~= math.huge and value ~= -math.huge
+  end
+
+  function Service:_titleCandidates(index)
+    local entries = {}
+    for _, class in ipairs({ "quick", "auto" }) do
+      for _, metadata in ipairs(index:list(class)) do entries[#entries + 1] = metadata end
+    end
+    for slot = 1, 10 do
+      local metadata = index:slot(slot)
+      if metadata then entries[#entries + 1] = metadata end
+    end
+    table.sort(entries, function(left, right)
+      if left.createdAt ~= right.createdAt then return left.createdAt > right.createdAt end
+      return left.id < right.id
+    end)
+    return entries
+  end
+
+  -- Select a durable, independently validated automatic title-resume target.
+  -- Recovery intentionally never enters the index candidate set.  A normal
+  -- save wins an exact timestamp tie: it is the native title behavior and is
+  -- the least surprising choice if the host clock has only second precision.
+  function Service:titleLatestResumeCandidate(game)
+    local store, storeCode, storeMessage = self:_store(game, "selected")
+    if not store then return nil, storeCode, storeMessage end
+    local context, contextCode, contextMessage = invoke(store, "context")
+    if not context then return nil, contextCode, contextMessage end
+    local now, nowCode, nowMessage = self:_now()
+    if not now then return nil, nowCode, nowMessage end
+    local normalSavedAt = context.normalSavedAt
+    if not validTimestamp(normalSavedAt) or normalSavedAt > now + MAX_FUTURE_CAPTURE_SKEW then
+      normalSavedAt = nil
+    end
+    local index, indexCode, indexMessage = invoke(store, "loadIndex")
+    if not index then return nil, indexCode, indexMessage end
+    local skipped = false
+    for _, metadata in ipairs(self:_titleCandidates(index)) do
+      if not validTimestamp(metadata.createdAt)
+          or metadata.createdAt > now + MAX_FUTURE_CAPTURE_SKEW then
+        skipped = true
+        self:_warn("invalid_capture_time",
+          "Savestate capture time is invalid or implausibly far in the future.", metadata)
+      elseif normalSavedAt ~= nil and metadata.createdAt <= normalSavedAt then
+        return nil, "normal_save_newer",
+          "The ordinary save is as recent as the newest compatible savestate."
+      else
+        local snapshot, code, message = invoke(store, "readSnapshot", metadata.id)
+        if snapshot then return snapshot end
+        if not SKIPPABLE_STATE_ERRORS[code] then return nil, code, message end
+        skipped = true
+        self:_warn(code, message, metadata)
+      end
+    end
+    if skipped then
+      return nil, "no_valid_resume_state", "No valid savestate is available for CONTINUE."
+    end
+    return nil, "no_resume_state", "No savestate is available for CONTINUE."
   end
 
   function Service:_listStates(game, class, scope)
