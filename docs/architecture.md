@@ -123,9 +123,10 @@ The existing START descriptor list is decorated after downstream mods return.
 Registered `ListMenu`/`NamingScreen` factories provide histories, state actions,
 ten slots, pinning, rename/delete, undo, and settings visibility. Load/save-slot
 actions close their known public widget chain before checkpoint inspection; no
-private state-stack operation is used. State action screens expose location,
-semantic trigger, age, runtime kind, and compatibility/warning status; the
-settings summary mirrors every public product option and links to the MODS editor.
+private state-stack operation is used. Actions stay first in their compact menu;
+the capture-time location, trigger, age, runtime kind, compatibility, and party
+preview live in a separately paged native detail screen. The settings summary
+mirrors every public product option and links to the MODS editor.
 Destructive history and slot actions route through a registered, default-NO
 native confirmation and update their source list only after storage succeeds.
 
@@ -133,7 +134,11 @@ Notifications are one replace-in-place model drawn through `render.hud`; they
 never become an updating screen or consume A/B input. Success types honor their
 save/load toggles, while safety and persistence failures remain visible.
 Text is measured with the active public font, long details are fitted to the
-18-tile interior, and the one required long title wraps at a word boundary.
+18-tile interior, and the one required long title wraps at a word boundary. The
+banner uses the complete logical top row rather than physical Android coordinates:
+`render.hud` precedes the engine touch overlay, whose controls occupy the bottom
+region. Headless geometry tests cover that contract; portrait/landscape device
+presentation remains a manual release-acceptance check.
 
 The autosave fingerprint hashes canonical progress but deliberately removes only
 `playTime` and `startMenuIndex`. Those presentation counters would otherwise make

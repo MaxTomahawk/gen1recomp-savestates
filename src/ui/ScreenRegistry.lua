@@ -6,6 +6,7 @@ return function(deps)
     root = "SavestatesRoot",
     history = "SavestatesHistory",
     actions = "SavestatesActions",
+    details = "SavestatesDetails",
     slots = "SavestatesSlots",
     slotActions = "SavestatesSlotActions",
     pinPicker = "SavestatesPinPicker",
@@ -173,20 +174,7 @@ return function(deps)
         local row = inspect(opts.row, game)
         local metadata = row.metadata or {}
         local menu
-        local status = row.available and
-          ((type(row.warnings) == "table" and next(row.warnings)) and "WARN" or "OK")
-          or upperValue(row.status, 10)
-        local items = {
-          { label = "LOCATION", right = truncate(
-              metadata.locationName or metadata.locationId, 12) },
-          { label = "TRIGGER", right = upperValue(
-              metadata.trigger and metadata.trigger:gsub("_", " "), 12) },
-          { label = "CREATED", right = Time.relative(metadata.createdAt, clock()) },
-          { label = "KIND", right = upperValue(metadata.stateKind, 12) },
-          { label = "STATUS", right = status },
-        }
-        appendPreview(items, row.preview or metadata.preview)
-        local firstAction = #items + 1
+        local items = {}
         if row.available then
           items[#items + 1] = { label = "LOAD", onSelect = function()
             closeMenus(menu, opts.parents)
@@ -200,6 +188,9 @@ return function(deps)
             })
           end }
         end
+        items[#items + 1] = { label = "DETAILS", onSelect = function()
+          mod.ui.push(game, IDS.details, { row = row, parent = menu })
+        end }
         items[#items + 1] = { label = "DELETE", onSelect = function()
           mod.ui.push(game, IDS.deleteConfirm, {
             target = "state",
@@ -216,8 +207,34 @@ return function(deps)
           onChoose = dispatch,
           pageJump = true,
         })
-        menu.index = firstAction
+        menu.index = 1
         return menu
+      end,
+    })
+
+    mod.content.screens:register(IDS.details, {
+      new = function(game, opts)
+        opts = opts or {}
+        local row = inspect(opts.row, game)
+        local metadata = row.metadata or {}
+        local status = row.available and
+          ((type(row.warnings) == "table" and next(row.warnings)) and "WARN" or "OK")
+          or upperValue(row.status, 10)
+        local items = {
+          { label = "LOCATION", right = truncate(
+              metadata.locationName or metadata.locationId, 12) },
+          { label = "TRIGGER", right = upperValue(
+              metadata.trigger and metadata.trigger:gsub("_", " "), 12) },
+          { label = "CREATED", right = Time.relative(metadata.createdAt, clock()) },
+          { label = "KIND", right = upperValue(metadata.stateKind, 12) },
+          { label = "STATUS", right = status },
+        }
+        appendPreview(items, row.preview or metadata.preview)
+        return mod.ui.ListMenu.new(game, "STATE DETAILS", items, {
+          onChoose = dispatch,
+          pageJump = true,
+          keyRepeat = true,
+        })
       end,
     })
 
@@ -309,7 +326,6 @@ return function(deps)
         if not row.occupied then
           items[#items + 1] = { label = "SAVE HERE", onSelect = saveHere }
         else
-          appendPreview(items, row.preview or row.metadata.preview)
           if row.available then
             items[#items + 1] = { label = "LOAD", onSelect = function()
               closeMenus(menu, opts.parents)
@@ -325,6 +341,9 @@ return function(deps)
               action = menu,
               slotMenu = opts.slotMenu,
             })
+          end }
+          items[#items + 1] = { label = "DETAILS", onSelect = function()
+            mod.ui.push(game, IDS.details, { row = row, parent = menu })
           end }
           items[#items + 1] = { label = "DELETE", onSelect = function()
             mod.ui.push(game, IDS.deleteConfirm, {

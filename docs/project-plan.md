@@ -240,7 +240,12 @@ Next ordered work is:
 3. Independently improve the mod's logical-viewport UI: compact/paged preview
    details, a capture-time/relative-time display choice only if it improves
    browsing, and a HUD banner geometry that avoids touch-control overlap using
-   the public logical viewport. These do not wait for title bootstrap.
+   the public logical viewport. The first mobile usability slice is complete:
+   actions now remain at the top of compact state/slot menus, rich information
+   is in a paged `STATE DETAILS` screen, and `render.hud` uses the full logical
+   top banner rather than bottom physical-pixel guesses. 803 Lua checks plus
+   package/clean-install gates are green; physical Android presentation remains
+   a manual acceptance test. These improvements do not wait for title bootstrap.
 4. Re-audit battle entry only after the title primitive is proven. If no public
    command-boundary auxiliary action exists then, open a separate focused
    generic engine seam; #1023 is not that seam.

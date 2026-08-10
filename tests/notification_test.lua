@@ -72,6 +72,7 @@ notice:show("state_deleted", {})
 T:eq(notice:current().title, "STATE DELETED", "deletion has required title")
 
 local drawn = {}
+local boxes = {}
 love = { graphics = {
   push = function() end,
   origin = function() end,
@@ -82,15 +83,27 @@ love = { graphics = {
 } }
 local Font = {
   width = function(text) return #text * 8 end,
-  drawBox = function() end,
+  drawBox = function(tx, ty, tw, th)
+    boxes[#boxes + 1] = { tx = tx, ty = ty, tw = tw, th = th }
+  end,
   draw = function(text) drawn[#drawn + 1] = text end,
 }
+notice:show("auto_saved", { locationName = "ROUTE 24" })
+T:eq(notice:draw({ gameX = 12, gameY = 8, scale = 2 }, Font), true,
+  "short notification draws through the native HUD path")
+local shortBox = boxes[#boxes]
+T:check(shortBox and shortBox.tx == 0 and shortBox.ty == 0 and shortBox.tw == 20,
+  "short notification still uses the fixed logical top banner")
+drawn, boxes = {}, {}
 notice:show("save_failed", { message = string.rep("X", 40) })
 T:eq(notice:draw({ gameX = 0, gameY = 0, scale = 1 }, Font), true,
   "long failure notification draws through the native HUD path")
 T:eq(drawn[1], "SAVE STATE FAILED", "fitting preserves a short title")
 T:eq(drawn[2], string.rep("X", 17) .. ".",
   "long detail is visibly truncated to the maximum box interior")
+local box = boxes[#boxes]
+T:check(box and box.tx == 0 and box.ty == 0 and box.tw == 20 and box.th == 5,
+  "notification uses a full-width top banner in logical UI coordinates")
 
 drawn = {}
 notice:show("save_rejected", {
@@ -101,5 +114,8 @@ T:eq(notice:draw({ gameX = 0, gameY = 0, scale = 1 }, Font), true,
 T:eq(drawn[1], "CAN'T SAVE STATE", "long title wraps at a word boundary")
 T:eq(drawn[2], "NOW", "wrapped title retains its complete required wording")
 T:eq(drawn[3], "SCRIPT IS BUSY", "wrapped title leaves room for concise reason")
+box = boxes[#boxes]
+T:check(box and box.tx == 0 and box.ty == 0 and box.tw == 20 and box.th == 7,
+  "wrapped banner grows upward-free instead of entering touch-control space")
 
 T:finish()

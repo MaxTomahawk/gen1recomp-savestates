@@ -101,7 +101,8 @@ T:eq(type(eventHandlers["player.warped"]), "function",
   "composition subscribes to immediate before-warp autosaves")
 local screenCount = 0
 for _ in pairs(registeredScreens) do screenCount = screenCount + 1 end
-T:eq(screenCount, 10, "composition registers every state manager screen")
+T:eq(screenCount, 11,
+  "composition registers the action and dedicated detail state manager screens")
 local menu = startMenuWrapper(function(_, items) return items end, {}, {
   { label = "SAVE" }, { label = "OPTION" },
 })

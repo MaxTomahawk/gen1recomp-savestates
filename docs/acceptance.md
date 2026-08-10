@@ -14,14 +14,14 @@ Status vocabulary:
 | `QUICKSAVE` and `STATES` appear natively | Verified | `tests/start_menu_test.lua`; real modkit loader validation. |
 | Rolling manual quicksaves and configured retention | Verified | Service, retention, index, and transaction failure tests. |
 | Newest valid quickload; corrupt newest falls back safely | Verified | Service tests cover empty, valid, corrupt-newest, all-invalid, and identity cases. |
-| Browse/load/pin/delete quick and auto histories | Verified | Native screen tests including empty and unavailable rows, detail status, confirmation, and count refresh. |
+| Browse/load/pin/delete quick and auto histories | Verified | Native screen tests keep load/pin/delete immediately reachable; a separately paged detail screen covers preview/status, empty/unavailable rows, confirmation, and count refresh. |
 | Rich capture-time state previews | Verified | Strict data-only preview tests cover time, badges, 0–6 party members, nickname/species fallback, HP/fainted state, no status, battle/overworld capture, legacy absence, malformed metadata, source-provenance pin/rename, lazy index browsing, and native detail rendering. |
 | Event-based location/trainer/wild autosaves | Verified | Public event composition plus runtime-kind deferral/stale-request tests; no timer autosave. |
 | Optional after-battle and synchronous before-warp saves | Verified | Controller/service tests; `player.warped` timing is documented from the public emit site. |
 | Cooldown, semantic duplicate replacement, retention | Verified | Fingerprint/deduplicator/service tests; presentation-only counters are excluded. |
 | Ten permanent slots with load/overwrite/rename/delete | Verified | Service/UI tests; generation-safe overwrite, failed-publication preservation, 12-character native labels, metadata-only rename, source-provenance-preserving pin, and default-NO confirmation for direct or pin-driven replacement. |
 | Durable one-level recovery and undo-load | Verified | A -> load B -> undo -> A tests; recovery is written/re-read before restore and not overwritten by undo. |
-| Native non-modal replace-in-place notifications | Verified | HUD model/draw tests cover toggles, replacement, expiry, fitting/wrapping, failures, and compatibility warnings. |
+| Native non-modal replace-in-place notifications | Verified headlessly | HUD model/draw tests cover toggles, replacement, expiry, fitting/wrapping, failures, compatibility warnings, and a fixed logical top banner outside the bottom touch-control region. Physical portrait/landscape/touch-control presentation remains manual acceptance. |
 | Configurable histories, autosave triggers, notifications | Verified | Public option schema and settings-summary tests cover all product options. |
 | Persistence across restarts | Verified at API/storage layer | Public storage fresh-decode, main/tmp/backup recovery, and process-independent checkpoint reconstruction tests. Final packaged runtime restart is part of the private release acceptance pass. |
 | Game/playthrough isolation | Verified | Hard wrapper/checkpoint validation plus upstream active-slot/new-game/playthrough storage tests. |

@@ -156,11 +156,12 @@ function Notification:draw(viewport, Font)
   local maximum = 18 * 8
   local titles = titleLines(Font, active.title, maximum)
   local detail = active.detail and fitLine(Font, active.detail, maximum) or nil
-  local widest = detail and Font.width(detail) or 0
-  for _, line in ipairs(titles) do widest = math.max(widest, Font.width(line)) end
-  local tiles = math.max(12, math.min(20, math.ceil(widest / 8) + 2))
+  -- render.hud runs before the engine's touch overlay. A fixed banner on the
+  -- logical top edge keeps every short and long notification out of the
+  -- bottom touch-control zone without guessing physical Android pixels.
+  local tiles = 20
   local height = #titles > 1 and 7 or 5
-  local tx, ty = 20 - tiles, 18 - height
+  local tx, ty = 0, 0
 
   love.graphics.push("all")
   love.graphics.origin()

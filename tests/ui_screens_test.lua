@@ -158,22 +158,28 @@ T:eq(pushes[#pushes].id, ids.actions, "state row opens action menu")
 local action = registered[ids.actions].new(game, {
   row = service.quickRows[1], parents = { history, root },
 })
-T:eq(action.items[1].label, "LOCATION", "state detail shows location")
-T:eq(action.items[1].right, "CERULEAN GYM", "state detail keeps location value")
-T:eq(action.items[2].label, "TRIGGER", "state detail shows semantic trigger")
-T:eq(action.items[2].right, "MANUAL", "state detail formats trigger")
-T:eq(action.items[3].label, "CREATED", "state detail shows creation time")
-T:eq(action.items[3].right, "NOW", "state detail uses relative creation time")
-T:eq(action.items[4].right, "BATTLE", "state detail shows runtime kind")
-T:eq(action.items[5].right, "OK", "state detail shows compatibility")
-T:eq(action.items[6].label, "PLAY TIME", "state detail shows captured play time")
-T:eq(action.items[6].right, "04:37", "state detail keeps captured play time")
-T:eq(action.items[7].right, "1/8", "state detail shows captured badge progress")
-T:eq(action.items[8].label, "SPARKY", "state detail lists captured party member")
-T:eq(action.items[8].right, "L22 45/57", "party preview contains captured level and HP")
-T:eq(action.items[9].label, "LOAD", "available state offers load after preview details")
-T:eq(action.items[10].label, "PIN TO SLOT", "available state can pin permanently")
-T:eq(action.index, 9, "state detail cursor starts on the first action")
+T:eq(action.items[1].label, "LOAD", "available state keeps load immediately visible")
+T:eq(action.items[2].label, "PIN TO SLOT", "available state keeps pin immediately visible")
+T:eq(action.items[3].label, "DETAILS", "state preview opens a dedicated detail screen")
+T:eq(action.items[4].label, "DELETE", "state cleanup stays on the action screen")
+T:eq(action.index, 1, "action cursor begins on load without scrolling")
+if action.items[1].label ~= "LOAD" then T:finish() end
+local detail
+if type(action.items[3].onSelect) == "function" then
+  action.items[3].onSelect()
+  T:eq(pushes[#pushes].id, ids.details, "details action opens a registered native detail screen")
+  detail = registered[ids.details].new(game, pushes[#pushes].opts)
+  T:eq(detail.items[1].label, "LOCATION", "detail screen shows location")
+  T:eq(detail.items[1].right, "CERULEAN GYM", "detail screen keeps location value")
+  T:eq(detail.items[2].right, "MANUAL", "detail screen formats trigger")
+  T:eq(detail.items[3].right, "NOW", "detail screen shows capture age")
+  T:eq(detail.items[4].right, "BATTLE", "detail screen shows runtime kind")
+  T:eq(detail.items[5].right, "OK", "detail screen shows compatibility")
+  T:eq(detail.items[6].right, "04:37", "detail screen keeps captured play time")
+  T:eq(detail.items[7].right, "1/8", "detail screen shows captured badge progress")
+  T:eq(detail.items[8].label, "SPARKY", "detail screen lists captured party member")
+  T:eq(detail.items[8].right, "L22 45/57", "party preview contains captured level and HP")
+end
 
 service.inspectOverrides = {
   qwarn = {
@@ -191,13 +197,17 @@ local warningAction = registered[ids.actions].new(game, {
   },
   parents = { history, root },
 })
-T:eq(warningAction.items[5].right, "WARN",
-  "state detail marks soft engine compatibility warnings before load")
+if type(warningAction.items[3].onSelect) == "function" then
+  warningAction.items[3].onSelect()
+  detail = registered[ids.details].new(game, pushes[#pushes].opts)
+  T:eq(detail.items[5].right, "WARN",
+    "detail screen marks soft engine compatibility warnings before load")
+end
 
 local pinAction = registered[ids.actions].new(game, {
   row = service.quickRows[1], parents = { history, root },
 })
-pinAction.items[10].onSelect()
+pinAction.items[2].onSelect()
 T:eq(pushes[#pushes].id, ids.pinPicker, "pin action opens the permanent-slot picker")
 local pinPicker = registered[ids.pinPicker].new(game, pushes[#pushes].opts)
 pinPicker.items[1].onSelect()
@@ -220,7 +230,7 @@ overwriteConfirm.opts.choice(true)
 T:eq(calls[#calls], "pin:q00000002:2",
   "confirmed occupied-slot pin invokes the requested copy")
 
-action.items[9].onSelect()
+action.items[1].onSelect()
 T:eq(action.closeCount, 1, "load closes action menu")
 T:eq(history.closeCount, 1, "load closes history menu")
 T:eq(root.closeCount, 2, "load closes root menu after history")
@@ -229,13 +239,19 @@ T:eq(calls[#calls], "load:q00000002", "load action invokes selected state id")
 local unavailableAction = registered[ids.actions].new(game, {
   row = service.quickRows[2], parents = { history, root },
 })
-T:eq(unavailableAction.items[5].right, "CORRUPT_M.",
-  "unavailable state detail exposes a conservative compatibility code")
-T:eq(unavailableAction.items[6].label, "DELETE",
+T:eq(unavailableAction.items[1].label, "DETAILS",
+  "unavailable state still exposes readable diagnostics")
+if type(unavailableAction.items[1].onSelect) == "function" then
+  unavailableAction.items[1].onSelect()
+  detail = registered[ids.details].new(game, pushes[#pushes].opts)
+  T:eq(detail.items[5].right, "CORRUPT_M.",
+    "unavailable detail exposes a conservative compatibility code")
+end
+T:eq(unavailableAction.items[2].label, "DELETE",
   "unavailable state offers safe cleanup instead of load")
 history.index = 2
 local callsBeforeDelete = #calls
-unavailableAction.items[6].onSelect()
+unavailableAction.items[2].onSelect()
 T:eq(pushes[#pushes].id, ids.deleteConfirm,
   "history delete opens the registered native confirmation")
 local deleteConfirm = registered[ids.deleteConfirm].new(game, pushes[#pushes].opts)
@@ -243,7 +259,7 @@ T:eq(deleteConfirm.opts.defaultNo, true, "delete confirmation defaults to NO")
 deleteConfirm.opts.choice(false)
 T:eq(#calls, callsBeforeDelete, "cancelled delete does not mutate state")
 T:eq(unavailableAction.closeCount, 0, "cancelled delete keeps action menu open")
-unavailableAction.items[6].onSelect()
+unavailableAction.items[2].onSelect()
 deleteConfirm = registered[ids.deleteConfirm].new(game, pushes[#pushes].opts)
 deleteConfirm.opts.choice(true)
 T:eq(calls[#calls], "delete:q00000001", "confirmed history delete invokes service")
@@ -275,7 +291,8 @@ for i, item in ipairs(occupiedSlotAction.items) do occupiedLabels[i] = item.labe
 T:eq(occupiedLabels[1], "LOAD", "occupied slot can load")
 T:eq(occupiedLabels[2], "OVERWRITE", "occupied slot can overwrite")
 T:eq(occupiedLabels[3], "RENAME", "occupied slot can rename")
-T:eq(occupiedLabels[4], "DELETE", "occupied slot can delete")
+T:eq(occupiedLabels[4], "DETAILS", "occupied slot exposes capture preview separately")
+T:eq(occupiedLabels[5], "DELETE", "occupied slot can delete")
 local callsBeforeOverwrite = #calls
 occupiedSlotAction.items[2].onSelect()
 T:eq(pushes[#pushes].id, ids.overwriteConfirm,
@@ -291,13 +308,13 @@ T:eq(calls[#calls], "saveSlot:2",
   "confirmed slot overwrite invokes the explicit save action")
 root.items[3].right = "STALE"
 local slotCallsBeforeDelete = #calls
-occupiedSlotAction.items[4].onSelect()
+occupiedSlotAction.items[5].onSelect()
 T:eq(pushes[#pushes].id, ids.deleteConfirm,
   "slot delete opens the registered native confirmation")
 deleteConfirm = registered[ids.deleteConfirm].new(game, pushes[#pushes].opts)
 deleteConfirm.opts.choice(false)
 T:eq(#calls, slotCallsBeforeDelete, "cancelled slot delete does not mutate state")
-occupiedSlotAction.items[4].onSelect()
+occupiedSlotAction.items[5].onSelect()
 deleteConfirm = registered[ids.deleteConfirm].new(game, pushes[#pushes].opts)
 deleteConfirm.opts.choice(true)
 T:eq(calls[#calls], "deleteSlot:2", "confirmed slot delete invokes service")
