@@ -15,12 +15,12 @@ T:eq(notice:show("quick_saved", {
   count = 5, limit = 5, locationName = "CERULEAN GYM",
 }), true, "quicksave notification is accepted")
 local current = notice:current()
-T:eq(current.title, "QUICK SAVED · 5/5", "quicksave title includes rolling count")
+T:eq(current.title, "QUICK SAVED", "quicksave title omits unhelpful rolling count")
 T:eq(current.detail, "CERULEAN GYM", "quicksave detail includes location")
 local modern = notice:modernModel()
 T:eq(modern.id, "savestates:notification",
   "modern presentation uses a stable source-owned replacement key")
-T:eq(modern.title, "QUICK SAVED · 5/5",
+T:eq(modern.title, "QUICK SAVED",
   "modern presentation retains the captured notification title")
 T:eq(modern.detail, "CERULEAN GYM",
   "modern presentation retains the captured notification detail")
@@ -98,25 +98,29 @@ local Font = {
   drawBox = function(tx, ty, tw, th)
     boxes[#boxes + 1] = { tx = tx, ty = ty, tw = tw, th = th }
   end,
-  draw = function(text) drawn[#drawn + 1] = text end,
+  draw = function(text, x, y) drawn[#drawn + 1] = { text = text, x = x, y = y } end,
 }
 notice:show("auto_saved", { locationName = "ROUTE 24" })
 T:eq(notice:drawNative(Font), true,
   "short notification draws directly in the native logical UI pass")
 local shortBox = boxes[#boxes]
-T:check(shortBox and shortBox.tx == 0 and shortBox.ty == 0 and shortBox.tw == 20,
-  "short notification still uses the fixed logical top banner")
+T:check(shortBox and shortBox.tx == 0 and shortBox.ty == 1 and shortBox.tw == 20,
+  "short notification keeps one logical tile of top breathing room")
+T:eq(drawn[1].x, 80 - Font.width(drawn[1].text) / 2,
+  "notification title is horizontally centered")
+T:eq(drawn[2].x, 80 - Font.width(drawn[2].text) / 2,
+  "notification detail is horizontally centered")
 T:eq(transformed, 0,
   "native notification never guesses Android viewport or DPI transforms")
 drawn, boxes = {}, {}
 notice:show("save_failed", { message = string.rep("X", 40) })
 T:eq(notice:drawNative(Font), true,
   "long failure notification stays in the native UI pass")
-T:eq(drawn[1], "SAVE STATE FAILED", "fitting preserves a short title")
-T:eq(drawn[2], string.rep("X", 17) .. ".",
+T:eq(drawn[1].text, "SAVE STATE FAILED", "fitting preserves a short title")
+T:eq(drawn[2].text, string.rep("X", 17) .. ".",
   "long detail is visibly truncated to the maximum box interior")
 local box = boxes[#boxes]
-T:check(box and box.tx == 0 and box.ty == 0 and box.tw == 20 and box.th == 5,
+T:check(box and box.tx == 0 and box.ty == 1 and box.tw == 20 and box.th == 5,
   "notification uses a full-width top banner in logical UI coordinates")
 
 drawn = {}
@@ -125,11 +129,11 @@ notice:show("save_rejected", {
 })
 T:eq(notice:drawNative(Font), true,
   "long required refusal title draws through the native UI pass")
-T:eq(drawn[1], "CAN'T SAVE STATE", "long title wraps at a word boundary")
-T:eq(drawn[2], "NOW", "wrapped title retains its complete required wording")
-T:eq(drawn[3], "SCRIPT IS BUSY", "wrapped title leaves room for concise reason")
+T:eq(drawn[1].text, "CAN'T SAVE STATE", "long title wraps at a word boundary")
+T:eq(drawn[2].text, "NOW", "wrapped title retains its complete required wording")
+T:eq(drawn[3].text, "SCRIPT IS BUSY", "wrapped title leaves room for concise reason")
 box = boxes[#boxes]
-T:check(box and box.tx == 0 and box.ty == 0 and box.tw == 20 and box.th == 7,
+T:check(box and box.tx == 0 and box.ty == 1 and box.tw == 20 and box.th == 7,
   "wrapped banner grows upward-free instead of entering touch-control space")
 
 T:finish()

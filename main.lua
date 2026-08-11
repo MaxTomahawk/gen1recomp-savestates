@@ -53,7 +53,8 @@ return function(mod)
   local StartMenu = Options and module("src/ui/StartMenuIntegration.lua")
   local TitleMenu = StartMenu and module("src/ui/TitleMenuIntegration.lua")
   local DetailsFactory = TitleMenu and module("src/ui/StateDetailsView.lua")
-  local ScreenFactory = DetailsFactory and module("src/ui/ScreenRegistry.lua")
+  local HistoryFactory = DetailsFactory and module("src/ui/HistoryView.lua")
+  local ScreenFactory = HistoryFactory and module("src/ui/ScreenRegistry.lua")
   local Notification = ScreenFactory and module("src/ui/Notification.lua")
   local ModernUiIntegration = Notification and module("src/ui/ModernUiIntegration.lua")
   local ServiceFactory = ModernUiIntegration and module("src/service/SaveStateService.lua")
@@ -69,7 +70,8 @@ return function(mod)
     local Fingerprint = FingerprintFactory(Canonical)
     local StateStore = StoreFactory({ DataOnly = DataOnly, StateIndex = StateIndex })
     local Details = DetailsFactory()
-    local Screens = ScreenFactory({ Time = Time, Details = Details })
+    local History = HistoryFactory()
+    local Screens = ScreenFactory({ Time = Time, Details = Details, History = History })
     local function capturePreview(_, checkpoint)
       local badgeIds = {}
       local constants = mod.content and mod.content.constants
@@ -142,10 +144,10 @@ return function(mod)
       end,
       clock = os.time,
       quickLimit = function()
-        return mod.options:get("quick_history") or 5
+        return mod.options:get("quick_history") or 50
       end,
       autoLimit = function()
-        return mod.options:get("auto_history") or 20
+        return mod.options:get("auto_history") or 50
       end,
       previewFor = capturePreview,
       modVersion = mod.version,
@@ -193,6 +195,7 @@ return function(mod)
       StartMenu = StartMenu,
       TitleMenu = TitleMenu,
       Details = Details,
+      History = History,
       Screens = Screens,
       Notification = Notification,
       ModernUiIntegration = ModernUiIntegration,

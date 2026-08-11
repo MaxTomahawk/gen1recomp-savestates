@@ -45,9 +45,7 @@ end
 local function text(kind, detail)
   detail = detail or {}
   if kind == "quick_saved" then
-    return ("QUICK SAVED · %s/%s"):format(
-      tostring(detail.count or "-"), tostring(detail.limit or "-")),
-      detail.locationName
+    return "QUICK SAVED", detail.locationName
   elseif kind == "auto_saved" then
     return "AUTO SAVED", detail.locationName
   elseif kind == "slot_saved" then
@@ -176,16 +174,19 @@ function Notification:drawNative(Font)
   -- exactly as it does for native Party UI and the QoL location banner.
   local tiles = 20
   local height = #titles > 1 and 7 or 5
-  local tx, ty = 0, 0
+  local tx, ty = 0, 1
+  local function centered(line)
+    return math.max(0, math.floor((160 - Font.width(line)) / 2))
+  end
 
   love.graphics.setColor(1, 1, 1, 1)
   Font.drawBox(tx, ty, tiles, height)
   love.graphics.setColor(0, 0, 0, 1)
   for index, line in ipairs(titles) do
-    Font.draw(line, (tx + 1) * 8, (ty + index) * 8)
+    Font.draw(line, centered(line), (ty + index) * 8)
   end
   if detail then
-    Font.draw(detail, (tx + 1) * 8, (ty + (#titles > 1 and 4 or 3)) * 8)
+    Font.draw(detail, centered(detail), (ty + (#titles > 1 and 4 or 3)) * 8)
   end
   love.graphics.setColor(1, 1, 1, 1)
   return true

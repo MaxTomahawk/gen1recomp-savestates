@@ -1,6 +1,7 @@
 return function(deps)
   local Time = assert(deps.Time, "ScreenRegistry needs Time")
   local Details = assert(deps.Details, "ScreenRegistry needs Details")
+  local History = assert(deps.History, "ScreenRegistry needs History")
 
   local Registry = {}
   local IDS = {
@@ -54,10 +55,32 @@ return function(deps)
   function Registry.install(mod, service, clock)
     clock = clock or os.time
 
-    local function historyTime(row)
+    local function formatted(game, methodName, fallback, seconds)
+      local facade = mod.datetime
+      local method = facade and facade[methodName]
+      if type(method) == "function" then
+        local ok, value = pcall(method, facade, game, seconds)
+        if ok and type(value) == "string" and value ~= "" then return value end
+      end
+      return fallback(seconds)
+    end
+
+    local function captureDate(game, seconds)
+      return formatted(game, "date", Time.date, seconds)
+    end
+
+    local function captureTime(game, seconds)
+      return formatted(game, "time", Time.historyDate, seconds)
+    end
+
+    local function captureDateTime(game, seconds)
+      return formatted(game, "dateTime", Time.absolute, seconds)
+    end
+
+    local function historyTime(game, row)
       local metadata = type(row) == "table" and row.metadata or {}
       local mode = mod.options and mod.options:get("history_time") or "play_time"
-      if mode == "date_time" then return Time.historyDate(metadata.createdAt) end
+      if mode == "date_time" then return captureTime(game, metadata.createdAt) end
       if mode == "age" then return Time.relative(metadata.createdAt, clock()) end
       local preview = row.preview or metadata.preview
       local captured = type(preview) == "table" and Time.playTime(preview.playTime) or "----"
@@ -179,7 +202,7 @@ return function(deps)
           for _, row in ipairs(rows) do
             items[#items + 1] = {
               label = stateLabel(row.metadata),
-              right = row.available == false and "BAD" or historyTime(row),
+              right = row.available == false and "BAD" or historyTime(game, row),
               value = row,
               onSelect = function(item)
                 mod.ui.push(game, IDS.actions, {
@@ -191,11 +214,21 @@ return function(deps)
             }
           end
         end
-        menu = mod.ui.ListMenu.new(game, title, items, {
-          onChoose = dispatch,
-          pageJump = true,
-          keyRepeat = true,
-        })
+        if rows and #rows > 0 then
+          menu = History.new(mod, game, title, items, {
+            dateFor = function(item)
+              local metadata = item.value and item.value.metadata or {}
+              return captureDate(game, metadata.createdAt)
+            end,
+            onChoose = dispatch,
+          })
+        else
+          menu = mod.ui.ListMenu.new(game, title, items, {
+            onChoose = dispatch,
+            pageJump = true,
+            keyRepeat = true,
+          })
+        end
         return menu
       end,
     })
@@ -262,7 +295,7 @@ return function(deps)
           { label = "LOCATION", value = metadata.locationName or metadata.locationId },
           { label = "TRIGGER", value = upperValue(
             metadata.trigger and metadata.trigger:gsub("_", " "), 12) },
-          { label = "CREATED", value = Time.absolute(metadata.createdAt) },
+          { label = "CREATED", value = captureDateTime(game, metadata.createdAt) },
           { label = "KIND", value = upperValue(metadata.stateKind, 12) },
           { label = "STATUS", value = status },
         }
@@ -520,7 +553,7 @@ return function(deps)
         local items = {
           { label = "QUICK HISTORY", right = tostring(mod.options:get("quick_history")) },
           { label = "AUTO HISTORY", right = tostring(mod.options:get("auto_history")) },
-          { label = "HISTORY TIME", right = historyTime(mod.options:get("history_time")) },
+          { label = "HISTORY", right = historyTime(mod.options:get("history_time")) },
           { label = "LOCATION ENTRY", right = onOff(mod.options:get("auto_location")) },
           { label = "TRAINER BATTLE", right = onOff(
               mod.options:get("auto_trainer_battle")) },
@@ -532,9 +565,17 @@ return function(deps)
           { label = "LOAD POPUPS", right = onOff(mod.options:get("load_notifications")) },
           { label = "DEBUG TIMINGS", right = onOff(mod.options:get("debug_logging")) },
         }
+        local maximum = 136
+        for _, item in ipairs(items) do
+          while mod.ui.Font.width(item.label) + mod.ui.Font.width(item.right or "") + 8
+              > maximum and #item.label > 1 do
+            item.label = item.label:sub(1, -2)
+          end
+        end
         return mod.ui.ListMenu.new(game, "STATE SETTINGS", items, {
           onChoose = function(_, menu) menu:close() end,
-          footer = "CHANGE IN MODS > SAVE STATES",
+          footer = "EDIT IN MODS",
+          rows = 6,
           pageJump = true,
           keyRepeat = true,
         })

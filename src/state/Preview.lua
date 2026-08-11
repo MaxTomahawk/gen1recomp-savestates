@@ -44,8 +44,10 @@ return function(DataOnly)
     end
     for _, mon in ipairs(copy.party) do
       if type(mon) ~= "table" or not onlyKeys(mon, {
-        name = true, level = true, hp = true, maxHp = true,
+        species = true, name = true, level = true, hp = true, maxHp = true,
       }) or type(mon.name) ~= "string" or mon.name == ""
+          or (mon.species ~= nil and
+            (type(mon.species) ~= "string" or mon.species == ""))
           or not integer(mon.level, 1) or not integer(mon.hp, 0)
           or not integer(mon.maxHp, 1) or mon.hp > mon.maxHp then
         return failure()
@@ -94,6 +96,7 @@ return function(DataOnly)
         return nil, "preview_unavailable", "Checkpoint party data is invalid."
       end
       party[#party + 1] = {
+        species = mon.species,
         name = partyName(mon, context.speciesName),
         level = mon.level,
         hp = mon.hp,

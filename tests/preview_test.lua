@@ -32,6 +32,8 @@ T:eq(captured.badgeTotal, 4, "preview keeps captured badge total")
 T:eq(#captured.party, 6, "preview keeps complete six-mon party")
 T:eq(captured.party[1].name, "SPARKY", "nickname takes precedence over species")
 T:eq(captured.party[2].name, "NIDORINO", "species name is fallback without nickname")
+T:eq(captured.party[1].species, "PIKACHU",
+  "preview keeps species identity for public party-icon presentation")
 T:eq(captured.party[1].level, 22, "preview keeps captured level")
 T:eq(captured.party[1].hp, 45, "preview keeps captured current HP")
 T:eq(captured.party[1].maxHp, 57, "preview keeps captured maximum HP")
@@ -56,6 +58,15 @@ local malformed, malformedCode = Preview.validate({
 })
 T:eq(malformed, nil, "preview rejects stored status fields")
 T:eq(malformedCode, "corrupt_preview", "malformed preview has stable error code")
+
+local legacy = assert(Preview.validate({
+  playTime = 0,
+  badgeCount = 0,
+  badgeTotal = 8,
+  party = { { name = "OLDMON", level = 5, hp = 10, maxHp = 10 } },
+}))
+T:eq(legacy.party[1].species, nil,
+  "older preview rows without species remain valid and text-presentable")
 
 local impossible, impossibleCode = Preview.validate({
   playTime = 10,

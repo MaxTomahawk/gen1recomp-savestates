@@ -28,11 +28,15 @@ local function formatDate(seconds, format)
 end
 
 function Time.absolute(seconds)
-  return formatDate(seconds, "%Y-%m-%d %H:%M")
+  return formatDate(seconds, "%d-%m-%Y %H:%M")
 end
 
 function Time.historyDate(seconds)
-  return formatDate(seconds, "%m-%d %H:%M")
+  return formatDate(seconds, "%H:%M")
+end
+
+function Time.date(seconds)
+  return formatDate(seconds, "%d-%m-%Y")
 end
 
 return Time

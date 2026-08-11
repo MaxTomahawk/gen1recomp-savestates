@@ -2,12 +2,14 @@ local Options = {}
 
 local ROWS = {
   { key = "quick_history", label = "QUICK SAVE HISTORY", type = "choice",
-    default = 5, choices = {
-      { "1", 1 }, { "3", 3 }, { "5", 5 }, { "10", 10 }, { "20", 20 },
+    default = 50, choices = {
+      { "1", 1 }, { "3", 3 }, { "5", 5 }, { "10", 10 }, { "15", 15 },
+      { "20", 20 }, { "30", 30 }, { "50", 50 }, { "75", 75 }, { "100", 100 },
     } },
   { key = "auto_history", label = "AUTO SAVE HISTORY", type = "choice",
-    default = 20, choices = {
+    default = 50, choices = {
       { "5", 5 }, { "10", 10 }, { "20", 20 }, { "30", 30 }, { "50", 50 },
+      { "75", 75 }, { "100", 100 },
     } },
   { key = "history_time", label = "HISTORY TIME", type = "choice",
     default = "play_time", choices = {

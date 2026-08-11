@@ -13,9 +13,34 @@ function ModernUiIntegration.new(mod, notification)
     "ModernUiIntegration.new needs a notification model")
   local self = setmetatable({ mod = mod, notification = notification },
     ModernUiIntegration)
+  local function screen(screenId, selectAction)
+    local actions = {
+      up = function(_, state) return state:moveSelection(-1) end,
+      down = function(_, state) return state:moveSelection(1) end,
+      back = function(_, state) return state:back() end,
+    }
+    if selectAction == "choose" then
+      actions.select = function(_, state) return state:selectCurrent() end
+    elseif selectAction == "back" then
+      actions.select = function(_, state) return state:back() end
+    end
+    return {
+      match = function(state)
+        return type(state) == "table" and state.screenId == screenId
+          and type(state.modernModel) == "function"
+      end,
+      model = function(_, state) return state:modernModel() end,
+      actions = actions,
+      layer = "screen",
+      canSuppressNative = true,
+    }
+  end
   self.publicContract = {
     apiVersion = 1,
-    screens = {},
+    screens = {
+      history = screen("SavestatesHistory", "choose"),
+      details = screen("SavestatesDetails", "back"),
+    },
     transient = {
       model = function()
         return self.notification:modernModel()

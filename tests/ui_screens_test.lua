@@ -2,15 +2,18 @@ local Test = dofile("tests/testlib.lua")
 local T = Test.new("native state screens")
 local Time = dofile("src/util/Time.lua")
 local Details = dofile("src/ui/StateDetailsView.lua")()
+local History = dofile("src/ui/HistoryView.lua")()
 local ScreenFactory = dofile("src/ui/ScreenRegistry.lua")({
   Time = Time,
   Details = Details,
+  History = History,
 })
 
 local registered, pushes = {}, {}
 local mod = {
   content = { screens = {} },
-  ui = { ListMenu = {}, NamingScreen = {}, TextBox = {}, Font = {} },
+  ui = { ListMenu = {}, NamingScreen = {}, TextBox = {}, Font = {},
+    PokemonIcon = { draw = function() return true end }, Theme = { cursor = 1 } },
   options = { values = {
     quick_history = 5, auto_history = 20,
     auto_location = true, auto_trainer_battle = true,
@@ -20,6 +23,11 @@ local mod = {
     history_time = "play_time",
     debug_logging = false,
   } },
+  datetime = {
+    date = function(_, _, seconds) return "DATE-" .. tostring(seconds) end,
+    time = function(_, _, seconds) return "TIME-" .. tostring(seconds) end,
+    dateTime = function(_, _, seconds) return "DATETIME-" .. tostring(seconds) end,
+  },
 }
 local fontMetricCalls = 0
 function mod.ui.Font.width(text)
@@ -209,7 +217,8 @@ service.quickRows = {
       trigger = "manual", stateKind = "battle",
       preview = {
         playTime = 16620, badgeCount = 1, badgeTotal = 8,
-        party = { { name = "SPARKY", level = 22, hp = 45, maxHp = 57 } },
+        party = { { species = "PIKACHU", name = "SPARKY", level = 22,
+          hp = 45, maxHp = 57 } },
       },
     } },
   { available = false, status = "corrupt_metadata", metadata = {
@@ -220,10 +229,14 @@ local history = registered[ids.history].new(game, { class = "quick", parent = ro
 T:eq(history.title, "QUICK SAVES", "quick history has native title")
 T:eq(history.items[1].right, "04:37", "default history displays captured play time")
 T:eq(history.items[2].right, "BAD", "unavailable state stays visible and marked")
+T:eq(#history.items, 2, "date headers never become selectable history items")
+T:eq(history:visibleRows()[1].kind, "header", "history begins with a visual date group")
+T:eq(history:visibleRows()[1].text, "DATE-1000",
+  "date group uses the public engine datetime preference")
 mod.options.values.history_time = "date_time"
 local dateHistory = registered[ids.history].new(game, { class = "quick", parent = root })
-T:eq(dateHistory.items[1].right, Time.historyDate(1000),
-  "history DATE/TIME mode uses captured timestamp")
+T:eq(dateHistory.items[1].right, "TIME-1000",
+  "history DATE/TIME mode uses public engine time under its date group")
 mod.options.values.history_time = "age"
 local ageHistory = registered[ids.history].new(game, { class = "quick", parent = root })
 T:eq(ageHistory.items[1].right, "NOW", "history AGE mode remains available")
@@ -271,19 +284,19 @@ if type(action.items[3].onSelect) == "function" then
   detail = registered[ids.details].new(game, pushes[#pushes].opts)
   T:eq(#detail.items, 0,
     "state details have no selectable ListMenu rows")
-  T:eq(detail.index, nil,
-    "state details have no cursor on continuation lines")
+  T:eq(detail.index, 1,
+    "state details cursor selects a whole Pokemon entry only")
   T:eq(detailValue(detail, "LOCATION"), "CERULEAN GYM",
     "location remains one readable logical block")
-  T:eq(detailValue(detail, "CREATED"), Time.absolute(1000),
-    "detail screen shows useful absolute creation date and time")
+  T:eq(detailValue(detail, "CREATED"), "DATETIME-1000",
+    "detail screen uses the public engine date/time preference")
   local mon = detail.blocks[#detail.blocks]
   T:eq(mon.kind, "pokemon",
     "each party member remains one logical block")
   T:eq(mon.lines[1], "SPARKY",
     "each party block starts with its captured name")
-  T:eq(mon.lines[2], "LV22   HP 45/57",
-    "each party block always has a second level and HP line")
+  T:eq(mon.lines[2], "LV22 HP 45/57",
+    "each party block keeps Party-style level and HP in one logical entry")
   T:check(fontMetricCalls > 0,
     "detail layout uses the public Font.width metric instead of character guesses")
 end
@@ -472,7 +485,7 @@ local settings = registered[ids.settings].new(game, { parent = root })
 T:eq(settings.title, "STATE SETTINGS", "settings screen is native")
 T:eq(settings.items[1].right, "5", "settings shows current quick limit")
 T:eq(#settings.items, 11, "settings reports every product option")
-T:eq(settings.items[3].label, "HISTORY TIME", "settings exposes history time mode")
+T:eq(settings.items[3].label, "HISTORY", "settings exposes history time mode compactly")
 T:eq(settings.items[3].right, "PLAY TIME", "settings names the default history time mode")
 T:eq(settings.items[4].label, "LOCATION ENTRY", "settings shows location autosaves")
 T:eq(settings.items[4].right, "ON", "settings shows trigger value")
@@ -482,5 +495,10 @@ T:eq(settings.items[10].right, "OFF", "settings shows load notification toggle")
 T:eq(settings.items[11].label, "DEBUG TIMINGS", "settings shows diagnostics option")
 T:check(settings.opts.footer:find("MODS", 1, true) ~= nil,
   "settings explains the public manager edit path")
+T:eq(settings.opts.rows, 6, "settings reserves space for its footer")
+for _, item in ipairs(settings.items) do
+  T:check(mod.ui.Font.width(item.label) + mod.ui.Font.width(item.right or "") + 8 <= 136,
+    "settings label and value fit without overlap: " .. item.label)
+end
 
 T:finish()
