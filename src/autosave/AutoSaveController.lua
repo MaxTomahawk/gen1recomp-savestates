@@ -109,16 +109,25 @@ end
 
 function AutoSaveController:tick(game)
   if #self.pending == 0 then return false, "empty" end
-  local entry = self.pending[1]
   local ok, capability = pcall(self.checkpoints.inspect, self.checkpoints, game)
   if not ok then return self:_unexpected(capability) end
+  local entry = self.pending[1]
   local definition = TRIGGERS[entry.trigger]
-  if definition and definition.runtime
-      and type(capability) == "table" and capability.kind ~= definition.runtime then
+  -- Event requests share one FIFO, but a map-entry request can legitimately
+  -- still be waiting when a battle starts. Drop every leading request that
+  -- no longer matches this runtime in the SAME pre-input tick, so it cannot
+  -- consume the first safe battle decision and delay the battle autosave until
+  -- after the player has already chosen an action.
+  while entry and definition and definition.runtime
+      and type(capability) == "table" and capability.kind ~= definition.runtime do
     table.remove(self.pending, 1)
     reindex(self)
+    entry = self.pending[1]
+    definition = entry and TRIGGERS[entry.trigger] or nil
+  end
+  if not entry then
     return false, "stale_trigger",
-      "The deferred event no longer matches the active runtime."
+      "Deferred events no longer match the active runtime."
   end
   if type(capability) ~= "table" or not capability.canCapture then
     return false,

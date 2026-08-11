@@ -9,6 +9,12 @@ local renderComposeWrapper
 local inputStepWrapper
 local eventHandlers = {}
 local selectedStorageCalls = 0
+local storageValues = {}
+local optionValues = {}
+local checkpointCapability = {
+  canCapture = false, kind = "script", reason = "script_busy",
+}
+local captureBattleKind = "trainer"
 local modernRegistration
 local modernActive = false
 local nativeCanvasSets, nativeBoxes, composeNextCalls = {}, 0, 0
@@ -38,6 +44,27 @@ local mod = {
     }
   end,
   storage = {
+    context = function()
+      return { engineVersion = "0.0.0-dev", gameVersion = "red",
+        playthroughId = "selected-playthrough" }
+    end,
+    read = function(_, _, key)
+      local value = storageValues[key]
+      if value == nil then return nil, "not_found", "missing " .. key end
+      return value
+    end,
+    write = function(_, _, key, value) storageValues[key] = value return true end,
+    list = function(_, _, prefix)
+      local keys = {}
+      for key in pairs(storageValues) do
+        if key == prefix or key:sub(1, #prefix + 1) == prefix .. "/" then
+          keys[#keys + 1] = key
+        end
+      end
+      table.sort(keys)
+      return keys
+    end,
+    delete = function(_, _, key) storageValues[key] = nil return true end,
     selected = function(_, game)
       selectedStorageCalls = selectedStorageCalls + 1
       T:eq(game.save.meta.playthroughId, nil,
@@ -56,12 +83,34 @@ local mod = {
   },
   checkpoints = {
     inspect = function()
-      return { canCapture = false, kind = "script", reason = "script_busy" }
+      return checkpointCapability
     end,
+    capture = function(_, game)
+      return {
+        format = 1, kind = "battle",
+        identity = { engineVersion = "0.0.0-dev", gameVersion = "red",
+          playthroughId = "selected-playthrough" },
+        save = game.save,
+        runtime = {
+          overworld = { map = "OAKS_LAB", x = 5, y = 6,
+            facing = "down", surfing = false },
+          battle = { kind = captureBattleKind, origin = {
+            kind = captureBattleKind == "trainer" and "trainer_encounter"
+              or "wild_encounter", map = "OAKS_LAB",
+          } },
+        },
+        rng = { love = "fixture-rng" },
+      }
+    end,
+    ensureNormalSave = function() return true, "already_exists" end,
   },
   options = {
-    get = function() return nil end,
-    define = function(self, schema) self.schema = schema return schema end,
+    get = function(_, key) return optionValues[key] end,
+    define = function(self, schema)
+      self.schema = schema
+      for _, row in ipairs(schema) do optionValues[row.key] = row.default end
+      return schema
+    end,
   },
   hooks = {
     wrap = function(_, name, callback)
@@ -160,6 +209,37 @@ T:eq(type(eventHandlers["battle.started"]), "function",
   "composition subscribes to deferred battle-start autosaves")
 T:eq(type(eventHandlers["player.warped"]), "function",
   "composition subscribes to immediate before-warp autosaves")
+
+checkpointCapability = { canCapture = true, canRestore = true, kind = "battle" }
+local battleGame = { save = {
+  version = "red", meta = { playthroughId = "selected-playthrough" },
+  player = { map = "OAKS_LAB", x = 5, y = 6, facing = "down" },
+  playTime = 180, inventory = {}, party = {},
+} }
+eventHandlers["battle.started"]({ kind = "trainer" })
+T:eq(storageValues.index, nil,
+  "battle autosave waits through the unsafe intro event")
+inputStepWrapper(function() end, battleGame, 1 / 60)
+T:check(type(storageValues.index) == "table",
+  "first settled battle input boundary publishes an autosave index")
+local battlePayloads = 0
+for key in pairs(storageValues) do
+  if key:match("^states/a") then battlePayloads = battlePayloads + 1 end
+end
+T:eq(battlePayloads, 1,
+  "composed public event-to-checkpoint path writes one battle autosave")
+captureBattleKind = "wild"
+eventHandlers["battle.started"]({ kind = "wild" })
+inputStepWrapper(function() end, battleGame, 1 / 60)
+battlePayloads = 0
+for key in pairs(storageValues) do
+  if key:match("^states/a") then battlePayloads = battlePayloads + 1 end
+end
+T:eq(battlePayloads, 2,
+  "ordinary wild and trainer starts persist independently at their safe boundary")
+checkpointCapability = {
+  canCapture = false, kind = "script", reason = "script_busy",
+}
 local screenCount = 0
 for _ in pairs(registeredScreens) do screenCount = screenCount + 1 end
 T:eq(screenCount, 11,
@@ -202,8 +282,11 @@ T:eq(nativeBoxes, 1,
   "Modern UI presentation suppresses the duplicate native banner")
 T:eq(composeNextCalls, 2,
   "Modern UI claim still preserves the normal engine compositor")
-T:check(type(logs[#logs]) == "string" and logs[#logs]:find("core ready", 1, true),
-  "successful composition logs one ready lifecycle message")
+local ready
+for _, message in ipairs(logs) do
+  if message:find("core ready", 1, true) then ready = true end
+end
+T:check(ready == true, "successful composition logs one ready lifecycle message")
 for _, message in ipairs(logs) do
   T:check(not message:match("^ERROR"), "successful composition emits no error log")
 end

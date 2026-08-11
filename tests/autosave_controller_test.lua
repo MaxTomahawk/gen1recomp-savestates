@@ -190,6 +190,26 @@ T:eq(locationCode, "stale_trigger", "expired location request is explicit")
 T:eq(staleLocation:pendingCount(), 0,
   "expired location request cannot create a mislabeled battle state")
 
+local boundary = AutoSaveController.new({
+  service = service, checkpoints = checkpoints,
+  option = function(key) return options[key] end,
+})
+boundary:onTrigger("location_enter", {
+  mapId = "OAKS_LAB", contextKey = "OAKS_LAB",
+})
+boundary:onTrigger("trainer_battle_start", {
+  contextKey = "trainer_battle_start", battleKind = "trainer",
+})
+checkpoints.capability = { canCapture = true, canRestore = true, kind = "battle" }
+local battleBoundary, battleBoundaryCode = boundary:tick(game)
+T:check(battleBoundary and true or false,
+  "safe battle boundary skips stale location work and saves immediately: "
+    .. tostring(battleBoundaryCode))
+T:eq(calls[#calls].trigger, "trainer_battle_start",
+  "the first safe battle decision captures the battle trigger")
+T:eq(boundary:pendingCount(), 0,
+  "stale overworld work cannot delay battle autosave past the first command menu")
+
 local reported = {}
 local brokenCheckpoints = { inspect = function() error("injected inspect crash") end }
 local broken = AutoSaveController.new({
