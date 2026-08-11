@@ -239,7 +239,7 @@ return function(mod)
     end,
   }):install(mod)
   mod.hooks:wrap("render.compose", function(next, renderer, ctx)
-    if not core.modernUi:claimsPresentation()
+    if not core.modernUi:claimsPresentation(ctx and ctx.game)
         and ctx and ctx.uiCanvas and love and love.graphics then
       -- The completed native UI canvas is still the authoritative logical
       -- 160x144 surface here. Draw before the engine composites it so Android

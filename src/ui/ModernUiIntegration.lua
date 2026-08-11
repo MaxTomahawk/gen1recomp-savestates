@@ -49,12 +49,12 @@ function ModernUiIntegration:register()
   return ok and accepted == true
 end
 
-function ModernUiIntegration:claimsPresentation()
+function ModernUiIntegration:claimsPresentation(game)
   local handle = self:handle()
   local active = handle and handle.exports
     and handle.exports.isTransientPresentationActive
   if type(active) ~= "function" then return false end
-  local ok, claimed = pcall(active, self.mod.id)
+  local ok, claimed = pcall(active, self.mod.id, game)
   return ok and claimed == true
 end
 

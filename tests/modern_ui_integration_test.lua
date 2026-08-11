@@ -11,6 +11,7 @@ local active = {
 local notice = { modernModel = function() return active end }
 local registered
 local modernEnabled = true
+local modelValid = true
 local mod = {
   id = "savestates",
   find = function(id)
@@ -21,8 +22,9 @@ local mod = {
           registered = spec
           return true
         end,
-        isTransientPresentationActive = function(owner)
-          return modernEnabled and owner == "savestates"
+        isTransientPresentationActive = function(owner, game)
+          return modernEnabled and modelValid and owner == "savestates"
+            and game == "game-context"
         end,
       },
     }
@@ -39,14 +41,17 @@ T:eq(contract.transient.model().title, "QUICK SAVED",
 T:eq(adapter:register(), true, "present Modern UI registers the source contract")
 T:eq(registered.owner, "savestates", "registration is scoped to this source mod")
 T:eq(registered.contract, contract, "registration passes the exact public contract")
-T:eq(adapter:claimsPresentation(), true,
+T:eq(adapter:claimsPresentation("game-context"), true,
   "enabled Modern UI claims the transient and prevents a duplicate native banner")
 
 modernEnabled = false
-T:eq(adapter:claimsPresentation(), false,
+T:eq(adapter:claimsPresentation("game-context"), false,
   "disabled Modern UI releases the native notification fallback")
+modernEnabled, modelValid = true, false
+T:eq(adapter:claimsPresentation("game-context"), false,
+  "malformed or throwing Modern UI presentation releases native fallback")
 mod.find = function() return nil end
-T:eq(adapter:claimsPresentation(), false,
+T:eq(adapter:claimsPresentation("game-context"), false,
   "absent Modern UI leaves the native notification fallback intact")
 
 T:finish()
