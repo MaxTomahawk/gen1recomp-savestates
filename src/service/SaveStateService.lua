@@ -190,6 +190,16 @@ return function(deps)
     end)
   end
 
+  function Service:_ensureNormalSave(game, checkpoint)
+    local anchored, code, message = invoke(
+      self.checkpoints, "ensureNormalSave", game, checkpoint)
+    if not anchored then
+      return nil, code or "save_failed",
+        message or "Could not create the first ordinary progress save."
+    end
+    return true
+  end
+
   function Service:_restoreCheckpoint(game, checkpoint)
     return self:_measure("checkpoint_restore", function()
       return invoke(self.checkpoints, "restore", game, checkpoint)
@@ -346,6 +356,8 @@ return function(deps)
     if not committed then
       return self:_failure("save_failed", commitCode, commitMessage)
     end
+    local anchored, anchorCode, anchorMessage = self:_ensureNormalSave(game, checkpoint)
+    if not anchored then return self:_failure("save_failed", anchorCode, anchorMessage) end
     if commitCode then self:_warn(commitCode, commitMessage, snapshot.metadata) end
     self:_notify("quick_saved", {
       id = id,
@@ -450,6 +462,8 @@ return function(deps)
     if not committed then
       return self:_failure("save_failed", commitCode, commitMessage)
     end
+    local anchored, anchorCode, anchorMessage = self:_ensureNormalSave(game, checkpoint)
+    if not anchored then return self:_failure("save_failed", anchorCode, anchorMessage) end
     if commitCode then self:_warn(commitCode, commitMessage, snapshot.metadata) end
     self:_notify("auto_saved", {
       id = id,
@@ -498,6 +512,10 @@ return function(deps)
       return invoke(store, "commitSlot", index, snapshot, cleanup)
     end)
     if not committed then return nil, commitCode, commitMessage end
+    if not sourceMetadata then
+      local anchored, anchorCode, anchorMessage = self:_ensureNormalSave(game, checkpoint)
+      if not anchored then return nil, anchorCode, anchorMessage end
+    end
     if commitCode then self:_warn(commitCode, commitMessage, snapshot.metadata) end
     self:_notify("slot_saved", {
       id = id,

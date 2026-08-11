@@ -34,7 +34,7 @@ Open START after overworld movement has settled. `QUICKSAVE` captures immediatel
 `STATES` opens histories, slots, undo, and current settings. Vanilla `SAVE` is
 unchanged. The development stack also adds `SAVE STATES` to the title menu: it
 browses only the selected existing playthrough and can resume a compatible saved
-state without silently creating a normal Pokémon save.
+state after a cold restart.
 
 ## START Menu
 
@@ -50,6 +50,13 @@ to the engine's validated title-resume transaction; pinning, renaming, and
 deleting remain durable operations inside the selected Save States namespace.
 This currently requires the unpublished development engine contract described in
 the project plan and is not yet part of a released compatibility promise.
+
+When the first successfully persisted savestate precedes the player's first
+Pokémon SAVE, the mod asks the engine to create exactly one ordinary progress
+anchor from that same verified checkpoint. The checkpoint and history land
+first; an anchor failure is reported as a failed save. Later savestates never
+rewrite the ordinary save, so vanilla SAVE and subsequent Save States history
+remain independent.
 
 `CONTINUE LATEST` defaults to ON. When enabled, the existing title `CONTINUE`
 row selects the newest valid progress point for that selected playthrough: a

@@ -265,8 +265,10 @@ title target, and exposes only durable pin/rename/delete operations alongside
 validated loads. `CONTINUE LATEST` is now mod-side policy with default ON: it
 compares only the selected facade's normal-save timestamp with original valid
 quick/auto/slot capture times, rejects implausibly future metadata, skips corrupt
-or incompatible records, gives native normal SAVE exact-time ties, and performs
-no hidden normal save.
+or incompatible records and gives native normal SAVE exact-time ties. A first
+successfully committed checkpoint now requests one engine-validated ordinary
+progress anchor only when the playthrough has never had a Pokémon SAVE; later
+savestates do not rewrite it.
 
 ### Current integration branches — 2026-08-10
 

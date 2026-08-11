@@ -15,6 +15,20 @@ local StateStore = dofile("src/state/StateStore.lua")({
   StateIndex = StateIndex,
 })
 
+local function eventPosition(events, expected)
+  for index, event in ipairs(events) do
+    if event == expected then return index end
+  end
+end
+
+local function eventCount(events, prefix)
+  local count = 0
+  for _, event in ipairs(events) do
+    if event:sub(1, #prefix) == prefix then count = count + 1 end
+  end
+  return count
+end
+
 local function checkpoint(money, map)
   map = map or "PALLET_TOWN"
   return {
@@ -134,6 +148,15 @@ local function environment(args)
     targetGame.current = assert(DataOnly.copy(target))
     return true
   end
+  function checkpoints:ensureNormalSave(_, target)
+    events[#events + 1] = "anchor:" .. tostring(target.save.money)
+    if self.anchorFailure then
+      return false, self.anchorFailure, "injected first-save anchor failure"
+    end
+    if self.normalSaveExists then return true, "already_exists" end
+    self.normalSaveExists = true
+    return true
+  end
 
   local migrations = StateMigrations.new(1)
   local storeScopes = {}
@@ -243,6 +266,11 @@ local happyIndex = happy.storeFactory(happy.game):loadIndex()
 T:eq(happyIndex:list("quick")[1].id, "q00000001", "quicksave publishes history")
 T:check(happy.storage.values["states/q00000001"] ~= nil,
   "quicksave payload persists independently")
+T:check((eventPosition(happy.events, "anchor:3000") or 0)
+    > (eventPosition(happy.events, "write:index") or math.huge),
+  "quicksave anchors normal progress only after durable state publication")
+T:eq(happy.checkpoints.normalSaveExists, true,
+  "first successful quicksave establishes the normal-save anchor")
 T:eq(happy.notifications[1].kind, "quick_saved", "successful save emits notification")
 T:eq(happy.notifications[1].detail.count, 1, "save notification reports history count")
 local happySummary = happy.service:summary(happy.game)
@@ -364,6 +392,9 @@ T:eq(listedSlots[3].occupied, true, "saved permanent slot is occupied")
 T:eq(listedSlots[3].metadata.label, "SLOT 03", "slot listing exposes saved label")
 T:eq(listedSlots[3].available, nil,
   "slot browsing remains index-only until the player opens a slot")
+T:check((eventPosition(slots.events, "anchor:500") or 0)
+    > (eventPosition(slots.events, "write:index") or math.huge),
+  "direct permanent-slot capture also establishes the first-save anchor")
 
 slots.game.current = checkpoint(600, "ROUTE_1")
 slots.storage.failWrite.index = true
@@ -469,10 +500,16 @@ T:eq(autoOne.metadata.trigger, "location_enter", "autosave records semantic trig
 T:eq(autoOne.metadata.contextKey, "PALLET_TOWN", "autosave records cooldown context")
 T:eq(autos.notifications[#autos.notifications].kind, "auto_saved",
   "autosave emits notification")
+T:check((eventPosition(autos.events, "anchor:100") or 0)
+    > (eventPosition(autos.events, "write:index") or math.huge),
+  "first autosave establishes the same normal-save anchor")
 
 autos.setNow(201)
+local anchorsBeforePin = eventCount(autos.events, "anchor:")
 local pinnedAuto = autos.service:pinToSlot(autos.game, autoOne.metadata.id, 2)
 T:check(pinnedAuto ~= nil, "autosave pins to permanent slot")
+T:eq(eventCount(autos.events, "anchor:"), anchorsBeforePin,
+  "pinning durable history never treats an old checkpoint as a new live capture")
 T:eq(pinnedAuto.metadata.createdAt, autoOne.metadata.createdAt,
   "pinning autosave preserves source creation time")
 T:eq(pinnedAuto.metadata.trigger, autoOne.metadata.trigger,
@@ -538,6 +575,18 @@ T:eq(unwrittenCode, "write_failed", "payload write failure preserves storage cod
 T:eq(writeFailure.storage.values.index, nil, "payload failure publishes no index")
 T:eq(writeFailure.errors[1].code, "write_failed",
   "persistence failure emits an error-level diagnostic")
+
+local anchorFailure = environment()
+anchorFailure.checkpoints.anchorFailure = "save_failed"
+local unanchored, unanchoredCode = anchorFailure.service:quickSave(anchorFailure.game)
+T:eq(unanchored, nil,
+  "a checkpoint is not reported successful when its first normal-save anchor fails")
+T:eq(unanchoredCode, "save_failed",
+  "first-save anchor failure preserves the engine error")
+T:check(anchorFailure.storage.values["states/q00000001"] ~= nil,
+  "anchor failure leaves the already-verified savestate recoverable")
+T:eq(anchorFailure.notifications[#anchorFailure.notifications].kind, "save_failed",
+  "first-save anchor failure is visible instead of claiming QUICK SAVED")
 
 local empty = environment()
 local noQuick, noQuickCode = empty.service:quickLoad(empty.game)
