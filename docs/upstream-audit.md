@@ -203,6 +203,12 @@ Independent storage/options remain unchanged. Full user/mod-author rules are in
 - A non-modal replace-in-place toast is implementable today through
   `render.compose` on the public logical UI canvas;
   no upstream toast API is required for the initial product.
+- Detached checkpoint preview rows cannot safely call private Party UI. PR #1079
+  adds a narrow presentation-only public delegate so icon packs/hooks retain the
+  exact engine-owned resolution path.
+- Timestamp formatting is broader engine configuration rather than Save States
+  progress. PR #1080 keeps it in `options.lua`, exposes only formatted strings to
+  mods, and preserves DMY/24-hour behavior where a device process locale is absent.
 
 ## Manifest, packaging, and index corrections
 
@@ -231,6 +237,8 @@ Independent storage/options remain unchanged. Full user/mod-author rules are in
 | `SAVESTATES-SP-08` | Title-safe selected storage, first-state normal anchor, and checkpoint resume | **Review branch:** non-allocating selected context, verified `ensureNormalSave`, validated resume | title fresh skeleton cannot safely resolve existing storage or bootstrap runtime | Narrow selected-playthrough facade; no enumeration, hidden SAVE simulation, or raw paths | 40/40 focused title checks, two-process cold restart, 149/149 engine and 10/10 modkit suites |
 | `SAVESTATES-SP-09` | START tool entry at a safe battle decision | **Review branch:** `battle.menu_auxiliary` | ordinary battle command loop privately owns START | Composable semantic auxiliary action sharing checkpoint safety predicate | 10/10 focused checks, 150/150 engine and 9/9 modkit suites |
 | `SAVESTATES-SP-10` | Safe scripted trainer/story battle checkpoint | **Review branch:** semantic `script_battle` origin | runner is coroutine-backed but known built-in command boundary is reconstructable | Persist script id/pc/context and one-use result, never coroutine/stack | 20/20 focused checks, 150/150 engine and 9/9 modkit suites; combined stack 151/151 and 10/10 |
+| `SAVESTATES-SP-11` | Render detached checkpoint party previews through the same icon composition as Party UI | **Review PR #1079:** `mod.ui.PokemonIcon.draw` | `PartyMenu.drawIcon` already owns content icons, asset overrides, and `pokemon.icon` hook composition | Validate `{species,hp,maxHp}` and delegate presentation only | 14/14 public API checks; 149/149 engine and 10/10 modkit suites; GitHub CI green |
+| `SAVESTATES-SP-12` | Consistent device/fallback date-time presentation across engine and mods | **Review PR #1080:** global preferences plus read-only `mod.datetime` | options are engine-owned and must remain current across restore; Lua exposes process locale only where platform supplies it | DEVICE/process-locale formatter with DMY/24-hour fallback and explicit DMY/MDY/YMD + 12/24h overrides | 11/11 engine and 8/8 public API checks; 150/150 engine and 10/10 modkit suites; GitHub CI green |
 
 The table records both landed and remaining seams. Optional custom actions remain
 a future candidate; Level A, Level B, packaging, and the cross-mod lifecycle are

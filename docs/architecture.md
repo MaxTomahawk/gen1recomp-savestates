@@ -120,12 +120,16 @@ public-API failures are error-grade with the original remediation message.
 ## Native UX and events
 
 The existing START descriptor list is decorated after downstream mods return.
-Registered `ListMenu`/`NamingScreen` factories provide histories, state actions,
+Registered public widget factories provide histories, state actions,
 ten slots, pinning, rename/delete, undo, and settings visibility. Load/save-slot
 actions close their known public widget chain before checkpoint inspection; no
 private state-stack operation is used. Actions stay first in their compact menu;
 the capture-time location, trigger, age, runtime kind, compatibility, and party
-preview live in a separately paged native detail screen. The settings summary
+preview live in a read-only scrolling detail screen. History headings are visual
+date rows, never selection targets. Detail metadata is collision-split using
+public font metrics; Pokémon are whole selectable two-line icon blocks. The icon
+is delegated to the engine's public Party icon presenter so content registrations,
+asset overrides, and `pokemon.icon` hooks keep composing. The settings summary
 mirrors every public product option and links to the MODS editor.
 Destructive history and slot actions route through a registered, default-NO
 native confirmation and update their source list only after storage succeeds.
@@ -143,7 +147,8 @@ tests cover that contract; portrait/landscape device
 presentation remains a manual release-acceptance check.
 
 `gen1_modern_ui` is an optional ordering dependency only. Save States publishes
-its `gen1ModernUi` v1 contract with a single source-owned `transient.model` and
+its `gen1ModernUi` v1 contract with data-only history/details screen models and a
+single source-owned `transient.model`, and
 registers it through the other mod's public export when available. The model
 contains only the active notification id/title/detail/severity. Modern UI owns
 theme, responsive safe-area layout, and drawing; Save States keeps content,
@@ -152,7 +157,9 @@ only while the public presenter explicitly claims the source, so absence,
 disablement, incompatibility, or presenter failure falls back cleanly. The
 native classic banner uses the logical top edge while Modern UI's QOL location
 banner remains a separate bottom card; neither mod reads the other's private
-state.
+state. Date/time presentation similarly delegates to the public engine formatter;
+the global options stay current across checkpoint restore and the mod uses a
+portable DMY/24-hour fallback on older hosts.
 
 The autosave fingerprint hashes canonical progress but deliberately removes only
 `playTime` and `startMenuIndex`. Those presentation counters would otherwise make
@@ -160,12 +167,14 @@ two gameplay-equivalent states different on every capture; coordinates, party,
 inventory, boxes, money, Pokédex, flags, object/trainer state, and other mod data
 remain significant.
 
-`map.entered`, ordinary `battle.started`, and optional `battle.ended` events
+`map.entered`, ordinary/scripted `battle.started`, and optional `battle.ended` events
 enqueue semantic requests. An `input.step` wrapper retries at most one request per
 fixed tick and calls the service only after `mod.checkpoints:inspect` proves the
 matching overworld or battle boundary. A battle-start request expires when the
 runtime leaves battle, preventing a later overworld save from carrying the wrong
-trigger. `player.warped` is different: it fires synchronously before transition
+trigger. If a stale overworld request is ahead of a battle request, every leading
+runtime mismatch is discarded in that same pre-input tick so the first safe
+battle decision is not missed. `player.warped` is different: it fires synchronously before transition
 mutation, so enabled before-warp capture runs immediately with the live game
 cached at the current `input.step`. It is never deferred into the destination.
 

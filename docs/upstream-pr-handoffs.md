@@ -121,6 +121,40 @@ commands at the existing settled player-decision boundary.
   the public worktree.
 ```
 
+## Gen1Recomp: canonical detached Pokémon icons
+
+| Field | Value |
+| --- | --- |
+| Fork branch | `MaxTomahawk/gen1recomp:feat/mod-pokemon-icon` |
+| Head | `ccb5358aad517f67b1cbe9726ef591db15ce6997` |
+| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
+| Title | `feat(mods): expose canonical Pokémon icon presentation` |
+| PR | [#1079](https://github.com/bryanthaboi/gen1recomp/pull/1079) — open, non-draft, mergeable/clean, CI green |
+
+The public `mod.ui.PokemonIcon.draw` accepts only detached
+`{species,hp,maxHp}` data plus presentation flags and delegates to the native
+Party icon resolver. Content icon registrations, sprite assets, and
+`pokemon.icon` hooks therefore compose without exposing PartyMenu or live
+Pokémon records. `./scripts/test.sh --quick` passes 149/149 engine and 10/10
+modkit suites; ROM-derived Tier 3 is unavailable.
+
+## Gen1Recomp: shared local date and time
+
+| Field | Value |
+| --- | --- |
+| Fork branch | `MaxTomahawk/gen1recomp:feat/device-date-time` |
+| Head | `2c8c80058419594d778b9b42346c253a2db7c54f` |
+| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
+| Title | `feat(mods): add shared local date and time formatting` |
+| PR | [#1080](https://github.com/bryanthaboi/gen1recomp/pull/1080) — open, non-draft, mergeable/clean, CI green |
+
+Global DEVICE/DMY/MDY/YMD and DEVICE/12h/24h choices live in `options.lua`,
+so checkpoint restore never rewinds them. The read-only `mod.datetime` facade
+returns formatted strings only. DEVICE follows the process time locale where
+the target exposes one and otherwise deliberately falls back to DMY/24-hour.
+`./scripts/test.sh --quick` passes 150/150 engine and 10/10 modkit suites;
+ROM-derived Tier 3 is unavailable.
+
 ## Gen1 Modern UI: source transient presentation
 
 | Field | Value |

@@ -10,7 +10,11 @@ The focused cross-mod audit proved the need for the success-only
 `checkpoint.restored` lifecycle, now merged through upstream PR
 [`bryanthaboi/gen1recomp#993`](https://github.com/bryanthaboi/gen1recomp/pull/993).
 Title browsing/resume additionally depends on the unpublished generic
-selected-playthrough/title-checkpoint contract under local engine review. It is
+selected-playthrough/title-checkpoint contract under review. The Party-style
+preview and global locale preference additionally use the focused
+public contracts in upstream PRs #1079 and #1080. Older development hosts retain
+text-only icons and deterministic DMY/24-hour fallback, but the final supported
+release floor will include these presentation contracts. It is
 not a supported player release until every required public contract ships in an
 official engine release and `manifest.json` can name that release as its minimum.
 
@@ -60,7 +64,9 @@ compatibility promise. Default battle-start autosaves remain available without i
 `location_enter` defers `map.entered` until a stable Level A boundary.
 `trainer_battle_start` and `wild_battle_start` defer `battle.started` until the
 first Level B player-decision boundary; requests expire if the battle ends or
-proves unsupported. `battle_end` waits for stable overworld return when enabled.
+proves unsupported. A stale overworld request ahead of a battle request is removed
+in the same pre-input tick, allowing the battle capture at the first safe command
+menu. `battle_end` waits for stable overworld return when enabled.
 `before_warp` captures synchronously inside the public `player.warped` event,
 which is emitted after destination resolution but before transition mutation.
 It is discarded rather than deferred when capability inspection rejects that

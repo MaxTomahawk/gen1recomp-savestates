@@ -9,18 +9,19 @@ save slots to Gen1Recomp without replacing the normal Pokémon save system.
 
 ## Features
 
-The current development package provides rolling overworld and supported battle
+The current development package provides 50 rolling Quick Saves and 50 rolling
+Auto Saves by default (configurable up to 100 each), plus overworld and supported battle
 safe-point quicksaves, newest and selected-state loading, deferred location,
 battle-start, and after-battle autosaves, ten permanent renameable slots, pinning,
 durable undo-load recovery, native START and manager screens, configurable
 history/notification options, and non-modal notifications. Storage is isolated
 by game and opaque playthrough identity.
 
-When the optional Gen1 Modern UI compatibility extension is installed and
-enabled, Save States keeps its own notification timing and content but lets that
-mod present the banner in its active theme and touch-safe layout. Without it,
-Save States uses the native Gen1-style banner. No other mod's private theme or
-runtime state is read.
+When Gen1 Modern UI is enabled, the public v1 screen adapter presents Save States
+history and details while Save States retains every callback. The optional
+notification extension additionally lets Modern UI present transient results in
+its active theme and touch-safe layout. Without that extension, Save States uses
+the native Gen1-style top banner. No private theme or runtime state is read.
 
 ## Installation
 
@@ -72,11 +73,16 @@ implausibly future-dated checkpoints are skipped. Turning it OFF leaves vanilla
 `QUICKSAVE` writes a rolling history. The exported quickload command selects the
 newest valid entry; the manager can inspect, load, pin, or delete older entries.
 History defaults to captured `PLAY TIME`; `DATE/TIME` and relative `AGE` are
-available in settings. Previewless legacy records fall back to age. Each state
+available in settings. Quick/Auto histories group captures under non-selectable
+date headings. Date/time text follows Gen1Recomp's global device/DMY/MDY/YMD and
+12/24-hour preference when that public formatter is available, falling back to
+`DD-MM-YYYY` and 24-hour time. Previewless legacy records fall back to age. Each state
 detail shows location, trigger, absolute captured date/time, runtime kind, and
 current compatibility before presenting mutating actions. New captures also show
-their captured play time, badges, and up to six party members as a name row plus
-a level/current-HP/maximum-HP row. These are descriptive previews, not restore
+their captured play time, badges, and up to six party members as selectable
+Party-style icon blocks with a name row plus a level/current-HP/maximum-HP row.
+Icon resolution stays engine-owned, so registered icon/sprite mods and the public
+Pokémon icon hook compose exactly as in the native Party viewer. These are descriptive previews, not restore
 data; older states without them remain usable. State and slot deletes use a
 native confirmation that defaults to NO.
 
@@ -111,7 +117,8 @@ checkpoint. Undo restores it without overwriting it.
 
 ## Settings
 
-History limits, history-time presentation, autosave triggers, `CONTINUE LATEST`,
+Quick and Auto history limits default to 50 each and offer values through 100.
+History-time presentation, autosave triggers, `CONTINUE LATEST`,
 save/load notification toggles, and opt-in debug timings use the native MODS
 manager. The STATES settings screen reports current values and points to that
 public edit path. Debug timing logs report
@@ -151,6 +158,11 @@ The design uses data-only snapshots, strict identity/content validation,
 verified replacement, durable recovery before load, and engine-owned semantic
 runtime reconstruction. Corrupt or incompatible data must never execute or
 partially mutate a live game.
+
+Measured serialized wrapper sizes on the ROM-free fixture were about 2.6 KiB for
+an early overworld state and 232–235 KiB for an intentionally heavy late-game
+state with all twelve boxes filled. One hundred such heavy records are roughly
+23 MiB of logical state data before the engine's crash-recovery witnesses.
 
 ## Development
 

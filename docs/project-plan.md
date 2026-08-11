@@ -1,7 +1,8 @@
 # Save States Living Project Plan
 
 Status: active execution; Level A, Level B, and cross-mod restore lifecycle
-merged upstream; rich previews implemented and verified
+merged upstream; mobile preview/history/battle-autosave pass verified; required
+title, battle-entry, scripted-battle, icon, and date/time contributions in review
 
 Updated: 2026-08-11
 
@@ -25,6 +26,10 @@ commits named there. Key conclusions:
 
 - Native UI decoration, registered screens, options, semantic events, and HUD
   notifications are available publicly now.
+- Current public UI lacked only two small presentation contracts needed by the
+  approved mobile UX: canonical detached Party icons and shared local timestamp
+  formatting. Focused review-ready PRs #1079 and #1080 now provide them without
+  checkpoint/storage authority.
 - `mod.save` cannot be the savestate store without coupling quicksaves to vanilla
   SAVE and recursively embedding the history; merged `mod.storage` is the
   independent playthrough-scoped public store selected for the product.
@@ -150,7 +155,7 @@ No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 | M6 — Autosaves and robustness | Supported event triggers, cooldown/dedup, quarantine, compatibility, performance logging | IMPLEMENTED: location, ordinary trainer/wild start, optional after-battle deferral, synchronous capability-gated before-warp, stale-event expiry, dedup/retention, corrupt visibility, and opt-in phase timings; broader clean-runtime matrix remains |
 | M7 — Battle beta | MERGED: field/RNG/continuation map plus persistent safe-point capture/restore | PR #986; wild/trainer differential reconstruction; damage/crit/accuracy/AI/escape/encounter RNG replay; rollback and unsupported-phase tests green |
 | M8 — Cross-mod compatibility | Generic rewind ownership, real shiny case, cooperating/passive fake mods, lifecycle proof | MERGED: PR #993 as `ee891fb8`; 46/46 public cross-mod checks; `mod.save` rewinds, storage/options do not, shiny-style metadata roundtrips in overworld/battle |
-| M9 — Rich preview metadata | Capture-time play time, badge, and party summaries in index metadata | VERIFIED locally: optional format-1 preview, strict validation, lazy index browsing, public content capture, and source-provenance pin/rename |
+| M9 — Rich preview metadata | Capture-time play time, badge, and party summaries in index metadata | VERIFIED locally: optional format-1 preview, strict validation, lazy index browsing, grouped date headings, read-only metric-safe details, engine-owned Party icons, and source-provenance pin/rename |
 | M10 — Release readiness | Docs, clean package install, GitHub release, then index metadata PR | byte-identical source-date ZIP builds, clean install, validate/lint/tests, no private requires/ROM content, release asset resolves |
 
 Milestones are sequencing boundaries, not permission to claim incomplete features.
@@ -185,6 +190,8 @@ test, documentation, or packaging task that remains valid.
 | Generic complete-playthrough transfer | NON-BLOCKING FUTURE WORK | Fresh review found no competing PR; issue #949 is raw `.sav`, #977 is Android sync permissions; not part of Save States 0.1.0 |
 | HUD notifications | VERIFIED capability | implemented in mod via `render.compose` logical UI pass; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
+| `SAVESTATES-SP-11` detached Party icon presentation | REVIEW-READY | PR #1079 (`ccb5358`), public `mod.ui.PokemonIcon`, 149/149 engine + 10/10 modkit suites and green CI |
+| `SAVESTATES-SP-12` shared date/time presentation | REVIEW-READY | PR #1080 (`2c8c800`), global device/DMY/MDY/YMD + 12/24h options and read-only `mod.datetime`; 150/150 engine + 10/10 modkit suites and green CI |
 
 ## Current execution boundary
 
@@ -274,11 +281,15 @@ savestates do not rewrite it.
 
 ### Current integration branches — 2026-08-11
 
-- Save States `feat/initial-savestates` is at `b342a30`; it adds default-ON
+- Save States `feat/initial-savestates` carries the verified mobile UX commits
+  `5fae204` and `46eb95e` on top of published `a8df5c4`; it adds default-ON
   `CONTINUE LATEST`, battle-manager entry through the proposed generic safe
   decision-boundary action, optional public Modern UI notification presentation
   with a native fallback, and captured play-time/date/age history presentation
-  with metric-safe two-row details.
+  with metric-safe two-row details. The current pass adds non-selectable grouped
+  date headings, whole-Pokémon Party-style icon rows, centered top notices,
+  50/50 defaults (choices through 100), and same-tick stale-request removal at
+  the first safe battle boundary.
 - Generic title resume is independently rebased on `dev` at `4db9716`
   (`feat/mod-title-checkpoint-resume`): 149/149 engine and 10/10 modkit suites
   passed; Tier 3 was skipped because no legal generated data is present. Its
@@ -290,6 +301,13 @@ savestates do not rewrite it.
   `882763c` (`feat/scripted-battle-checkpoints`): 20/20 focused checks and the
   150/150 engine plus 9/9 modkit quick stack pass without serializing coroutine
   state or changing checkpoint format 1.
+- Canonical detached Party icon presentation is independently based on `dev` at
+  `ccb5358` ([#1079](https://github.com/bryanthaboi/gen1recomp/pull/1079));
+  149/149 engine and 10/10 modkit suites plus all GitHub checks pass.
+- Shared device/fallback date-time presentation is independently based on `dev`
+  at `2c8c800` ([#1080](https://github.com/bryanthaboi/gen1recomp/pull/1080));
+  150/150 engine and 10/10 modkit suites plus all GitHub checks pass. DEVICE uses
+  the process locale where present and safely falls back to DMY/24-hour elsewhere.
 - Fresh audit pins `dev` at `79ed376`; #993 is merged as `ee891fb8` (PR head
   `aa3b2a1`). #1023 provides
   battle render visibility only, not a command-boundary input seam.
@@ -322,26 +340,32 @@ savestates do not rewrite it.
 - Focused evidence: Modern UI `compose_suppression` LÖVE smoke test passes;
   syntax plus modkit validate/lint pass. Save States notification model,
   adapter fallback, composition registration, and all repository behavior tests
-  pass against the local combined engine stack. The generic extension is now
+  pass against the local combined engine stack. The generic extension is
   published as [Gen1 Modern UI PR #13](https://github.com/ArmstrongThomas/gen1-modern-ui/pull/13),
   open, non-draft, and mergeable/clean.
 
 ### Current coherent development integration — 2026-08-11
 
-- The private integration worktree is at `c32ac7c` over current `dev` `79ed376`,
+- The current integration worktree is `integration/savestates-ui` at `a492da1`
+  over current `dev` `79ed376`,
   with merged #993 `ee891fb8`, title resume `4db9716`, battle auxiliary action
-  `59725c0`, and semantic scripted-battle checkpoints `882763c`. Title
+  `59725c0`, semantic scripted-battle checkpoints `882763c`, Party icons
+  `ccb5358`, and date/time `2c8c800`. Title
   `Checkpoint.resume` emits
   `checkpoint.restored` exactly once only after final verified installation,
   directly in the title-resume contribution because the lifecycle contract is
   part of its merged base; no integration-only lifecycle patch remains.
 - Fresh evidence against that exact stack: `./scripts/test.sh --quick` passes
-  151/151 engine and 10/10 modkit suites (including 46/46 cross-mod, 40/40 title
+  152/152 engine and 12/12 modkit suites (including 46/46 cross-mod, 40/40 title
   context, the real two-process cold-restart check, 10/10 battle-menu, and 20/20
-  scripted-battle checks); Tier 3 is correctly skipped without imported/generated
-  data. `make check` at the current Save States working head passes 963/963 Lua
-  behavior checks, 7/7 Python checks, modkit validate/lint, byte-identical 33-file
+  scripted-battle checks, 14/14 Party-icon, and 8/8 public date-time checks);
+  Tier 3 is correctly skipped without imported/generated data. `make check` at
+  the current Save States working tree passes 1020/1020 Lua
+  behavior checks, 7/7 Python checks, modkit validate/lint, byte-identical 34-file
   ZIP builds plus pack metadata, and clean extracted-install validation.
+- Serialized wrapper measurements are 2.56 KiB early and 232–235 KiB for an
+  intentionally full late-game overworld/battle fixture; 100 such heavy states
+  total about 23 MiB logical before physical recovery witnesses.
 
 Verification for this pass is new evidence, not inherited counts: focused
 title/playthrough/bootstrap and battle-entry tests, affected mod behavior tests,

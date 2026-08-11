@@ -46,6 +46,11 @@ Version headings match `manifest.json`.
   Pokémon with nickname/species fallback and captured level/HP values. Previews
   are optional Format-1 metadata, browse from the index without payload reads,
   and preserve source provenance through pin and rename.
+- Non-selectable date headings in Quick/Auto histories, with PLAY TIME default
+  and DATE/TIME or AGE alternatives.
+- Public Party-icon preview delegation and optional Gen1 Modern UI screen models
+  for history/details presentation without transferring gameplay callbacks.
+- Shared engine date/time formatting integration with portable DMY/24-hour fallback.
 
 ### Changed
 
@@ -56,6 +61,12 @@ Version headings match `manifest.json`.
   manual capture.
 - The native slot naming screen now accepts 12-character labels such as
   `BEFORE MISTY` without overflowing its 160-pixel canvas.
+- Quick and Auto rolling limits now default to 50 each and offer choices through
+  100; a deliberately full late-game fixture measured about 232–235 KiB per state.
+- Battle-start deferral now discards stale runtime-mismatched work in one tick so
+  the first safe trainer/wild command boundary cannot be missed.
+- Native notices use a centered logical top banner and no longer show the current
+  Quick Save count.
 
 ## 0.1.0
 
