@@ -1,5 +1,6 @@
 return function(deps)
   local Time = assert(deps.Time, "ScreenRegistry needs Time")
+  local Details = assert(deps.Details, "ScreenRegistry needs Details")
 
   local Registry = {}
   local IDS = {
@@ -50,55 +51,8 @@ return function(deps)
     return truncate(tostring(value or "----"):upper(), maximum or 12)
   end
 
-  local function appendPreview(items, preview, addDetail, fit)
-    if type(preview) ~= "table" then return end
-    addDetail(items, "PLAY TIME", Time.playTime(preview.playTime))
-    addDetail(items, "BADGES", ("%d/%d"):format(
-      tonumber(preview.badgeCount) or 0, tonumber(preview.badgeTotal) or 0))
-    for _, mon in ipairs(preview.party or {}) do
-      items[#items + 1] = {
-        label = fit(mon.name),
-      }
-      items[#items + 1] = {
-        label = fit(("LV%d %d/%d HP"):format(mon.level, mon.hp, mon.maxHp)),
-      }
-    end
-  end
-
   function Registry.install(mod, service, clock)
     clock = clock or os.time
-
-    local function fontWidth(text)
-      local font = mod.ui and mod.ui.Font
-      if type(font) == "table" and type(font.width) == "function" then
-        local ok, width = pcall(font.width, tostring(text or ""))
-        if ok and type(width) == "number" and width >= 0 then return width end
-      end
-      return #tostring(text or "") * 8
-    end
-
-    local function fit(text, maximum)
-      maximum = maximum or 136
-      text = tostring(text or "----")
-      if fontWidth(text) <= maximum then return text end
-      local suffix, out = ".", ""
-      for index = 1, #text do
-        local candidate = text:sub(1, index) .. suffix
-        if fontWidth(candidate) > maximum then break end
-        out = candidate
-      end
-      return out ~= "" and out or suffix
-    end
-
-    local function addDetail(items, label, value)
-      label, value = fit(label), fit(value)
-      if fontWidth(label) + 8 + fontWidth(value) <= 136 then
-        items[#items + 1] = { label = label, right = value }
-      else
-        items[#items + 1] = { label = label }
-        items[#items + 1] = { label = value }
-      end
-    end
 
     local function historyTime(row)
       local metadata = type(row) == "table" and row.metadata or {}
@@ -303,18 +257,30 @@ return function(deps)
         local status = row.available and
           ((type(row.warnings) == "table" and next(row.warnings)) and "WARN" or "OK")
           or upperValue(row.status, 10)
-        local items = {}
-        addDetail(items, "LOCATION", metadata.locationName or metadata.locationId)
-        addDetail(items, "TRIGGER", upperValue(
-          metadata.trigger and metadata.trigger:gsub("_", " "), 12))
-        addDetail(items, "CREATED", Time.absolute(metadata.createdAt))
-        addDetail(items, "KIND", upperValue(metadata.stateKind, 12))
-        addDetail(items, "STATUS", status)
-        appendPreview(items, row.preview or metadata.preview, addDetail, fit)
-        return mod.ui.ListMenu.new(game, "STATE DETAILS", items, {
-          onChoose = dispatch,
-          pageJump = true,
-          keyRepeat = true,
+        local preview = row.preview or metadata.preview
+        local fields = {
+          { label = "LOCATION", value = metadata.locationName or metadata.locationId },
+          { label = "TRIGGER", value = upperValue(
+            metadata.trigger and metadata.trigger:gsub("_", " "), 12) },
+          { label = "CREATED", value = Time.absolute(metadata.createdAt) },
+          { label = "KIND", value = upperValue(metadata.stateKind, 12) },
+          { label = "STATUS", value = status },
+        }
+        if type(preview) == "table" then
+          fields[#fields + 1] = {
+            label = "PLAY TIME",
+            value = Time.playTime(preview.playTime),
+          }
+          fields[#fields + 1] = {
+            label = "BADGES",
+            value = ("%d/%d"):format(tonumber(preview.badgeCount) or 0,
+              tonumber(preview.badgeTotal) or 0),
+          }
+        end
+        return Details.new(mod, game, {
+          title = "STATE DETAILS",
+          fields = fields,
+          party = type(preview) == "table" and preview.party or {},
         })
       end,
     })

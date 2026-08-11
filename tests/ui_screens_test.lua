@@ -1,7 +1,11 @@
 local Test = dofile("tests/testlib.lua")
 local T = Test.new("native state screens")
 local Time = dofile("src/util/Time.lua")
-local ScreenFactory = dofile("src/ui/ScreenRegistry.lua")({ Time = Time })
+local Details = dofile("src/ui/StateDetailsView.lua")()
+local ScreenFactory = dofile("src/ui/ScreenRegistry.lua")({
+  Time = Time,
+  Details = Details,
+})
 
 local registered, pushes = {}, {}
 local mod = {
@@ -43,6 +47,14 @@ function mod.options:get(key) return self.values[key] end
 local function rightFor(menu, label)
   for _, item in ipairs(menu.items or {}) do
     if item.label == label then return item.right end
+  end
+end
+
+local function detailValue(view, label)
+  for _, block in ipairs(view.blocks or {}) do
+    if block.kind == "field" and block.label == label then
+      return block.value
+    end
   end
 end
 
@@ -257,26 +269,21 @@ if type(action.items[3].onSelect) == "function" then
   action.items[3].onSelect()
   T:eq(pushes[#pushes].id, ids.details, "details action opens a registered native detail screen")
   detail = registered[ids.details].new(game, pushes[#pushes].opts)
-  local function itemIndex(label)
-    for index, item in ipairs(detail.items) do
-      if item.label == label then return index end
-    end
-  end
-  local location = itemIndex("LOCATION")
-  T:eq(detail.items[location].right, nil,
-    "public font metrics split a colliding location detail into logical rows")
-  T:eq(detail.items[location + 1].label, "CERULEAN GYM",
-    "split location value stays readable on its own row")
-  local created = itemIndex("CREATED")
-  T:eq(detail.items[created].right, nil,
-    "absolute CREATED value splits instead of colliding with its label")
-  T:eq(detail.items[created + 1].label, Time.absolute(1000),
+  T:eq(#detail.items, 0,
+    "state details have no selectable ListMenu rows")
+  T:eq(detail.index, nil,
+    "state details have no cursor on continuation lines")
+  T:eq(detailValue(detail, "LOCATION"), "CERULEAN GYM",
+    "location remains one readable logical block")
+  T:eq(detailValue(detail, "CREATED"), Time.absolute(1000),
     "detail screen shows useful absolute creation date and time")
-  local party = itemIndex("SPARKY")
-  T:eq(detail.items[party].right, nil,
-    "each party member has a dedicated name row")
-  T:eq(detail.items[party + 1].label, "LV22 45/57 HP",
-    "each party member always has a second level and HP row")
+  local mon = detail.blocks[#detail.blocks]
+  T:eq(mon.kind, "pokemon",
+    "each party member remains one logical block")
+  T:eq(mon.lines[1], "SPARKY",
+    "each party block starts with its captured name")
+  T:eq(mon.lines[2], "LV22   HP 45/57",
+    "each party block always has a second level and HP line")
   T:check(fontMetricCalls > 0,
     "detail layout uses the public Font.width metric instead of character guesses")
 end
@@ -310,7 +317,7 @@ local warningAction = registered[ids.actions].new(game, {
 if type(warningAction.items[3].onSelect) == "function" then
   warningAction.items[3].onSelect()
   detail = registered[ids.details].new(game, pushes[#pushes].opts)
-  T:eq(rightFor(detail, "STATUS"), "WARN",
+  T:eq(detailValue(detail, "STATUS"), "WARN",
     "detail screen marks soft engine compatibility warnings before load")
 end
 
@@ -354,7 +361,7 @@ T:eq(unavailableAction.items[1].label, "DETAILS",
 if type(unavailableAction.items[1].onSelect) == "function" then
   unavailableAction.items[1].onSelect()
   detail = registered[ids.details].new(game, pushes[#pushes].opts)
-  T:eq(rightFor(detail, "STATUS"), "CORRUPT_M.",
+  T:eq(detailValue(detail, "STATUS"), "CORRUPT_M.",
     "unavailable detail exposes a conservative compatibility code")
 end
 T:eq(unavailableAction.items[2].label, "DELETE",

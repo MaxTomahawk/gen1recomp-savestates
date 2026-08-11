@@ -52,7 +52,8 @@ return function(mod)
   local Options = StoreFactory and module("src/config/Options.lua")
   local StartMenu = Options and module("src/ui/StartMenuIntegration.lua")
   local TitleMenu = StartMenu and module("src/ui/TitleMenuIntegration.lua")
-  local ScreenFactory = TitleMenu and module("src/ui/ScreenRegistry.lua")
+  local DetailsFactory = TitleMenu and module("src/ui/StateDetailsView.lua")
+  local ScreenFactory = DetailsFactory and module("src/ui/ScreenRegistry.lua")
   local Notification = ScreenFactory and module("src/ui/Notification.lua")
   local ModernUiIntegration = Notification and module("src/ui/ModernUiIntegration.lua")
   local ServiceFactory = ModernUiIntegration and module("src/service/SaveStateService.lua")
@@ -67,7 +68,8 @@ return function(mod)
     local Canonical = CanonicalFactory(DataOnly)
     local Fingerprint = FingerprintFactory(Canonical)
     local StateStore = StoreFactory({ DataOnly = DataOnly, StateIndex = StateIndex })
-    local Screens = ScreenFactory({ Time = Time })
+    local Details = DetailsFactory()
+    local Screens = ScreenFactory({ Time = Time, Details = Details })
     local function capturePreview(_, checkpoint)
       local badgeIds = {}
       local constants = mod.content and mod.content.constants
@@ -190,6 +192,7 @@ return function(mod)
       Options = Options,
       StartMenu = StartMenu,
       TitleMenu = TitleMenu,
+      Details = Details,
       Screens = Screens,
       Notification = Notification,
       ModernUiIntegration = ModernUiIntegration,
