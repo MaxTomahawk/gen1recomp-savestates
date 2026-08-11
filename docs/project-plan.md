@@ -322,8 +322,9 @@ savestates do not rewrite it.
 - Focused evidence: Modern UI `compose_suppression` LÖVE smoke test passes;
   syntax plus modkit validate/lint pass. Save States notification model,
   adapter fallback, composition registration, and all repository behavior tests
-  pass against the local combined engine stack. The Modern UI upstream PR still
-  requires external publication permission, like the engine PRs.
+  pass against the local combined engine stack. The generic extension is now
+  published as [Gen1 Modern UI PR #13](https://github.com/ArmstrongThomas/gen1-modern-ui/pull/13),
+  open, non-draft, and mergeable/clean.
 
 ### Current coherent development integration — 2026-08-11
 

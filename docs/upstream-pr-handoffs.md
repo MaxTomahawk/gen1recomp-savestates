@@ -123,16 +123,12 @@ commands at the existing settled player-decision boundary.
 
 ## Gen1 Modern UI: source transient presentation
 
-No `MaxTomahawk/gen1-modern-ui` fork currently exists, so create that fork first,
-then push local branch `feat/source-transient-notifications` at
-`9aebcb8ae1152b1efd8f48034a87069d6d564fa9` and open:
-
-<https://github.com/ArmstrongThomas/gen1-modern-ui/compare/main...MaxTomahawk:feat/source-transient-notifications?expand=1>
-
 | Field | Value |
 | --- | --- |
 | Base | `ArmstrongThomas/gen1-modern-ui:main` at `847e7b9ce1afca473da43c050ed34da05a30a0d0` |
 | Title | `feat: present source transient notices` |
+| Head | `9aebcb8ae1152b1efd8f48034a87069d6d564fa9` |
+| PR | [#13](https://github.com/ArmstrongThomas/gen1-modern-ui/pull/13) — open, non-draft, mergeable/clean |
 
 ```markdown
 ## Summary
