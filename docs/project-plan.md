@@ -1,8 +1,9 @@
 # Save States Living Project Plan
 
 Status: active execution; Level A, Level B, and cross-mod restore lifecycle
-merged upstream; mobile preview/history/battle-autosave pass verified; required
-title, battle-entry, scripted-battle, icon, and date/time contributions in review
+merged upstream; mobile preview/history/native-HUD pass verified; required title,
+battle-entry, scripted-battle, icon, date/time, and real battle-settling contributions
+are in review
 
 Updated: 2026-08-11
 
@@ -65,8 +66,10 @@ history; current work is governed by this living plan and acceptance matrix.
   not be confused with `save.meta.format`.
 - Current scaffold range is `>=0.0.0-dev <1.0.0`; the release manifest floor will
   target the first engine release containing required public seams.
-- `render.compose` on the public logical 160x144 UI canvas is sufficient for
-  native non-blocking notifications; Android scaling remains engine-owned.
+- `render.compose` targets the centered 160x144 game canvas and therefore cannot
+  place a native notice at the physical top of tall Android layouts. The public
+  screen-space `render.hud` pass supplies the viewport/scale/DPI transform needed
+  for the requested top banner while Android scaling remains engine-owned.
 - Location and battle lifecycle events already exist. They request autosaves but
   do not themselves prove a safe capture instant.
 - Current modkit can scaffold externally. The proposed tree is a responsibility
@@ -138,7 +141,7 @@ recovery semantics on top of that primitive.
 ### UI and events
 
 The mod decorates `ui.start_menu.items`, registers its manager screens, and draws
-notifications through `render.compose` on the logical UI canvas. Semantic events enqueue autosave requests;
+notifications through public screen-space `render.hud`. Semantic events enqueue autosave requests;
 capture occurs only when the runtime capability facade confirms a stable point.
 No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 
@@ -188,10 +191,11 @@ test, documentation, or packaging task that remains valid.
 | `SAVESTATES-SP-07` cross-mod restore lifecycle | MERGED | PR #993 as `ee891fb8`; success-only `checkpoint.restored`, 46/46 public fake-mod/shiny-style checks, no storage/options rewind, no event on failure/rollback |
 | `SAVESTATES-SP-08` rich previews | VERIFIED MOD-SIDE | Public `checkpoint.save`, public content registries, and index metadata are sufficient; no upstream seam proposed |
 | Generic complete-playthrough transfer | NON-BLOCKING FUTURE WORK | Fresh review found no competing PR; issue #949 is raw `.sav`, #977 is Android sync permissions; not part of Save States 0.1.0 |
-| HUD notifications | VERIFIED capability | implemented in mod via `render.compose` logical UI pass; no upstream request |
+| HUD notifications | VERIFIED capability | implemented in the mod through public screen-space `render.hud`; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
 | `SAVESTATES-SP-11` detached Party icon presentation | REVIEW-READY | PR #1079 (`ccb5358`), public `mod.ui.PokemonIcon`, 149/149 engine + 10/10 modkit suites and green CI |
 | `SAVESTATES-SP-12` shared date/time presentation | REVIEW-READY | PR #1080 (`2c8c800`), global device/DMY/MDY/YMD + 12/24h options and read-only `mod.datetime`; 150/150 engine + 10/10 modkit suites and green CI |
+| `SAVESTATES-SP-13` real battle decision settling | REVIEW-READY | PR #1087 (`41f02ec`), clears completed intro/queue markers before the existing strict checkpoint predicate; 18/18 focused boundary checks, 149/149 engine + 9/9 modkit suites, mergeable/clean with green CI |
 
 ## Current execution boundary
 
@@ -251,8 +255,8 @@ Next ordered work is:
    browsing, and a HUD banner geometry that avoids touch-control overlap using
    the public logical viewport. The first mobile usability slice is complete:
    actions now remain at the top of compact state/slot menus, rich information
-   is in a paged read-only `STATE DETAILS` view, and `render.compose` uses the full logical
-   top banner rather than bottom physical-pixel guesses. 803 Lua checks plus
+   is in a paged read-only `STATE DETAILS` view, and `render.hud` uses public
+   viewport metrics for a physical-top banner rather than canvas or pixel guesses. 803 Lua checks plus
    package/clean-install gates are green; physical Android presentation remains
    a manual acceptance test. These improvements do not wait for title bootstrap.
 4. Re-audit battle entry only after the title primitive is proven. If no public
@@ -297,11 +301,19 @@ savestates do not rewrite it.
   title resume publishes the merged #993 lifecycle only after final verification.
 - Generic battle auxiliary action is independently based on `dev` at
   `59725c0` (`feat/battle-menu-auxiliary`): 150/150 engine and 9/9 modkit
-  suites passed; Tier 3 was skipped for the same reason.
+  suites passed; Tier 3 was skipped for the same reason. PR #1077 remains
+  independently mergeable, while PR #1087 should land first so real command
+  menus satisfy the shared public safety predicate.
 - Generic scripted-battle checkpointing is independently based on `dev` at
   `882763c` (`feat/scripted-battle-checkpoints`): 20/20 focused checks and the
   150/150 engine plus 9/9 modkit quick stack pass without serializing coroutine
-  state or changing checkpoint format 1.
+  state or changing checkpoint format 1. PR #1087 should likewise land first.
+- Real battle-decision settling is independently based on `dev` at `41f02ec`
+  (`fix/battle-decision-settling`) and published as
+  [#1087](https://github.com/bryanthaboi/gen1recomp/pull/1087). It clears only
+  completed queue/intro markers, does not relax active-phase safety, passes
+  18/18 focused checks plus 149/149 engine and 9/9 modkit suites, and is
+  mergeable/clean with green GitHub CI.
 - Canonical detached Party icon presentation is independently based on `dev` at
   `ccb5358` ([#1079](https://github.com/bryanthaboi/gen1recomp/pull/1079));
   149/149 engine and 10/10 modkit suites plus all GitHub checks pass.
@@ -347,19 +359,20 @@ savestates do not rewrite it.
 
 ### Current coherent development integration — 2026-08-11
 
-- The current integration worktree is `integration/savestates-ui` at `a492da1`
+- The current integration worktree is `integration/savestates-ui` at `a11c43f`
   over current `dev` `79ed376`,
   with merged #993 `ee891fb8`, title resume `4db9716`, battle auxiliary action
-  `59725c0`, semantic scripted-battle checkpoints `882763c`, Party icons
-  `ccb5358`, and date/time `2c8c800`. Title
+  `59725c0`, semantic scripted-battle checkpoints `882763c`, real battle settling
+  `41f02ec`, Party icons `ccb5358`, and date/time `2c8c800`. Title
   `Checkpoint.resume` emits
   `checkpoint.restored` exactly once only after final verified installation,
   directly in the title-resume contribution because the lifecycle contract is
   part of its merged base; no integration-only lifecycle patch remains.
 - Fresh evidence against that exact stack: `./scripts/test.sh --quick` passes
   152/152 engine and 12/12 modkit suites (including 46/46 cross-mod, 40/40 title
-  context, the real two-process cold-restart check, 10/10 battle-menu, and 20/20
-  scripted-battle checks, 14/14 Party-icon, and 8/8 public date-time checks);
+  context, the real two-process cold-restart check, real wild/trainer/scripted
+  intro settling, 18/18 battle-menu, 24/24 scripted-battle, 14/14 Party-icon,
+  and 8/8 public date-time checks);
   Tier 3 is correctly skipped without imported/generated data. `make check` at
   the current Save States working tree passes 1020/1020 Lua
   behavior checks, 7/7 Python checks, modkit validate/lint, byte-identical 34-file
@@ -423,7 +436,7 @@ Latest verification (2026-08-08):
   index/retention, quick/auto/slot/recovery services, native screens, notifications,
   event deferral, fingerprints/deduplication, and transaction failure recovery;
   modkit validate/lint and reproducible 49-file package root verification pass.
-- Level B focused suites — battle boundary 13/13, capture 29/29, continuation 17/17,
+- Level B focused suites — battle boundary 18/18, capture 29/29, continuation 17/17,
   restore/determinism/failure rollback 43/43, public checkpoints 53/53 including
   real public-facade battle differential roundtrip, switched/fainted-party
   fidelity, and complete overworld-progress fidelity.

@@ -5,8 +5,8 @@ Prepared: 2026-08-11
 SSH git pushed all Gen1Recomp branches to `MaxTomahawk/gen1recomp`. Rechecking
 the execution history showed that earlier successful contributions used the
 root user's authenticated GitHub CLI, not the cross-repository GitHub app. The
-same `gh pr create` path opened all three contributions on 2026-08-11. GitHub
-reports each non-draft PR mergeable and clean with 15/15 checks complete.
+same `gh pr create` path opened the contributions on 2026-08-11. GitHub reports
+each non-draft PR mergeable and clean; current checks are recorded per PR.
 
 ## Gen1Recomp: title checkpoint resume
 
@@ -76,15 +76,42 @@ START only at an already-settled ordinary wild/trainer player-decision boundary.
 This is a reusable boundary for tool mods; it contains no Save States policy or
 serialization behavior.
 
+PR #1087 should merge first. It fixes the pre-existing real-runtime settling
+defect which otherwise leaves completed intro markers on the command menu; this
+API deliberately shares the unchanged checkpoint-safety predicate.
+
 ## Verification
 
 - `luajit tests/engine/battle_menu_auxiliary.lua` — 10/10.
-- `luajit tests/engine/battle_checkpoint_boundary.lua` — 13/13.
+- Integration with PR #1087: real wild/trainer intros reach the safe boundary
+  and START dispatches without consuming a command or advancing RNG.
 - `luajit tests/modkit/cases/checkpoints.lua` — 58/58.
 - `./scripts/test.sh --quick` — 150/150 engine suites, 9/9 modkit suites.
 - ROM-derived Tier 3 is skipped because no generated/imported game data is in
   the public worktree.
 ```
+
+## Gen1Recomp: settle real battle decisions
+
+| Field | Value |
+| --- | --- |
+| Fork branch | `MaxTomahawk/gen1recomp:fix/battle-decision-settling` |
+| Head | `41f02ecfbca4d12ed3f5ee380c8038b348810f5a` |
+| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
+| Title | `fix: settle real battle checkpoint decisions` |
+| PR | [#1087](https://github.com/bryanthaboi/gen1recomp/pull/1087) — open, non-draft, mergeable/clean, CI green |
+
+Real wild/trainer intros drained their action queue but retained completed
+`afterQueue`, insertion, wait, and intro-slide markers. The existing strict
+checkpoint predicate correctly treated those markers as busy, which blocked
+both queued battle autosaves and the public START auxiliary action in real play
+while synthetic tests that assigned `phase = "menu"` passed.
+
+The patch normalizes only completed markers during the existing transition into
+the command menu. It does not weaken any active-animation, queue, forced-choice,
+origin, or script exclusion. Focused real-intro boundary checks pass 18/18;
+`./scripts/test.sh --quick` passes 149/149 engine and 9/9 modkit suites; GitHub
+CI is green. This repair should merge before #1077 and #1078.
 
 ## Gen1Recomp: scripted battle checkpoints
 
@@ -115,8 +142,9 @@ commands at the existing settled player-decision boundary.
 
 - `luajit tests/engine/scripted_battle_checkpoints.lua` — 20/20.
 - `./scripts/test.sh --quick` — 150/150 engine suites, 9/9 modkit suites.
-- Combined current-dev integration with title and auxiliary branches — 151/151
-  engine suites and 10/10 modkit suites.
+- Integration with PR #1087: a real scripted trainer intro reaches the safe
+  boundary, captures/restores, and exposes the generic START action.
+- Combined current-dev integration — 152/152 engine suites and 12/12 modkit suites.
 - ROM-derived Tier 3 is skipped because no generated/imported game data is in
   the public worktree.
 ```

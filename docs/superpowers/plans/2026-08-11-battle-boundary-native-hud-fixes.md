@@ -29,11 +29,11 @@
 - Consumes: `BattleSafety.inspect(game, battle) -> true | nil, code, message`.
 - Produces: a real intro-to-command transition whose completed transient fields are semantically idle and accepted by `BattleSafety.inspect`.
 
-- [ ] Add a regression that calls the real battle `enter()`/update transition rather than assigning `phase = "menu"` directly, then asserts checkpoint safety at the first ordinary player decision.
-- [ ] Run the focused test and confirm it fails with `battle_phase_busy` from completed transient markers.
-- [ ] Clear or normalize only completed queue/presentation markers when their lifecycle ends; retain nonterminal markers during unsafe phases.
-- [ ] Run the focused test and existing battle checkpoint/menu suites.
-- [ ] Commit the generic engine correction on `feat/battle-menu-auxiliary`.
+- [x] Add a regression that calls the real battle `enter()`/update transition rather than assigning `phase = "menu"` directly, then asserts checkpoint safety at the first ordinary player decision.
+- [x] Run the focused test and confirm it fails with `battle_phase_busy` from completed transient markers.
+- [x] Clear or normalize only completed queue/presentation markers when their lifecycle ends; retain nonterminal markers during unsafe phases.
+- [x] Run the focused test and existing battle checkpoint/menu suites.
+- [x] Commit the generic engine correction independently on `fix/battle-decision-settling` and publish PR #1087.
 
 ### Task 2: Prove Autosave and START Share the Correct Boundary
 
@@ -46,12 +46,12 @@
 - Consumes: public `battle.started`, `input.step`, `mod.checkpoints:inspect`, and `battle.menu_auxiliary`.
 - Produces: one queued autosave at the first safe command menu and one START auxiliary callback without turn/RNG advancement.
 
-- [ ] Extend the real battle regression to assert START reaches the public auxiliary hook only after the intro settles.
-- [ ] Add/adjust Save States integration coverage proving the queued request remains pending while unsafe and is captured at the first safe input boundary.
-- [ ] Confirm the new tests fail against the pre-fix boundary.
-- [ ] Implement no mod change unless the public event-to-boundary test proves one is required.
-- [ ] Run focused wild/trainer tests and the scripted-battle integration suite.
-- [ ] Commit only genuine mod changes separately from engine work.
+- [x] Extend the real battle regression to assert START reaches the public auxiliary hook only after the intro settles.
+- [x] Add/adjust Save States integration coverage proving the queued request remains pending while unsafe and is captured at the first safe input boundary.
+- [x] Confirm the new tests fail against the pre-fix boundary.
+- [x] Implement no mod change because the public event-to-boundary test proved the existing queue correct.
+- [x] Run focused wild/trainer tests and the scripted-battle integration suite.
+- [x] Commit only genuine mod changes separately from engine work.
 
 ### Task 3: Draw Native Notifications in Screen Space
 
@@ -66,12 +66,12 @@
 - Consumes: public `render.hud(next, game, viewport)` with window-space geometry.
 - Produces: `Notification:drawNativeHud(Font, viewport)` that draws a centered native banner near the physical top and never duplicates a claimed Modern UI presentation.
 
-- [ ] Change tests to require `render.hud`, physical-top placement, centered title/detail, native fallback, and Modern UI suppression.
-- [ ] Run the focused tests and confirm the old `render.compose` implementation fails.
-- [ ] Replace the native `render.compose` wrapper with `render.hud`; use only provided viewport/window metrics and preserve `next` composition.
-- [ ] Draw the banner at a small top margin with deterministic scaling and clipping, before touch controls.
-- [ ] Run notification, composition, Modern UI, and QOL coexistence tests.
-- [ ] Commit the mod-side native HUD correction.
+- [x] Change tests to require `render.hud`, physical-top placement, centered title/detail, native fallback, and Modern UI suppression.
+- [x] Run the focused tests and confirm the old `render.compose` implementation fails.
+- [x] Replace the native `render.compose` wrapper with `render.hud`; use only provided viewport/window metrics and preserve `next` composition.
+- [x] Draw the banner at a small top margin with deterministic scaling and clipping, before touch controls.
+- [x] Run notification, composition, Modern UI, and QOL coexistence tests.
+- [x] Commit the mod-side native HUD correction.
 
 ### Task 4: Integrate, Verify, Publish, and Package
 
@@ -85,11 +85,11 @@
 - Consumes: fresh upstream `dev`, independent title/scripted/UI contribution heads, Save States `feat/initial-savestates`.
 - Produces: verified branches, review-ready upstream PR state, reproducible mod ZIP, parallel Android APK, and exact build evidence.
 
-- [ ] Rebase/update the battle contribution against current upstream `dev` without discarding unpublished work.
-- [ ] Run focused engine suites, `./scripts/test.sh --quick`, and relevant modkit public-API suites.
-- [ ] Run `make check` and reproducible clean package validation for Save States against the coherent integration engine.
-- [ ] Update living documentation with exact heads and fresh outcomes.
-- [ ] Commit and push coherent engine/mod changes.
-- [ ] Open or update focused upstream PRs; verify base, non-draft state, conflict-free GitHub mergeability, and CI.
+- [x] Base the independent battle-settling contribution on current upstream `dev` without discarding unpublished work.
+- [x] Run focused engine suites, `./scripts/test.sh --quick`, and relevant modkit public-API suites.
+- [x] Run `make check` and reproducible clean package validation for Save States against the coherent integration engine.
+- [x] Update living documentation with exact heads and fresh outcomes.
+- [ ] Commit and push coherent mod documentation changes.
+- [x] Open or update focused upstream PRs; verify base, non-draft state, conflict-free GitHub mergeability, and CI.
 - [ ] Build the parallel APK and installable Save States ZIP only after the coherent gates pass.
 - [ ] Write exact SHAs, commands, results, application/signing compatibility, and hashes to `BUILD-INFO.txt` and `SHA256SUMS.txt`.

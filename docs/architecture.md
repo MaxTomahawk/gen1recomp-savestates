@@ -134,15 +134,17 @@ mirrors every public product option and links to the MODS editor.
 Destructive history and slot actions route through a registered, default-NO
 native confirmation and update their source list only after storage succeeds.
 
-Notifications are one replace-in-place model drawn through `render.compose` on
-the engine's public 160x144 `uiCanvas`; they
+Notifications are one replace-in-place model drawn through the public
+screen-space `render.hud` pass; they
 never become an updating screen or consume A/B input. Success types honor their
 save/load toggles, while safety and persistence failures remain visible.
 Text is measured with the active public font, long details are fitted to the
 18-tile interior, and the one required long title wraps at a word boundary. The
-banner uses the complete logical top row rather than physical Android coordinates.
-This follows the native UI-pass strategy used by QoL location banners and lets
-the engine own Android scaling and touch-control composition. Headless geometry
+banner is transformed from the HUD viewport's public scale/DPI metrics and placed
+one logical tile below the physical top rather than inside the centered 160x144
+game canvas or at guessed Android pixels. This follows the native UI-pass strategy
+used by QoL location banners and lets the engine own Android scaling and
+touch-control composition. Headless geometry
 tests cover that contract; portrait/landscape device
 presentation remains a manual release-acceptance check.
 
@@ -177,6 +179,13 @@ runtime mismatch is discarded in that same pre-input tick so the first safe
 battle decision is not missed. `player.warped` is different: it fires synchronously before transition
 mutation, so enabled before-warp capture runs immediately with the live game
 cached at the current `input.step`. It is never deferred into the destination.
+
+Real battle intros originally left completed `afterQueue`, insertion, wait, and
+intro-slide markers after transitioning to the command menu. The strict public
+safety predicate correctly rejected those markers, so both the queued autosave
+and START auxiliary action remained unavailable. Generic engine PR #1087 clears
+only those completed markers at the transition; active queues, animations, forced
+choices, and unsupported origins remain fail-closed under the unchanged predicate.
 
 Opt-in debug timings use the monotonic LÖVE clock. The service measures checkpoint
 capture, deterministic wrapper serialization and byte size, state/recovery writes,
