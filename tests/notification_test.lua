@@ -84,12 +84,12 @@ T:eq(notice:current().title, "STATE DELETED", "deletion has required title")
 
 local drawn = {}
 local boxes = {}
-local transformed = 0
+local transforms = {}
 love = { graphics = {
   push = function() end,
-  origin = function() transformed = transformed + 1 end,
-  translate = function() transformed = transformed + 1 end,
-  scale = function() transformed = transformed + 1 end,
+  origin = function() transforms[#transforms + 1] = { "origin" } end,
+  translate = function(x, y) transforms[#transforms + 1] = { "translate", x, y } end,
+  scale = function(x, y) transforms[#transforms + 1] = { "scale", x, y } end,
   setColor = function() end,
   pop = function() end,
 } }
@@ -101,39 +101,53 @@ local Font = {
   draw = function(text, x, y) drawn[#drawn + 1] = { text = text, x = x, y = y } end,
 }
 notice:show("auto_saved", { locationName = "ROUTE 24" })
-T:eq(notice:drawNative(Font), true,
-  "short notification draws directly in the native logical UI pass")
+local portrait = {
+  width = 550, height = 960, gameX = 35, gameY = 264,
+  gameWidth = 480, gameHeight = 432, scale = 3, dpiX = 1, dpiY = 1,
+}
+T:eq(notice:drawNativeHud(Font, portrait), true,
+  "short notification draws in the public screen-space HUD pass")
 local shortBox = boxes[#boxes]
-T:check(shortBox and shortBox.tx == 0 and shortBox.ty == 1 and shortBox.tw == 20,
-  "short notification keeps one logical tile of top breathing room")
+T:check(shortBox and shortBox.tx == 0 and shortBox.ty == 0 and shortBox.tw == 20,
+  "short notification uses the native full-width logical box")
 T:eq(drawn[1].x, 80 - Font.width(drawn[1].text) / 2,
   "notification title is horizontally centered")
 T:eq(drawn[2].x, 80 - Font.width(drawn[2].text) / 2,
   "notification detail is horizontally centered")
-T:eq(transformed, 0,
-  "native notification never guesses Android viewport or DPI transforms")
+T:eq(transforms[2] and transforms[2][1], "translate",
+  "portrait banner applies a screen-space translation")
+T:eq(transforms[2] and transforms[2][2], 35,
+  "portrait banner is centred horizontally")
+T:eq(transforms[2] and transforms[2][3], 24,
+  "portrait banner stays one logical tile from the physical top")
+T:eq(transforms[3] and transforms[3][1], "scale",
+  "portrait banner applies the engine scale")
+T:eq(transforms[3] and transforms[3][2], 3,
+  "native HUD uses the engine-provided horizontal scale")
+T:eq(transforms[3] and transforms[3][3], 3,
+  "native HUD uses the engine-provided vertical scale")
 drawn, boxes = {}, {}
 notice:show("save_failed", { message = string.rep("X", 40) })
-T:eq(notice:drawNative(Font), true,
-  "long failure notification stays in the native UI pass")
+T:eq(notice:drawNativeHud(Font, portrait), true,
+  "long failure notification stays in the screen-space HUD pass")
 T:eq(drawn[1].text, "SAVE STATE FAILED", "fitting preserves a short title")
 T:eq(drawn[2].text, string.rep("X", 17) .. ".",
   "long detail is visibly truncated to the maximum box interior")
 local box = boxes[#boxes]
-T:check(box and box.tx == 0 and box.ty == 1 and box.tw == 20 and box.th == 5,
-  "notification uses a full-width top banner in logical UI coordinates")
+T:check(box and box.tx == 0 and box.ty == 0 and box.tw == 20 and box.th == 5,
+  "notification uses a full-width banner at its translated physical-top origin")
 
 drawn = {}
 notice:show("save_rejected", {
   code = "script_busy", message = "Wait for the active script to finish.",
 })
-T:eq(notice:drawNative(Font), true,
-  "long required refusal title draws through the native UI pass")
+T:eq(notice:drawNativeHud(Font, portrait), true,
+  "long required refusal title draws through the screen-space HUD pass")
 T:eq(drawn[1].text, "CAN'T SAVE STATE", "long title wraps at a word boundary")
 T:eq(drawn[2].text, "NOW", "wrapped title retains its complete required wording")
 T:eq(drawn[3].text, "SCRIPT IS BUSY", "wrapped title leaves room for concise reason")
 box = boxes[#boxes]
-T:check(box and box.tx == 0 and box.ty == 1 and box.tw == 20 and box.th == 7,
-  "wrapped banner grows upward-free instead of entering touch-control space")
+T:check(box and box.tx == 0 and box.ty == 0 and box.tw == 20 and box.th == 7,
+  "wrapped banner grows down from the physical top instead of entering touch controls")
 
 T:finish()

@@ -5,7 +5,7 @@ local logs = {}
 local registeredScreens = {}
 local startMenuWrapper
 local titleMenuWrapper
-local renderComposeWrapper
+local renderHudWrapper
 local inputStepWrapper
 local eventHandlers = {}
 local selectedStorageCalls = 0
@@ -17,11 +17,14 @@ local checkpointCapability = {
 local captureBattleKind = "trainer"
 local modernRegistration
 local modernActive = false
-local nativeCanvasSets, nativeBoxes, composeNextCalls = {}, 0, 0
+local nativeBoxes, hudNextCalls = 0, 0
+local hudOrder = {}
 love = { graphics = {
   push = function() end,
   pop = function() end,
-  setCanvas = function(canvas) nativeCanvasSets[#nativeCanvasSets + 1] = canvas end,
+  origin = function() end,
+  translate = function() end,
+  scale = function() end,
   setColor = function() end,
 } }
 local mod = {
@@ -116,7 +119,7 @@ local mod = {
     wrap = function(_, name, callback)
       if name == "ui.start_menu.items" then startMenuWrapper = callback end
       if name == "ui.title_menu.items" then titleMenuWrapper = callback end
-      if name == "render.compose" then renderComposeWrapper = callback end
+      if name == "render.hud" then renderHudWrapper = callback end
       if name == "input.step" then inputStepWrapper = callback end
       return function() end
     end,
@@ -140,7 +143,10 @@ local mod = {
     NamingScreen = { new = function(_, opts) return { opts = opts } end },
     Font = {
       width = function(text) return #tostring(text or "") * 8 end,
-      drawBox = function() nativeBoxes = nativeBoxes + 1 end,
+      drawBox = function()
+        nativeBoxes = nativeBoxes + 1
+        hudOrder[#hudOrder + 1] = "savestates"
+      end,
       draw = function() end,
     },
   },
@@ -198,8 +204,8 @@ T:eq(type(mod.exports.undoLastLoad), "function", "composition publishes undo com
 T:eq(#(mod.options.schema or {}), 12, "composition registers the full options schema")
 T:eq(type(startMenuWrapper), "function", "composition installs START decoration")
 T:eq(type(titleMenuWrapper), "function", "composition installs title decoration")
-T:eq(type(renderComposeWrapper), "function",
-  "composition installs notification in the logical native UI pass")
+T:eq(type(renderHudWrapper), "function",
+  "composition installs notification in the public screen-space HUD pass")
 T:eq(type(inputStepWrapper), "function", "composition installs deferred autosave boundary")
 T:eq(type(eventHandlers["map.entered"]), "function",
   "composition subscribes to location autosaves")
@@ -262,26 +268,29 @@ T:eq(selectedStorageCalls, 2,
 T:eq(titleRoot.items[1].label, "QUICK SAVES",
   "empty selected title history remains natively browsable")
 mod.exports.quickSave({})
-local uiCanvas = {}
-renderComposeWrapper(function()
-  composeNextCalls = composeNextCalls + 1
-  return false
-end, {}, { uiCanvas = uiCanvas })
-T:eq(nativeCanvasSets[#nativeCanvasSets], uiCanvas,
-  "native notification draws into the engine-owned logical UI canvas")
+local hudGame = { save = battleGame.save }
+local viewport = {
+  width = 550, height = 960, gameX = 35, gameY = 264,
+  gameWidth = 480, gameHeight = 432, scale = 3, dpiX = 1, dpiY = 1,
+}
+renderHudWrapper(function()
+  hudNextCalls = hudNextCalls + 1
+  hudOrder[#hudOrder + 1] = "existing_hud"
+end, hudGame, viewport)
 T:eq(nativeBoxes, 1,
   "native fallback draws exactly one Save States banner")
-T:eq(composeNextCalls, 1,
-  "native banner preserves the normal engine compositor")
+T:eq(hudNextCalls, 1,
+  "native banner preserves other public HUD contributors")
+T:eq(table.concat(hudOrder, ","), "existing_hud,savestates",
+  "native Save States banner composes after an existing QOL-style HUD contributor")
 modernActive = true
-renderComposeWrapper(function()
-  composeNextCalls = composeNextCalls + 1
-  return false
-end, {}, { uiCanvas = {} })
+renderHudWrapper(function()
+  hudNextCalls = hudNextCalls + 1
+end, hudGame, viewport)
 T:eq(nativeBoxes, 1,
   "Modern UI presentation suppresses the duplicate native banner")
-T:eq(composeNextCalls, 2,
-  "Modern UI claim still preserves the normal engine compositor")
+T:eq(hudNextCalls, 2,
+  "Modern UI claim still preserves other public HUD contributors")
 local ready
 for _, message in ipairs(logs) do
   if message:find("core ready", 1, true) then ready = true end

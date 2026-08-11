@@ -163,22 +163,38 @@ local function titleLines(Font, value, maximum)
   return wrapped or { fitLine(Font, title, maximum) }
 end
 
-function Notification:drawNative(Font)
+function Notification:drawNativeHud(Font, viewport)
   local active = self:current()
-  if not active or not love or not love.graphics or not Font then return false end
+  if not active or not love or not love.graphics or not Font
+      or type(viewport) ~= "table" then return false end
+  local width = tonumber(viewport.width)
+  local scale = tonumber(viewport.scale)
+  local dpiX = tonumber(viewport.dpiX) or 1
+  local dpiY = tonumber(viewport.dpiY) or 1
+  if not width or not scale or scale <= 0 or dpiX <= 0 or dpiY <= 0 then
+    return false
+  end
   local maximum = 18 * 8
   local titles = titleLines(Font, active.title, maximum)
   local detail = active.detail and fitLine(Font, active.detail, maximum) or nil
-  -- This draws into the engine-owned 160x144 UI canvas during render.compose.
-  -- The engine then owns Android scale, DPI, letterboxing, and touch controls,
-  -- exactly as it does for native Party UI and the QoL location banner.
   local tiles = 20
   local height = #titles > 1 and 7 or 5
-  local tx, ty = 0, 1
+  local tx, ty = 0, 0
   local function centered(line)
     return math.max(0, math.floor((160 - Font.width(line)) / 2))
   end
 
+  -- render.hud is already the engine-owned post-composite screen-space pass.
+  -- Reuse its exact logical scale and DPI conversion, centre the native
+  -- 160-pixel banner in the physical viewport, and leave one logical tile of
+  -- breathing room above it. Touch controls draw after this public hook.
+  local sx, sy = scale / dpiX, scale / dpiY
+  local x = math.max(0, math.floor((width - 160 * sx) / 2))
+  local y = math.max(0, math.floor(8 * sy))
+  love.graphics.push("all")
+  love.graphics.origin()
+  love.graphics.translate(x, y)
+  love.graphics.scale(sx, sy)
   love.graphics.setColor(1, 1, 1, 1)
   Font.drawBox(tx, ty, tiles, height)
   love.graphics.setColor(0, 0, 0, 1)
@@ -189,6 +205,7 @@ function Notification:drawNative(Font)
     Font.draw(detail, centered(detail), (ty + (#titles > 1 and 4 or 3)) * 8)
   end
   love.graphics.setColor(1, 1, 1, 1)
+  love.graphics.pop()
   return true
 end
 

@@ -47,7 +47,17 @@ checkpoints.capability = {
 local introWait, introCode = controller:tick(game)
 T:eq(introWait, false, "unsafe battle intro defers autosave")
 T:eq(introCode, "battle_phase_busy", "battle intro preserves capability reason")
-controller.pending, controller.pendingByKey = {}, {}
+T:eq(controller:pendingCount(), 1,
+  "battle-start request remains queued throughout the unsafe intro")
+checkpoints.capability = { canCapture = true, canRestore = true, kind = "battle" }
+local battleSaved, battleSaveCode = controller:tick(game)
+T:check(battleSaved ~= nil,
+  "first settled battle decision drains the queued autosave: "
+    .. tostring(battleSaveCode))
+T:eq(calls[#calls].trigger, "trainer_battle_start",
+  "deferred capture retains its battle-start trigger")
+T:eq(controller:pendingCount(), 0,
+  "successful first-decision capture removes the queued request")
 checkpoints.capability = {
   canCapture = false, kind = "overworld", reason = "transition_busy",
   message = "Wait for transition.",
@@ -57,18 +67,20 @@ T:eq(controller:onTrigger("location_enter", {
   mapId = "PALLET_TOWN", contextKey = "PALLET_TOWN",
 }), true, "enabled location trigger queues")
 T:eq(controller:pendingCount(), 1, "location trigger is pending")
+local callsBeforeUnsafeLocation = #calls
 local waiting, waitingCode = controller:tick(game)
 T:eq(waiting, false, "unsafe runtime defers pending autosave")
 T:eq(waitingCode, "transition_busy", "deferred autosave preserves capability reason")
 T:eq(controller:pendingCount(), 1, "unsafe pending event remains queued")
-T:eq(#calls, 0, "unsafe tick never asks service to capture")
+T:eq(#calls, callsBeforeUnsafeLocation,
+  "unsafe tick never asks service to capture")
 
 checkpoints.capability = { canCapture = true, canRestore = true, kind = "overworld" }
 local saved, saveCode, saveMessage = controller:tick(game)
 T:check(saved ~= nil, "settled runtime drains pending autosave: "
   .. tostring(saveCode or saveMessage))
-T:eq(calls[1].trigger, "location_enter", "controller forwards semantic trigger")
-T:eq(calls[1].context.mapId, "PALLET_TOWN", "controller forwards safe event metadata")
+T:eq(calls[#calls].trigger, "location_enter", "controller forwards semantic trigger")
+T:eq(calls[#calls].context.mapId, "PALLET_TOWN", "controller forwards safe event metadata")
 T:eq(controller:pendingCount(), 0, "attempted event leaves pending queue")
 
 controller:onTrigger("location_enter", { mapId = "ROUTE_1", contextKey = "ROUTE_1" })
