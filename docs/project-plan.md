@@ -282,7 +282,8 @@ savestates do not rewrite it.
 ### Current integration branches — 2026-08-11
 
 - Save States `feat/initial-savestates` carries the verified mobile UX commits
-  `5fae204` and `46eb95e` on top of published `a8df5c4`; it adds default-ON
+  `5fae204` and `46eb95e` plus synchronized product documentation on top of
+  published `a8df5c4`; it adds default-ON
   `CONTINUE LATEST`, battle-manager entry through the proposed generic safe
   decision-boundary action, optional public Modern UI notification presentation
   with a native fallback, and captured play-time/date/age history presentation
@@ -366,12 +367,20 @@ savestates do not rewrite it.
 - Serialized wrapper measurements are 2.56 KiB early and 232–235 KiB for an
   intentionally full late-game overworld/battle fixture; 100 such heavy states
   total about 23 MiB logical before physical recovery witnesses.
+- The parallel Android development build uses package
+  `com.theboisclub.pokemonred.savestates.test`, versionCode `20260812`, and the
+  same debug certificate as the previous parallel test versionCode `20260811`.
+  Its game payload intentionally retains engine `0.0.0-dev`, while Android owns
+  the independent app version. This both preserves in-place test updates and
+  satisfies unmodified Gen1 Modern UI's documented development-version range.
+  The APK, Save States package, and patched Modern UI package pass their ROM-free
+  build/archive gates; physical Android and ROM-backed behavior remain manual.
 
 Verification for this pass is new evidence, not inherited counts: focused
 title/playthrough/bootstrap and battle-entry tests, affected mod behavior tests,
 the full public engine quick suite, the complete mod gate, and a rebuilt Android
-bundle only after these features form one coherent stack. Physical Android
-geometry and ROM-backed behavior remain explicit manual acceptance gates.
+bundle after these features formed one coherent stack. Physical Android geometry
+and ROM-backed behavior remain explicit manual acceptance gates.
 
 Latest verification (2026-08-08):
 
