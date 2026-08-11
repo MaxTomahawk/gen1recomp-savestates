@@ -2,12 +2,11 @@
 
 Prepared: 2026-08-11
 
-SSH git successfully pushed all Gen1Recomp branches to `MaxTomahawk/gen1recomp`.
-Publication was retried on 2026-08-11 through both available paths: `gh pr create`
-cannot run because no CLI token is configured, while the connected GitHub app
-returns HTTP 403 `Resource not accessible by integration` for each cross-repository
-PR. These are review-ready local/fork branches; this document provides exact
-titles, bases, bodies, and compare URLs for manual publication.
+SSH git pushed all Gen1Recomp branches to `MaxTomahawk/gen1recomp`. Rechecking
+the execution history showed that earlier successful contributions used the
+root user's authenticated GitHub CLI, not the cross-repository GitHub app. The
+same `gh pr create` path opened all three contributions on 2026-08-11. GitHub
+reports each non-draft PR mergeable and clean with 15/15 checks complete.
 
 ## Gen1Recomp: title checkpoint resume
 
@@ -17,7 +16,7 @@ titles, bases, bodies, and compare URLs for manual publication.
 | Head | `4db97164bb6a48f0de10d1ebc841dc42b1a6d0cf` |
 | Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
 | Title | `feat(mods): resume selected checkpoints from title` |
-| Open PR | <https://github.com/bryanthaboi/gen1recomp/compare/dev...MaxTomahawk:feat/mod-title-checkpoint-resume?expand=1> |
+| PR | [#1076](https://github.com/bryanthaboi/gen1recomp/pull/1076) — open, non-draft, mergeable/clean, 15/15 checks |
 
 ```markdown
 ## Summary
@@ -59,7 +58,7 @@ exactly once after the same final verification boundary as live restore.
 | Head | `59725c0ead3c761b7e6c4fbf977e15531819f285` |
 | Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
 | Title | `feat(mods): add battle menu auxiliary action` |
-| Open PR | <https://github.com/bryanthaboi/gen1recomp/compare/dev...MaxTomahawk:feat/battle-menu-auxiliary?expand=1> |
+| PR | [#1077](https://github.com/bryanthaboi/gen1recomp/pull/1077) — open, non-draft, mergeable/clean, 15/15 checks |
 
 ```markdown
 ## Summary
@@ -95,7 +94,7 @@ serialization behavior.
 | Head | `882763cfe1dc42714908b5d16018811f00a64b70` |
 | Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
 | Title | `feat(mods): checkpoint scripted battle decisions` |
-| Open PR | <https://github.com/bryanthaboi/gen1recomp/compare/dev...MaxTomahawk:feat/scripted-battle-checkpoints?expand=1> |
+| PR | [#1078](https://github.com/bryanthaboi/gen1recomp/pull/1078) — open, non-draft, mergeable/clean, 15/15 checks |
 
 ```markdown
 ## Summary
