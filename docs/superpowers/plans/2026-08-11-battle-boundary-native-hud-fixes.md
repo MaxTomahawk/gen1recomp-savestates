@@ -89,7 +89,7 @@
 - [x] Run focused engine suites, `./scripts/test.sh --quick`, and relevant modkit public-API suites.
 - [x] Run `make check` and reproducible clean package validation for Save States against the coherent integration engine.
 - [x] Update living documentation with exact heads and fresh outcomes.
-- [ ] Commit and push coherent mod documentation changes.
+- [x] Commit and push coherent mod documentation changes.
 - [x] Open or update focused upstream PRs; verify base, non-draft state, conflict-free GitHub mergeability, and CI.
-- [ ] Build the parallel APK and installable Save States ZIP only after the coherent gates pass.
-- [ ] Write exact SHAs, commands, results, application/signing compatibility, and hashes to `BUILD-INFO.txt` and `SHA256SUMS.txt`.
+- [x] Build the parallel APK and installable Save States ZIP only after the coherent gates pass.
+- [x] Write exact SHAs, commands, results, application/signing compatibility, and hashes to `BUILD-INFO.txt` and `SHA256SUMS.txt`.

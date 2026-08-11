@@ -33,7 +33,7 @@ Status vocabulary:
 | Unsafe scripts/transitions/menus/animations/battle phases rejected | Verified | Public checkpoint capability and exclusion tests; compatibility docs name every supported boundary and the narrow semantic scripted-battle exception. |
 | Manual battle quicksave UX | Prepared on review branches | Generic `battle.menu_auxiliary` provides START entry only at proven decision boundaries. PR #1087 fixes the real completed-intro settling defect without relaxing safety; focused real wild/trainer/scripted integration and 152/152 ROM-free engine suites pass. Official release remains gated on merge/release. |
 | No private engine dependency in distributed mod | Verified | Source boundary inspection found no private `src.*` require, raw filesystem, state-stack, process, package, or debug access; sibling source loads use public `mod:read`, and real modkit load/lint passes. |
-| ROM-free CI, tests, lint, reproducible package | Verified | Fresh combined integration proves 152/152 engine and 12/12 modkit suites. Save States proves 1020/1020 Lua checks, 7/7 Python checks, validate/lint, byte-identical 34-file ZIP builds plus pack manifest, and clean extracted-install validation. |
+| ROM-free CI, tests, lint, reproducible package | Verified | Fresh combined integration proves 152/152 engine and 12/12 modkit suites. Save States proves 1029/1029 Lua checks, 7/7 Python checks, validate/lint, byte-identical 35-file ZIP builds plus pack manifest, and clean extracted-install validation. |
 | Exact released-engine compatibility | Prepared | Release gate derives/checks out the manifest's exact minimum official tag. Manifest intentionally remains experimental/dev until upstream APIs ship. |
 | Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
 | Installable GitHub Release | Blocked externally | Tag workflow intentionally refuses preview metadata; requires official upstream API release and final manifest range. |
@@ -41,8 +41,9 @@ Status vocabulary:
 
 ## External release gates
 
-1. Merge and official release of the title-resume, battle auxiliary, and
-   scripted-battle contracts.
+1. Merge and official release of the title-resume, battle auxiliary,
+   scripted-battle, detached-icon, shared-date/time, and real-battle-settling
+   contracts.
    The cross-mod lifecycle (#993), Level A, Level B, and source-date modkit fix
    are already merged into `dev`.
 2. Private clean-runtime acceptance using legally imported game data.

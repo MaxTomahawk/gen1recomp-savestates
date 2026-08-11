@@ -374,20 +374,22 @@ savestates do not rewrite it.
   intro settling, 18/18 battle-menu, 24/24 scripted-battle, 14/14 Party-icon,
   and 8/8 public date-time checks);
   Tier 3 is correctly skipped without imported/generated data. `make check` at
-  the current Save States working tree passes 1020/1020 Lua
-  behavior checks, 7/7 Python checks, modkit validate/lint, byte-identical 34-file
+  the current Save States working tree passes 1029/1029 Lua
+  behavior checks, 7/7 Python checks, modkit validate/lint, byte-identical 35-file
   ZIP builds plus pack metadata, and clean extracted-install validation.
 - Serialized wrapper measurements are 2.56 KiB early and 232–235 KiB for an
   intentionally full late-game overworld/battle fixture; 100 such heavy states
   total about 23 MiB logical before physical recovery witnesses.
 - The parallel Android development build uses package
-  `com.theboisclub.pokemonred.savestates.test`, versionCode `20260812`, and the
+  `com.theboisclub.pokemonred.savestates.test`, versionCode `20260813`, and the
   same debug certificate as the previous parallel test versionCode `20260811`.
   Its game payload intentionally retains engine `0.0.0-dev`, while Android owns
   the independent app version. This both preserves in-place test updates and
   satisfies unmodified Gen1 Modern UI's documented development-version range.
   The APK, Save States package, and patched Modern UI package pass their ROM-free
   build/archive gates; physical Android and ROM-backed behavior remain manual.
+  Current artifact SHA-256 values are `af3143ee...2494` (APK),
+  `365d4046...09af` (Save States ZIP), and `d40b540c...9140` (adapted Modern UI ZIP).
 
 Verification for this pass is new evidence, not inherited counts: focused
 title/playthrough/bootstrap and battle-entry tests, affected mod behavior tests,
