@@ -84,11 +84,12 @@ T:eq(notice:current().title, "STATE DELETED", "deletion has required title")
 
 local drawn = {}
 local boxes = {}
+local transformed = 0
 love = { graphics = {
   push = function() end,
-  origin = function() end,
-  translate = function() end,
-  scale = function() end,
+  origin = function() transformed = transformed + 1 end,
+  translate = function() transformed = transformed + 1 end,
+  scale = function() transformed = transformed + 1 end,
   setColor = function() end,
   pop = function() end,
 } }
@@ -100,15 +101,17 @@ local Font = {
   draw = function(text) drawn[#drawn + 1] = text end,
 }
 notice:show("auto_saved", { locationName = "ROUTE 24" })
-T:eq(notice:draw({ gameX = 12, gameY = 8, scale = 2 }, Font), true,
-  "short notification draws through the native HUD path")
+T:eq(notice:drawNative(Font), true,
+  "short notification draws directly in the native logical UI pass")
 local shortBox = boxes[#boxes]
 T:check(shortBox and shortBox.tx == 0 and shortBox.ty == 0 and shortBox.tw == 20,
   "short notification still uses the fixed logical top banner")
+T:eq(transformed, 0,
+  "native notification never guesses Android viewport or DPI transforms")
 drawn, boxes = {}, {}
 notice:show("save_failed", { message = string.rep("X", 40) })
-T:eq(notice:draw({ gameX = 0, gameY = 0, scale = 1 }, Font), true,
-  "long failure notification draws through the native HUD path")
+T:eq(notice:drawNative(Font), true,
+  "long failure notification stays in the native UI pass")
 T:eq(drawn[1], "SAVE STATE FAILED", "fitting preserves a short title")
 T:eq(drawn[2], string.rep("X", 17) .. ".",
   "long detail is visibly truncated to the maximum box interior")
@@ -120,8 +123,8 @@ drawn = {}
 notice:show("save_rejected", {
   code = "script_busy", message = "Wait for the active script to finish.",
 })
-T:eq(notice:draw({ gameX = 0, gameY = 0, scale = 1 }, Font), true,
-  "long required refusal title draws through the native HUD path")
+T:eq(notice:drawNative(Font), true,
+  "long required refusal title draws through the native UI pass")
 T:eq(drawn[1], "CAN'T SAVE STATE", "long title wraps at a word boundary")
 T:eq(drawn[2], "NOW", "wrapped title retains its complete required wording")
 T:eq(drawn[3], "SCRIPT IS BUSY", "wrapped title leaves room for concise reason")

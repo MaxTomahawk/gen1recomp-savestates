@@ -238,12 +238,18 @@ return function(mod)
       core.notification:show("save_failed", { code = code, message = message })
     end,
   }):install(mod)
-  mod.hooks:wrap("render.hud", function(next, game, viewport)
-    local result = next(game, viewport)
-    if not core.modernUi:claimsPresentation() then
-      core.notification:draw(viewport, mod.ui.Font)
+  mod.hooks:wrap("render.compose", function(next, renderer, ctx)
+    if not core.modernUi:claimsPresentation()
+        and ctx and ctx.uiCanvas and love and love.graphics then
+      -- The completed native UI canvas is still the authoritative logical
+      -- 160x144 surface here. Draw before the engine composites it so Android
+      -- scaling and touch-safe placement stay engine-owned.
+      love.graphics.push("all")
+      love.graphics.setCanvas(ctx.uiCanvas)
+      core.notification:drawNative(mod.ui.Font)
+      love.graphics.pop()
     end
-    return result
+    return next(renderer, ctx)
   end)
 
   -- This deliberately small inter-mod surface is compatibility metadata, not a

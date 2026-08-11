@@ -165,26 +165,19 @@ local function titleLines(Font, value, maximum)
   return wrapped or { fitLine(Font, title, maximum) }
 end
 
-function Notification:draw(viewport, Font)
+function Notification:drawNative(Font)
   local active = self:current()
   if not active or not love or not love.graphics or not Font then return false end
-  viewport = viewport or {}
-  local scale = viewport.scale or ((viewport.gameHeight or 144) / 144)
-  if type(scale) ~= "number" or scale <= 0 then scale = 1 end
   local maximum = 18 * 8
   local titles = titleLines(Font, active.title, maximum)
   local detail = active.detail and fitLine(Font, active.detail, maximum) or nil
-  -- render.hud runs before the engine's touch overlay. A fixed banner on the
-  -- logical top edge keeps every short and long notification out of the
-  -- bottom touch-control zone without guessing physical Android pixels.
+  -- This draws into the engine-owned 160x144 UI canvas during render.compose.
+  -- The engine then owns Android scale, DPI, letterboxing, and touch controls,
+  -- exactly as it does for native Party UI and the QoL location banner.
   local tiles = 20
   local height = #titles > 1 and 7 or 5
   local tx, ty = 0, 0
 
-  love.graphics.push("all")
-  love.graphics.origin()
-  love.graphics.translate(viewport.gameX or 0, viewport.gameY or 0)
-  love.graphics.scale(scale, scale)
   love.graphics.setColor(1, 1, 1, 1)
   Font.drawBox(tx, ty, tiles, height)
   love.graphics.setColor(0, 0, 0, 1)
@@ -194,7 +187,7 @@ function Notification:draw(viewport, Font)
   if detail then
     Font.draw(detail, (tx + 1) * 8, (ty + (#titles > 1 and 4 or 3)) * 8)
   end
-  love.graphics.pop()
+  love.graphics.setColor(1, 1, 1, 1)
   return true
 end
 

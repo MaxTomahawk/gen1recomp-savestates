@@ -5,12 +5,19 @@ local logs = {}
 local registeredScreens = {}
 local startMenuWrapper
 local titleMenuWrapper
-local renderHudWrapper
+local renderComposeWrapper
 local inputStepWrapper
 local eventHandlers = {}
 local selectedStorageCalls = 0
 local modernRegistration
 local modernActive = false
+local nativeCanvasSets, nativeBoxes, composeNextCalls = {}, 0, 0
+love = { graphics = {
+  push = function() end,
+  pop = function() end,
+  setCanvas = function(canvas) nativeCanvasSets[#nativeCanvasSets + 1] = canvas end,
+  setColor = function() end,
+} }
 local mod = {
   id = "savestates",
   version = "0.1.0",
@@ -47,7 +54,11 @@ local mod = {
       }
     end,
   },
-  checkpoints = {},
+  checkpoints = {
+    inspect = function()
+      return { canCapture = false, kind = "script", reason = "script_busy" }
+    end,
+  },
   options = {
     get = function() return nil end,
     define = function(self, schema) self.schema = schema return schema end,
@@ -56,7 +67,7 @@ local mod = {
     wrap = function(_, name, callback)
       if name == "ui.start_menu.items" then startMenuWrapper = callback end
       if name == "ui.title_menu.items" then titleMenuWrapper = callback end
-      if name == "render.hud" then renderHudWrapper = callback end
+      if name == "render.compose" then renderComposeWrapper = callback end
       if name == "input.step" then inputStepWrapper = callback end
       return function() end
     end,
@@ -78,6 +89,11 @@ local mod = {
       return { title = title, items = items, opts = opts }
     end },
     NamingScreen = { new = function(_, opts) return { opts = opts } end },
+    Font = {
+      width = function(text) return #tostring(text or "") * 8 end,
+      drawBox = function() nativeBoxes = nativeBoxes + 1 end,
+      draw = function() end,
+    },
   },
   content = {
     screens = {
@@ -133,7 +149,8 @@ T:eq(type(mod.exports.undoLastLoad), "function", "composition publishes undo com
 T:eq(#(mod.options.schema or {}), 12, "composition registers the full options schema")
 T:eq(type(startMenuWrapper), "function", "composition installs START decoration")
 T:eq(type(titleMenuWrapper), "function", "composition installs title decoration")
-T:eq(type(renderHudWrapper), "function", "composition installs non-modal HUD overlay")
+T:eq(type(renderComposeWrapper), "function",
+  "composition installs notification in the logical native UI pass")
 T:eq(type(inputStepWrapper), "function", "composition installs deferred autosave boundary")
 T:eq(type(eventHandlers["map.entered"]), "function",
   "composition subscribes to location autosaves")
@@ -164,6 +181,27 @@ T:eq(selectedStorageCalls, 2,
   "title policy and manager resolve only the engine-selected storage facade")
 T:eq(titleRoot.items[1].label, "QUICK SAVES",
   "empty selected title history remains natively browsable")
+mod.exports.quickSave({})
+local uiCanvas = {}
+renderComposeWrapper(function()
+  composeNextCalls = composeNextCalls + 1
+  return false
+end, {}, { uiCanvas = uiCanvas })
+T:eq(nativeCanvasSets[#nativeCanvasSets], uiCanvas,
+  "native notification draws into the engine-owned logical UI canvas")
+T:eq(nativeBoxes, 1,
+  "native fallback draws exactly one Save States banner")
+T:eq(composeNextCalls, 1,
+  "native banner preserves the normal engine compositor")
+modernActive = true
+renderComposeWrapper(function()
+  composeNextCalls = composeNextCalls + 1
+  return false
+end, {}, { uiCanvas = {} })
+T:eq(nativeBoxes, 1,
+  "Modern UI presentation suppresses the duplicate native banner")
+T:eq(composeNextCalls, 2,
+  "Modern UI claim still preserves the normal engine compositor")
 T:check(type(logs[#logs]) == "string" and logs[#logs]:find("core ready", 1, true),
   "successful composition logs one ready lifecycle message")
 for _, message in ipairs(logs) do
