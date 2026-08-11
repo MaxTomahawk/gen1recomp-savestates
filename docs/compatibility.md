@@ -21,6 +21,9 @@ official engine release and `manifest.json` can name that release as its minimum
 - Settled overworld control with the overworld as the top screen.
 - Settled ordinary wild/trainer player-decision menus with a reconstructable
   engine-owned continuation.
+- Settled built-in scripted trainer/story battle decision menus when the engine
+  can express the active script command and its continuation as validated,
+  data-only semantic state.
 - Exact semantic progress plus map, tile coordinates, facing, and surfing state.
 - Reconstruction with engine validation, recapture comparison, rollback, and
   preservation of the current global options.
@@ -32,10 +35,12 @@ official engine release and `manifest.json` can name that release as its minimum
 - Any menu or other screen above the overworld.
 - Movement between tiles.
 - Map transitions and partial field animations.
-- Active, queued, or parallel scripts and scripted movement.
+- Active, queued, or parallel scripts and scripted movement, except the narrow
+  supported built-in battle-command suspension described above.
 - Battle intro/messages/queues, HP tweens, animations, forced player actions,
   faint processing, link/Safari/ghost/demo variants, fishing/static origins,
-  mod-defined completion closures, and battles suspending a script coroutine.
+  mod-defined completion closures, opaque script rows/callbacks, missing script
+  NPC context, and scripted battles without a proven semantic continuation.
 - Arbitrary title/new-game capture. The development title manager can only
   browse the engine-selected existing playthrough and resume a validated stored
   checkpoint through the dedicated engine transaction; it never captures a
@@ -66,7 +71,7 @@ exact source-map boundary.
 | State | Result |
 | --- | --- |
 | Same game and playthrough, wrapper format 1, overworld kind | loadable |
-| Same game and playthrough, supported battle safe point | loadable with exact gameplay RNG |
+| Same game and playthrough, supported ordinary or semantic scripted battle safe point | loadable with exact gameplay RNG |
 | Different Red/Blue/Yellow identity | rejected: `wrong_game` |
 | Different playthrough | rejected: `wrong_playthrough` |
 | Unknown future wrapper format | rejected: `unsupported_format` |
@@ -83,7 +88,9 @@ exact source-map boundary.
 | Title `CONTINUE LATEST` OFF | exact native normal-save CONTINUE behavior; title history remains explicitly loadable |
 | Recovery checkpoint | never an automatic title-CONTINUE candidate |
 
-Suspended script and arbitrary-frame support require separate future contracts.
+Arbitrary suspended scripts and arbitrary-frame support remain unsupported. The
+scripted-battle contract records a stable script id/program counter plus a
+one-use semantic battle result; it never serializes the Lua coroutine or stack.
 
 ## Other installed mods
 

@@ -8,7 +8,8 @@ object. Generic engine work stays in separate Gen1Recomp worktrees:
 - official `dev` — merged scoped storage, settled-overworld checkpoints, battle
   safe points/RNG restoration, source-date reproducible modkit packaging, and
   the success-only cross-mod restore lifecycle from PR #993;
-- `feat/mod-title-checkpoint-resume` and `feat/battle-menu-auxiliary` —
+- `feat/mod-title-checkpoint-resume`, `feat/battle-menu-auxiliary`, and
+  `feat/scripted-battle-checkpoints` —
   review-ready generic contracts required only by the development title/battle
   manager flows until they are merged and released.
 
@@ -45,8 +46,8 @@ evidence.
 
 ## Release gate
 
-A public tag remains prohibited until the title-resume and battle auxiliary
-contracts, together with the complete checkpoint API, are included in an official
+A public tag remains prohibited until the title-resume, battle auxiliary, and
+scripted-battle contracts, together with the complete checkpoint API, are included in an official
 Gen1Recomp release. The cross-mod lifecycle, Level A, Level B, and the
 source-date modkit fix are already merged into `dev`.
 Then:

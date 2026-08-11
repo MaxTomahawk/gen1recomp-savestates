@@ -29,10 +29,11 @@ Status vocabulary:
 | Settled overworld restoration | Verified and merged upstream | Public facade differential recapture includes coordinates/facing, party, inventory/PC items/boxes, money, Pokédex, flags, trainers, and object toggles; upstream PR #952 is merged. |
 | Deterministic supported battle restoration | Verified and merged upstream | Ordinary wild/trainer player-decision reconstruction, switched/fainted party fidelity, rollback, and exact damage/crit/accuracy/AI/escape/encounter RNG replay; PR #986 is merged. |
 | Cross-mod canonical progress remains consistent | Verified on merged upstream `dev` | Real shiny implementation audit plus public fake/cooperating mods: core progress, `mod.save`, and shiny-style Pokémon metadata rewind in overworld/battle; independent storage/options do not; subscriber cache rebuilds after verified restore. |
-| Unsafe scripts/transitions/menus/animations/battle phases rejected | Verified | Public checkpoint capability and exclusion tests; compatibility docs name every supported boundary. |
+| Safe scripted trainer/story battle checkpoints | Prepared on review branch | Built-in battle commands reconstruct from a validated data-only `script_battle` descriptor; 20/20 focused checks and combined-stack tests pass without coroutine serialization. Opaque/unsafe scripts remain rejected. |
+| Unsafe scripts/transitions/menus/animations/battle phases rejected | Verified | Public checkpoint capability and exclusion tests; compatibility docs name every supported boundary and the narrow semantic scripted-battle exception. |
 | Manual battle quicksave UX | Prepared on review branch | Generic `battle.menu_auxiliary` provides START entry only at proven ordinary battle decision boundaries; 10/10 focused checks and 150/150 ROM-free engine suites pass on current development base. Official release remains gated on merge/release. |
 | No private engine dependency in distributed mod | Verified | Source boundary inspection found no private `src.*` require, raw filesystem, state-stack, process, package, or debug access; sibling source loads use public `mod:read`, and real modkit load/lint passes. |
-| ROM-free CI, tests, lint, reproducible package | Verified | CI now checks current upstream `dev`, not the obsolete #993 candidate. Fresh current-dev integration proves 150/150 engine and 10/10 modkit suites; Save States proves 912 Lua behavior checks, 7 Python release/package checks, validate/lint, byte-identical 32-file ZIP builds plus pack manifest, and clean extracted-install validation. |
+| ROM-free CI, tests, lint, reproducible package | Verified | CI checks current upstream `dev`, not an obsolete #993 candidate. Fresh combined integration proves 151/151 engine and 10/10 modkit suites; Save States proves 963/963 Lua checks, 7/7 Python checks, validate/lint, byte-identical 33-file ZIP builds plus pack manifest, and clean extracted-install validation. |
 | Exact released-engine compatibility | Prepared | Release gate derives/checks out the manifest's exact minimum official tag. Manifest intentionally remains experimental/dev until upstream APIs ship. |
 | Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
 | Installable GitHub Release | Blocked externally | Tag workflow intentionally refuses preview metadata; requires official upstream API release and final manifest range. |
@@ -40,7 +41,8 @@ Status vocabulary:
 
 ## External release gates
 
-1. Merge and official release of the title-resume and battle auxiliary contracts.
+1. Merge and official release of the title-resume, battle auxiliary, and
+   scripted-battle contracts.
    The cross-mod lifecycle (#993), Level A, Level B, and source-date modkit fix
    are already merged into `dev`.
 2. Private clean-runtime acceptance using legally imported game data.

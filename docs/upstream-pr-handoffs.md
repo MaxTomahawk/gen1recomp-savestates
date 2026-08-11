@@ -1,18 +1,20 @@
 # Review-ready upstream contribution handoffs
 
-Prepared: 2026-08-10
+Prepared: 2026-08-11
 
-The connected GitHub integration can push to `MaxTomahawk/gen1recomp-savestates`
-but returned HTTP 403 `Resource not accessible by integration` for cross-repository
-pull-request creation. These are review-ready local/fork branches; this document
-provides exact titles, bases, bodies, and compare URLs for manual publication.
+SSH git successfully pushed all Gen1Recomp branches to `MaxTomahawk/gen1recomp`.
+Publication was retried on 2026-08-11 through both available paths: `gh pr create`
+cannot run because no CLI token is configured, while the connected GitHub app
+returns HTTP 403 `Resource not accessible by integration` for each cross-repository
+PR. These are review-ready local/fork branches; this document provides exact
+titles, bases, bodies, and compare URLs for manual publication.
 
 ## Gen1Recomp: title checkpoint resume
 
 | Field | Value |
 | --- | --- |
 | Fork branch | `MaxTomahawk/gen1recomp:feat/mod-title-checkpoint-resume` |
-| Head | `4e20f4585f6ad634c55b2661f294c5843b6c7f99` |
+| Head | `4db97164bb6a48f0de10d1ebc841dc42b1a6d0cf` |
 | Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
 | Title | `feat(mods): resume selected checkpoints from title` |
 | Open PR | <https://github.com/bryanthaboi/gen1recomp/compare/dev...MaxTomahawk:feat/mod-title-checkpoint-resume?expand=1> |
@@ -30,15 +32,19 @@ checkpoint that belongs to the launcher-selected existing playthrough.
   bootstraps overworld or supported battle checkpoints from title.
 - The selected normal-save chronology is available as metadata only, so source
   mods can make policy decisions without reading canonical save data.
+- `mod.checkpoints:ensureNormalSave` may create one validated ordinary progress
+  anchor after a tool has durably committed its first checkpoint. It is
+  idempotent and never rewrites an existing normal save.
 
-No normal Pokémon save is created. NEW GAME stays a fresh identity, options stay
-current, and failures leave a usable title session. Because `checkpoint.restored`
+NEW GAME stays a fresh identity, options stay current, and failures leave a usable
+title session. Because `checkpoint.restored`
 is now merged in the base, a title resume emits that success-only lifecycle event
 exactly once after the same final verification boundary as live restore.
 
 ## Verification
 
 - `./scripts/test.sh --quick` — 149/149 engine suites, 10/10 modkit suites.
+- `tests/engine/title_checkpoint_cold_restart.sh` — PASS across two real processes.
 - Title selected-context, no-first-normal-save, corruption, recovery, cross-slot,
   cross-game, mod-save rebinding, and no-mod parity coverage are included.
 - ROM-derived Tier 3 is skipped because no generated/imported game data is in
@@ -81,11 +87,46 @@ serialization behavior.
   the public worktree.
 ```
 
+## Gen1Recomp: scripted battle checkpoints
+
+| Field | Value |
+| --- | --- |
+| Fork branch | `MaxTomahawk/gen1recomp:feat/scripted-battle-checkpoints` |
+| Head | `882763cfe1dc42714908b5d16018811f00a64b70` |
+| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
+| Title | `feat(mods): checkpoint scripted battle decisions` |
+| Open PR | <https://github.com/bryanthaboi/gen1recomp/compare/dev...MaxTomahawk:feat/scripted-battle-checkpoints?expand=1> |
+
+```markdown
+## Summary
+
+Extends persistent battle checkpoints to built-in scripted trainer/story battle
+commands at the existing settled player-decision boundary.
+
+- Captures a detached data-only `script_battle` origin containing stable script
+  identity, program counter, command context, and continuation metadata.
+- Reconstructs a fresh ScriptRunner at that known command with a one-use semantic
+  battle result, preserving the normal wrapper tail and post-battle branches.
+- Never serializes a coroutine, Lua stack, function, controller, or live NPC.
+- Rejects opaque callbacks, non-data-only rows, missing NPC context, concurrent
+  scripts, unsupported variants, and every non-settled battle phase.
+- Keeps checkpoint format 1 and existing ordinary battle behavior unchanged.
+
+## Verification
+
+- `luajit tests/engine/scripted_battle_checkpoints.lua` — 20/20.
+- `./scripts/test.sh --quick` — 150/150 engine suites, 9/9 modkit suites.
+- Combined current-dev integration with title and auxiliary branches — 151/151
+  engine suites and 10/10 modkit suites.
+- ROM-derived Tier 3 is skipped because no generated/imported game data is in
+  the public worktree.
+```
+
 ## Gen1 Modern UI: source transient presentation
 
 No `MaxTomahawk/gen1-modern-ui` fork currently exists, so create that fork first,
 then push local branch `feat/source-transient-notifications` at
-`62642c490382e7ad9aaa29b5a4ca6ee80e0ed53c` and open:
+`9aebcb8ae1152b1efd8f48034a87069d6d564fa9` and open:
 
 <https://github.com/ArmstrongThomas/gen1-modern-ui/compare/main...MaxTomahawk:feat/source-transient-notifications?expand=1>
 

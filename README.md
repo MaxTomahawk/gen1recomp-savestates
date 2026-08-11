@@ -84,8 +84,9 @@ native confirmation that defaults to NO.
 
 Location entry requests are deferred until stable overworld control. Ordinary
 wild/trainer starts defer through the intro and capture at the first proven player
-decision menu; an unsupported/scripted battle expires rather than later saving a
-mislabeled overworld state. Optional after-battle requests wait for stable return.
+decision menu. Supported built-in scripted trainer/story battles use a validated
+semantic continuation; opaque or otherwise unsafe scripted battles expire rather
+than later saving a mislabeled overworld state. Optional after-battle requests wait for stable return.
 Optional before-warp capture runs synchronously at the public `player.warped`
 pre-transition event and fails closed if that exact boundary is not checkpoint-safe.
 Cooldown, semantic duplicate replacement, and chronological retention are active.
@@ -134,8 +135,9 @@ how cooperating mods rebuild derived state is documented in
 - Suspended scripts, transitions, menus, and partial animations are not safe
   overworld checkpoints.
 - Battle checkpoints support ordinary single-player wild/trainer player-decision
-  menus. Link, Safari, ghost, demo, fishing/static-origin, scripted, forced-action,
-  message, queue, and animation phases are rejected.
+  menus and validated built-in scripted trainer/story battle commands. Link,
+  Safari, ghost, demo, fishing/static-origin, opaque scripted callbacks,
+  forced-action, message, queue, and animation phases are rejected.
 - The development battle manager needs the review-ready generic
   `battle.menu_auxiliary` engine branch until it is merged and released.
 - Other mods' canonical `mod.save` progress rewinds, while independent

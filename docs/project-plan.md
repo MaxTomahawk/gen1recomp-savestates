@@ -3,7 +3,7 @@
 Status: active execution; Level A, Level B, and cross-mod restore lifecycle
 merged upstream; rich previews implemented and verified
 
-Updated: 2026-08-10
+Updated: 2026-08-11
 
 Product owner: MaxTomahawk
 
@@ -29,7 +29,9 @@ commits named there. Key conclusions:
   SAVE and recursively embedding the history; merged `mod.storage` is the
   independent playthrough-scoped public store selected for the product.
 - Merged `mod.checkpoints` supplies exact settled-overworld capture and restore.
-- Scripts are coroutine-driven; suspended scripts are unsafe.
+- Scripts are coroutine-driven. Arbitrary suspended scripts remain unsafe, but
+  built-in scripted battle commands can be reconstructed from a narrow semantic
+  command/result descriptor without serializing a coroutine.
 - Merged Level B checkpoints supply supported battle reconstruction and exact
   gameplay RNG replay.
 - Cross-mod progress ownership is now explicit: `game.save`/`mod.save` rewinds;
@@ -58,8 +60,8 @@ history; current work is governed by this living plan and acceptance matrix.
   not be confused with `save.meta.format`.
 - Current scaffold range is `>=0.0.0-dev <1.0.0`; the release manifest floor will
   target the first engine release containing required public seams.
-- `render.hud` is sufficient for non-blocking notifications; no toast engine patch
-  is planned.
+- `render.compose` on the public logical 160x144 UI canvas is sufficient for
+  native non-blocking notifications; Android scaling remains engine-owned.
 - Location and battle lifecycle events already exist. They request autosaves but
   do not themselves prove a safe capture instant.
 - Current modkit can scaffold externally. The proposed tree is a responsibility
@@ -131,7 +133,7 @@ recovery semantics on top of that primitive.
 ### UI and events
 
 The mod decorates `ui.start_menu.items`, registers its manager screens, and draws
-notifications through `render.hud`. Semantic events enqueue autosave requests;
+notifications through `render.compose` on the logical UI canvas. Semantic events enqueue autosave requests;
 capture occurs only when the runtime capability facade confirms a stable point.
 No timer-based autosave loop is used. No hardcoded hotkey is stolen.
 
@@ -181,7 +183,7 @@ test, documentation, or packaging task that remains valid.
 | `SAVESTATES-SP-07` cross-mod restore lifecycle | MERGED | PR #993 as `ee891fb8`; success-only `checkpoint.restored`, 46/46 public fake-mod/shiny-style checks, no storage/options rewind, no event on failure/rollback |
 | `SAVESTATES-SP-08` rich previews | VERIFIED MOD-SIDE | Public `checkpoint.save`, public content registries, and index metadata are sufficient; no upstream seam proposed |
 | Generic complete-playthrough transfer | NON-BLOCKING FUTURE WORK | Fresh review found no competing PR; issue #949 is raw `.sav`, #977 is Android sync permissions; not part of Save States 0.1.0 |
-| HUD notifications | VERIFIED capability | implement in mod via `render.hud`; no upstream request |
+| HUD notifications | VERIFIED capability | implemented in mod via `render.compose` logical UI pass; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
 
 ## Current execution boundary
@@ -203,7 +205,7 @@ external product gate is review, merge, and official release of the complete
 checkpoint contract; the release workflow stays fail-closed against that exact
 future tag.
 
-### Fresh title/resume and mobile UX pass — 2026-08-10
+### Historical title/resume investigation — 2026-08-10
 
 Historical freshness note: the then-current official `dev` was
 `943ba5dcbfa62cf831e881684857ffd4867fe774`; candidate PR #993 remained open,
@@ -242,7 +244,7 @@ Next ordered work is:
    browsing, and a HUD banner geometry that avoids touch-control overlap using
    the public logical viewport. The first mobile usability slice is complete:
    actions now remain at the top of compact state/slot menus, rich information
-   is in a paged `STATE DETAILS` screen, and `render.hud` uses the full logical
+   is in a paged read-only `STATE DETAILS` view, and `render.compose` uses the full logical
    top banner rather than bottom physical-pixel guesses. 803 Lua checks plus
    package/clean-install gates are green; physical Android presentation remains
    a manual acceptance test. These improvements do not wait for title bootstrap.
@@ -270,24 +272,28 @@ successfully committed checkpoint now requests one engine-validated ordinary
 progress anchor only when the playthrough has never had a Pokémon SAVE; later
 savestates do not rewrite it.
 
-### Current integration branches — 2026-08-10
+### Current integration branches — 2026-08-11
 
-- Save States `feat/initial-savestates` is at `143786a`; it adds default-ON
+- Save States `feat/initial-savestates` is at `b342a30`; it adds default-ON
   `CONTINUE LATEST`, battle-manager entry through the proposed generic safe
   decision-boundary action, optional public Modern UI notification presentation
   with a native fallback, and captured play-time/date/age history presentation
   with metric-safe two-row details.
-- Generic title resume is independently rebased on `dev` at `4e20f45`
+- Generic title resume is independently rebased on `dev` at `4db9716`
   (`feat/mod-title-checkpoint-resume`): 149/149 engine and 10/10 modkit suites
   passed; Tier 3 was skipped because no legal generated data is present. Its
   title resume publishes the merged #993 lifecycle only after final verification.
 - Generic battle auxiliary action is independently based on `dev` at
   `59725c0` (`feat/battle-menu-auxiliary`): 150/150 engine and 9/9 modkit
   suites passed; Tier 3 was skipped for the same reason.
+- Generic scripted-battle checkpointing is independently based on `dev` at
+  `882763c` (`feat/scripted-battle-checkpoints`): 20/20 focused checks and the
+  150/150 engine plus 9/9 modkit quick stack pass without serializing coroutine
+  state or changing checkpoint format 1.
 - Fresh audit pins `dev` at `79ed376`; #993 is merged as `ee891fb8` (PR head
   `aa3b2a1`). #1023 provides
   battle render visibility only, not a command-boundary input seam.
-- Both engine branches are pushed to the MaxTomahawk fork. Attempts to open
+- All three required engine branches are pushed to the MaxTomahawk fork. Attempts to open
   upstream PRs through the connected GitHub integration return HTTP 403
   `Resource not accessible by integration`; this is an external publication
   permission blocker, not a test or merge conflict.
@@ -296,10 +302,10 @@ savestates do not rewrite it.
   has no public data-only transient notification surface. Modern notifications
   need a focused Modern UI extension, never private theme access or an engine patch.
 
-### Modern UI transient compatibility — 2026-08-10
+### Modern UI transient compatibility — 2026-08-11
 
 - The required public presentation seam is implemented in the isolated Gen1
-  Modern UI branch `feat/source-transient-notifications` at `62642c4`.
+  Modern UI branch `feat/source-transient-notifications` at `9aebcb8`.
   It extends the existing v1 adapter contract with an optional data-only
   `transient.model`, a bounded deterministic presenter, and the public
   `isTransientPresentationActive(owner)` fallback signal. It introduces no
@@ -317,21 +323,22 @@ savestates do not rewrite it.
   pass against the local combined engine stack. The Modern UI upstream PR still
   requires external publication permission, like the engine PRs.
 
-### Current coherent development integration — 2026-08-10
+### Current coherent development integration — 2026-08-11
 
-- The private integration worktree is at `db53287` over current `dev` `79ed376`,
-  with merged #993 `ee891fb8`, title resume `4e20f45`, and battle auxiliary
-  action `59725c0`. Title `Checkpoint.resume` now emits
+- The private integration worktree is at `c32ac7c` over current `dev` `79ed376`,
+  with merged #993 `ee891fb8`, title resume `4db9716`, battle auxiliary action
+  `59725c0`, and semantic scripted-battle checkpoints `882763c`. Title
+  `Checkpoint.resume` emits
   `checkpoint.restored` exactly once only after final verified installation,
   directly in the title-resume contribution because the lifecycle contract is
   part of its merged base; no integration-only lifecycle patch remains.
 - Fresh evidence against that exact stack: `./scripts/test.sh --quick` passes
-  150/150 engine and 10/10 modkit suites (including 46/46 cross-mod, 33/33 title
-  context, and 10/10 battle-menu suites); Tier 3 is correctly skipped without
-  imported/generated data. `make check` at Save States `143786a` passes 912 Lua
-  behavior checks, 7 Python release/package checks, validation/lint, two
-  byte-identical 32-file package builds plus `.modkit/pack.json`, and a clean
-  extracted-install validation.
+  151/151 engine and 10/10 modkit suites (including 46/46 cross-mod, 40/40 title
+  context, the real two-process cold-restart check, 10/10 battle-menu, and 20/20
+  scripted-battle checks); Tier 3 is correctly skipped without imported/generated
+  data. `make check` at the current Save States working head passes 963/963 Lua
+  behavior checks, 7/7 Python checks, modkit validate/lint, byte-identical 33-file
+  ZIP builds plus pack metadata, and clean extracted-install validation.
 
 Verification for this pass is new evidence, not inherited counts: focused
 title/playthrough/bootstrap and battle-entry tests, affected mod behavior tests,

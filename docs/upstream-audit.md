@@ -47,7 +47,7 @@ requires is unsupported.
 | Lifecycle | `game.ready` provides the sanctioned live `Game` reference | wiki `Concepts-Lifecycle.md`; `src/core/Game.lua:Game:load` |
 | UI | `screens:register`, `mod.ui.push`, stable widgets, `insertBefore`/`insertAfter` | `src/ui/ModUI.lua`; `src/ui/Screens.lua`; `example_dexnav` |
 | START menu | `ui.start_menu.items` decorates the returned descriptor list | `src/ui/StartMenu.lua:StartMenu.new`; wiki `Reference-Hooks.md` |
-| Notifications | `render.hud(next, game, viewport)` draws non-modal screen-space UI after composition and before touch controls | `src/core/Game.lua:Game:draw`; `tests/engine/tool_mod_hooks.lua` |
+| Notifications | `render.compose(next, game, frame)` exposes the logical 160x144 `uiCanvas`; native boxes drawn there are scaled/composited by the engine before Android touch controls | `src/core/Game.lua:Game:draw`; `tests/engine/tool_mod_hooks.lua`; QoL `qol_feature_location_banners` |
 | Options | `mod.options:define/get`; toggle, choice, number, and text rows persist in `options.lua` | `src/mods/Loader.lua:Loader:_api`; wiki `Concepts-Save-Model.md` |
 | Per-save mod data | `mod.save:get/set` maps to `save.modData[modId]` and persists only with the vanilla progress save | same sources |
 | Independent tool storage | `mod.storage:context/write/read/list/delete` is data-only, verified, portable-aware, and scoped by game/playthrough/mod | `src/mods/Storage.lua`; `docs/modding.md`; RFC 0003 |
@@ -119,7 +119,10 @@ Restore validates identity/content/position before mutation, preserves current
 options, suppresses ordinary entry/load side effects, verifies by recapture, and
 rolls back in memory on failure.
 
-It deliberately does not provide a resumable script checkpoint representation.
+It deliberately does not provide a general resumable coroutine representation.
+The separate scripted-battle contribution proves a narrower safe contract for
+built-in battle commands: stable script id/program counter/context plus a one-use
+semantic battle result can rebuild a fresh runner without serializing a Lua stack.
 Direct controller/state-stack/runner access remains unsupported and unnecessary.
 Gate A conclusion is now **GO on merged public API**; an official release tag is
 still required before the distributable manifest can declare compatibility.
@@ -197,7 +200,8 @@ Independent storage/options remain unchanged. Full user/mod-author rules are in
 - Full menu screens are supported. `ListMenu` supplies an empty-state sentence,
   but custom product copy will require a small screen wrapper rather than accepting
   its hardcoded `Nothing here.` everywhere.
-- A non-modal replace-in-place toast is implementable today through `render.hud`;
+- A non-modal replace-in-place toast is implementable today through
+  `render.compose` on the public logical UI canvas;
   no upstream toast API is required for the initial product.
 
 ## Manifest, packaging, and index corrections
@@ -224,6 +228,9 @@ Independent storage/options remain unchanged. Full user/mod-author rules are in
 | `SAVESTATES-SP-04` | Rebindable quick actions | GB-button injection only | core `Input`/`BindingsMenu` fixed action list | Additive mod action registry integrated with bindings UI | keyboard/pad/rebind/conflict/no-mod tests |
 | `SAVESTATES-SP-05` | Deterministic battle restore | **Merged:** ordinary wild/trainer decision-menu `mod.checkpoints` with engine-owned RNG | `BattleState` mutable fields; global random use | Implemented as opaque battle safe-point/RNG extension in PR #986 | differential/RNG/rollback suites plus current 139/139 engine and 7/7 modkit baseline |
 | `SAVESTATES-SP-07` | Let another mod reconcile progress-derived runtime state after restore | **Merged:** success-only `checkpoint.restored`; restore rebinds `mod.save` | `Checkpoint.restore` suppresses ordinary load/map/battle events; runtime caches remain private | Implemented without storage rewind or checkpoint payload | 46/46 public cross-mod checks; current upstream ROM-free integration 150/150 engine and 10/10 modkit suites |
+| `SAVESTATES-SP-08` | Title-safe selected storage, first-state normal anchor, and checkpoint resume | **Review branch:** non-allocating selected context, verified `ensureNormalSave`, validated resume | title fresh skeleton cannot safely resolve existing storage or bootstrap runtime | Narrow selected-playthrough facade; no enumeration, hidden SAVE simulation, or raw paths | 40/40 focused title checks, two-process cold restart, 149/149 engine and 10/10 modkit suites |
+| `SAVESTATES-SP-09` | START tool entry at a safe battle decision | **Review branch:** `battle.menu_auxiliary` | ordinary battle command loop privately owns START | Composable semantic auxiliary action sharing checkpoint safety predicate | 10/10 focused checks, 150/150 engine and 9/9 modkit suites |
+| `SAVESTATES-SP-10` | Safe scripted trainer/story battle checkpoint | **Review branch:** semantic `script_battle` origin | runner is coroutine-backed but known built-in command boundary is reconstructable | Persist script id/pc/context and one-use result, never coroutine/stack | 20/20 focused checks, 150/150 engine and 9/9 modkit suites; combined stack 151/151 and 10/10 |
 
 The table records both landed and remaining seams. Optional custom actions remain
 a future candidate; Level A, Level B, packaging, and the cross-mod lifecycle are
@@ -250,6 +257,6 @@ merged public behavior.
   byte-identical archives.
 
 Merged `dev` is still not a released compatibility target. The manifest remains
-experimental until the title-resume and battle auxiliary contracts, together with
+experimental until the title-resume, battle auxiliary, and scripted-battle contracts, together with
 the complete public APIs, ship in an upstream release and the final range can name
 that version honestly.

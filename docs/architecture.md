@@ -26,7 +26,7 @@ renderer state, or static ROM-derived content.
 Cross-mod ownership follows the same semantic boundary. Canonical `game.save`
 progress, every mod's `save.modData`, and data-only metadata on canonical records
 rewind. Independent `mod.storage`, current options, and arbitrary mod runtime
-state do not. Draft upstream PR #993 adds only a success-only
+state do not. Merged upstream PR #993 adds only a success-only
 `checkpoint.restored` invalidation boundary so cooperating mods can rebuild
 progress-derived caches after final verified reconstruction. Save States never
 enumerates another mod's private state or storage. See
@@ -130,14 +130,16 @@ mirrors every public product option and links to the MODS editor.
 Destructive history and slot actions route through a registered, default-NO
 native confirmation and update their source list only after storage succeeds.
 
-Notifications are one replace-in-place model drawn through `render.hud`; they
+Notifications are one replace-in-place model drawn through `render.compose` on
+the engine's public 160x144 `uiCanvas`; they
 never become an updating screen or consume A/B input. Success types honor their
 save/load toggles, while safety and persistence failures remain visible.
 Text is measured with the active public font, long details are fitted to the
 18-tile interior, and the one required long title wraps at a word boundary. The
-banner uses the complete logical top row rather than physical Android coordinates:
-`render.hud` precedes the engine touch overlay, whose controls occupy the bottom
-region. Headless geometry tests cover that contract; portrait/landscape device
+banner uses the complete logical top row rather than physical Android coordinates.
+This follows the native UI-pass strategy used by QoL location banners and lets
+the engine own Android scaling and touch-control composition. Headless geometry
+tests cover that contract; portrait/landscape device
 presentation remains a manual release-acceptance check.
 
 `gen1_modern_ui` is an optional ordering dependency only. Save States publishes

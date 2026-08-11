@@ -2,7 +2,7 @@
 
 Status: Gate D complete; supported Level B subset implemented and verified
 
-Evidence baseline: `bryanthaboi/gen1recomp` `dev` at `943ba5d`, which includes
+Evidence baseline: `bryanthaboi/gen1recomp` `dev` at `79ed376`, which includes
 merged Level A storage/checkpoints and merged Level B battle/RNG checkpoints from
 upstream PR #986 (`983bea6`).
 
@@ -14,11 +14,12 @@ partially completed effects. A data-only checkpoint therefore cannot safely copy
 the `BattleState` table. Level B will capture a semantic battle model only at a
 settled player-decision boundary and will reconstruct the controller.
 
-The supported first Level B subset is normal single-player wild and trainer
-battles with an engine-owned, serializable continuation descriptor. Link,
-Safari, ghost, old-man/demo, script-suspended, and mod-defined continuation
-battles remain explicitly unavailable until each has a tested semantic resume
-contract. This is narrower than "any battle frame" but stronger than an
+The supported Level B subset is normal single-player wild and trainer battles
+plus built-in scripted battle commands whose return can be represented by a
+validated semantic script descriptor. Link, Safari, ghost, old-man/demo,
+arbitrary script callbacks, and mod-defined continuation battles remain
+explicitly unavailable until each has a tested semantic resume contract. This is
+narrower than "any battle frame" but stronger than an
 in-memory-only snapshot: supported checkpoints must remain loadable after the
 original battle object and process no longer exist.
 
@@ -40,9 +41,10 @@ Capture is allowed only when all of these invariants hold:
   action (`thrash`, `rage`, recharge, trapping continuation) is about to bypass
   player selection;
 - the battle kind and continuation origin are in the supported subset;
-- the underlying overworld has no suspended `ScriptRunner`, parallel runner,
-  queued script, movement, warp, or transition that would need a Lua coroutine
-  stack to resume.
+- the underlying overworld has no unrelated suspended/parallel runner, queued
+  movement, warp, or transition. A single supported built-in battle-command
+  runner is allowed only when its stable script id, program counter, command,
+  context, and one-use battle result continuation are data-only and validated.
 
 Restore is allowed from a settled overworld or another eligible battle boundary.
 Validation, detached reconstruction, content checks, and rollback capture happen
@@ -133,15 +135,19 @@ objects:
 | fishing wild | clears fishing state, then `afterBattle` | Defer initially; distinct origin semantics required. |
 | static map Pokémon | defeated-object flag/removal, `afterBattle`, unfreeze | Defer initially; requires stable object id and post-battle reconstruction. |
 | ordinary map trainer | defeated/header flags, rewards, `afterBattle`, optional `onDone` | Support only when no script runner is suspended and the engine owns a serializable trainer continuation descriptor. |
-| `Commands.start_battle` | updates script context and resumes a suspended coroutine | Reject with `script_busy`; the program counter and Lua stack are not serializable. |
+| Built-in `start_battle`, `rival_battle`, `static_battle` commands | update script context and continue after battle | Support through a detached `script_battle` descriptor that restarts the known command at its stable program counter with a one-use semantic result. |
+| Opaque/custom script battle row | arbitrary command/callback/local state | Reject; no raw coroutine, stack, function, or unknown local state is serialized. |
 | ghost/Safari/old-man demo | variant-specific state and callbacks | Explicitly excluded from the first subset. |
 | link battle | network peer and separate synchronized RNG | Reject with `link_battle_unsupported`. |
 | mod-created battle/closure | arbitrary caller behavior | Reject unless a future public continuation registry supplies validated data-only capture/restore handlers. |
 
-`src/script/ScriptRunner.lua` stores the program counter and locals inside a Lua
-coroutine created by `ScriptRunner:run`; `Commands.start_battle` yields that
-coroutine and resumes it from `onFinish`. Restoring only the battle would strand
-or skip the script. This is a proven blocker, not an assumed limitation.
+`src/script/ScriptRunner.lua` remains coroutine-driven, so a general coroutine
+snapshot is neither attempted nor promised. The generic scripted-battle seam
+instead records only a stable built-in script command boundary and reconstructs
+a fresh runner at that command with a one-use semantic battle result. The normal
+wrapper tail, conditional branches, and `afterBattle` behavior then execute in
+engine-owned code. Missing content/NPC context, multiple active scripts,
+non-data-only rows, and custom callbacks fail closed.
 
 ## Chosen public contract
 
@@ -181,9 +187,11 @@ API is unused.
 - mod integration tests proving recovery and compatibility behavior for battle
   checkpoints.
 
-These checks landed through upstream PR #986; battle restore has 43/43 checks and
-the public facade has 53/53 checks. Current official `dev` passes 139/139 engine
-suites and 7/7 modkit suites. The public suite includes a complete battle
+The ordinary battle checks landed through upstream PR #986. The additional
+scripted-battle branch adds 20 focused capture/restore/continuation checks without
+changing checkpoint format 1. On the coherent development integration,
+`./scripts/test.sh --quick` passes 151/151 engine and 10/10 modkit suites. The
+public suite includes a complete battle
 capture/restore/recapture roundtrip and explicit complete overworld-progress
 fidelity. The mod advertises the supported `battle` kind while retaining every
 exclusion above.

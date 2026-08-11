@@ -27,6 +27,7 @@ tests/preview_test.lua
 tests/save_state_service_test.lua
 tests/snapshot_test.lua
 tests/start_menu_test.lua
+tests/state_details_view_test.lua
 tests/state_index_test.lua
 tests/state_store_test.lua
 tests/testlib.lua
