@@ -57,10 +57,55 @@ def _write_text(path, value):
     return True
 
 
-def _update_json(path, engine_range):
+def _update_json(path, engine_range, *, stable=False):
     data = json.loads(path.read_text(encoding="utf-8"))
     data["game_version"] = engine_range
+    if stable:
+        data["experimental"] = False
     return _write_text(path, json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+
+
+def _stable_readme(text, minimum):
+    note = (
+        f"> **Save States 0.1.0:** requires **Gen1Recomp {minimum} or newer**. "
+        "The ordinary Pokémon `SAVE` remains an independent conventional backup.\n"
+    )
+    text, count = re.subn(
+        r"(?m)^> \*\*Early access 0\.1\.0:\*\*[^\n]*(?:\n>[^\n]*)*\n?",
+        note,
+        text,
+    )
+    if count == 0 and note.strip() not in text:
+        raise ValueError("README must contain one early-access or stable notice")
+    if count > 1:
+        raise ValueError("README must contain exactly one early-access notice")
+    return re.sub(
+        r"(?m)^- This early-access release remains `experimental`[^\n]*\n"
+        r"(?:  [^\n]*\n)?",
+        "",
+        text,
+    )
+
+
+def _stable_index_description(text, minimum):
+    text, count = re.subn(
+        r"This is an experimental early-access release(?: for \*\*Gen1Recomp "
+        r"v?\d+\.\d+\.\d+ or newer\*\*)?\.",
+        f"This stable release requires **Gen1Recomp {minimum} or newer**.",
+        text,
+    )
+    stable = f"This stable release requires **Gen1Recomp {minimum} or newer**."
+    if count == 0 and stable not in text:
+        raise ValueError("index description must contain one early-access or stable notice")
+    if count > 1:
+        raise ValueError("index description must contain one early-access notice")
+    return text.replace(
+        "Keep using the normal Pokémon SAVE as a conventional backup while this "
+        "version\nremains experimental. The package contains no ROM or extracted "
+        "game assets.",
+        "The normal Pokémon SAVE remains an independent conventional backup. The "
+        "package\ncontains no ROM or extracted game assets.",
+    )
 
 
 def promote(root, *, battle_release, icon_release):
@@ -78,6 +123,7 @@ def promote(root, *, battle_release, icon_release):
     readme_path = root / "README.md"
     readme = readme_path.read_text(encoding="utf-8")
     readme = readme.replace(current_tag, minimum)
+    readme = _stable_readme(readme, minimum)
     readme = render_status(
         readme, minimum=minimum, battle_state="merged",
         battle_release=battle_release, icon_state="merged",
@@ -94,13 +140,17 @@ def promote(root, *, battle_release, icon_release):
         "and newer** through the same public composition path as the Party screen.",
     )
     changed |= _write_text(readme_path, readme)
-    changed |= _update_json(manifest_path, engine_range)
+    changed |= _update_json(manifest_path, engine_range, stable=True)
 
     card_path = root / "mod.card"
     card = card_path.read_text(encoding="utf-8")
     updated_card, count = RANGE.subn(engine_range, card)
     if count != 1:
         raise ValueError("mod.card must contain exactly one engine range")
+    updated_card = re.sub(
+        r'^\s*"early access:[^\n]*",\n',
+        "", updated_card, flags=re.MULTILINE,
+    )
     updated_card = re.sub(
         r'^\s*"battle START-menu access awaits[^\n]*#1077[^\n]*",\n',
         "", updated_card, flags=re.MULTILINE,
@@ -112,10 +162,11 @@ def promote(root, *, battle_release, icon_release):
     changed |= _write_text(card_path, updated_card)
 
     index = root / "index" / "MaxTomahawk@savestates"
-    changed |= _update_json(index / "meta.json", engine_range)
+    changed |= _update_json(index / "meta.json", engine_range, stable=True)
     description_path = index / "description.md"
     description = description_path.read_text(encoding="utf-8")
     description = description.replace(current_tag, minimum)
+    description = _stable_index_description(description, minimum)
     description = _replace_block(
         description, "battle-feature-note",
         f"Battle START-menu access is included in Gen1Recomp **{battle_release} "

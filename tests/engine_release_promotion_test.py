@@ -29,6 +29,7 @@ class EngineReleasePromotionTests(unittest.TestCase):
             index.mkdir(parents=True)
             (root / "README.md").write_text(
                 """# Save States
+> **Early access 0.1.0:** experimental until engine release.
 <!-- engine-feature-status:start -->old<!-- engine-feature-status:end -->
 <!-- battle-feature-note:start -->pending battle<!-- battle-feature-note:end -->
 <!-- icon-feature-note:start -->pending icons<!-- icon-feature-note:end -->
@@ -43,6 +44,7 @@ class EngineReleasePromotionTests(unittest.TestCase):
             )
             (root / "mod.card").write_text(
                 'return { known = {\n'
+                '  "early access: final acceptance is pending",\n'
                 '  "battle START-menu access awaits upstream PR #1077",\n'
                 '  "Party icons await upstream PR #1079",\n'
                 '}, compat = { engine = ">=0.1.79 <1.0.0", modApi = 2 } }\n',
@@ -56,6 +58,7 @@ class EngineReleasePromotionTests(unittest.TestCase):
             )
             (index / "description.md").write_text(
                 """# Save States
+This is an experimental early-access release.
 <!-- battle-feature-note:start -->pending battle<!-- battle-feature-note:end -->
 <!-- icon-feature-note:start -->pending icons<!-- icon-feature-note:end -->
 """,
@@ -71,20 +74,30 @@ class EngineReleasePromotionTests(unittest.TestCase):
             index_meta = json.loads((index / "meta.json").read_text())
             self.assertEqual(manifest["game_version"], ">=0.1.82 <1.0.0")
             self.assertEqual(index_meta["game_version"], ">=0.1.82 <1.0.0")
-            self.assertEqual(manifest["experimental"], True)
-            self.assertEqual(index_meta["experimental"], True)
+            self.assertEqual(manifest["experimental"], False)
+            self.assertEqual(index_meta["experimental"], False)
             card = (root / "mod.card").read_text()
             self.assertIn(">=0.1.82 <1.0.0", card)
             self.assertNotIn("#1077", card)
             self.assertNotIn("#1079", card)
+            self.assertNotIn("early access", card.lower())
             readme = (root / "README.md").read_text()
             description = (index / "description.md").read_text()
+            self.assertNotIn("early access", readme.lower())
+            self.assertNotIn("experimental", description.lower())
             self.assertIn("requires **Gen1Recomp v0.1.82 or newer**", readme)
             self.assertIn("Battle START menu:** available in **v0.1.80", readme)
             self.assertIn("Party icons in state details:** available in **v0.1.82", readme)
             self.assertIn("included in Gen1Recomp **v0.1.80", readme)
             self.assertIn("included in Gen1Recomp **v0.1.82", description)
             self.assertNotIn("pending battle", description)
+
+            self.assertEqual(
+                promotion.promote(
+                    root, battle_release="v0.1.80", icon_release="v0.1.82"
+                ),
+                False,
+            )
 
     def test_partial_release_keeps_the_installable_core_minimum(self):
         self.assertIsNone(promotion.minimum_release("v0.1.80", None))

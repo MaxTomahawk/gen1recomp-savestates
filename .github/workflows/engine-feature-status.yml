@@ -6,6 +6,8 @@ on:
     - cron: "23 6 * * *"
 
 permissions:
+  actions: write
+  checks: write
   contents: write
   pull-requests: write
 
@@ -59,13 +61,21 @@ jobs:
             fi
             printf '%s_state=%s\n' "$prefix" "$state" >> "$GITHUB_OUTPUT"
             printf '%s_release=%s\n' "$prefix" "$release" >> "$GITHUB_OUTPUT"
+            printf -v "${prefix}_state" '%s' "$state"
+            printf -v "${prefix}_release" '%s' "$release"
             printf '%s: state=%s release=%s\n' "$prefix" "$state" "${release:-pending}" >> "$GITHUB_STEP_SUMMARY"
           }
 
           resolve_pr 1077 battle
           resolve_pr 1079 icon
+          minimum_release=
+          if [ -n "$battle_release" ] && [ -n "$icon_release" ]; then
+            minimum_release="$(printf '%s\n%s\n' "$battle_release" "$icon_release" | sort -V | tail -1)"
+          fi
+          printf 'minimum_release=%s\n' "$minimum_release" >> "$GITHUB_OUTPUT"
 
       - name: Update compatibility and prepare the index handoff
+        id: update
         env:
           BATTLE_STATE: ${{ steps.engine.outputs.battle_state }}
           BATTLE_RELEASE: ${{ steps.engine.outputs.battle_release }}
@@ -93,9 +103,36 @@ jobs:
             fi
             python3 tools/update_engine_feature_status.py "${args[@]}"
           fi
+          if git diff --quiet -- README.md manifest.json mod.card \
+            index/MaxTomahawk@savestates; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Open or refresh a reviewable documentation PR
-        if: ${{ hashFiles('README.md') != '' }}
+      - name: Verify exact stable package and index handoff
+        if: ${{ steps.engine.outputs.battle_release != '' && steps.engine.outputs.icon_release != '' && steps.update.outputs.changed == 'true' }}
+        env:
+          MINIMUM_RELEASE: ${{ steps.engine.outputs.minimum_release }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y luajit unzip
+          git -C .engine checkout --detach "$MINIMUM_RELEASE"
+          make check GEN1RECOMP=.engine
+
+          index_dir="$(mktemp -d)"
+          git clone --depth 1 https://github.com/bryanthaboi/gen1recomp-mod-index.git "$index_dir"
+          mkdir -p "$index_dir/mods/MaxTomahawk@savestates"
+          cp index/MaxTomahawk@savestates/meta.json \
+            index/MaxTomahawk@savestates/description.md \
+            "$index_dir/mods/MaxTomahawk@savestates/"
+          node "$index_dir/scripts/validate.mjs" \
+            "$index_dir/mods/MaxTomahawk@savestates"
+          (cd "$index_dir" && node scripts/build-index.mjs >/dev/null)
+
+      - name: Open or refresh a reviewable pending-status PR
+        if: ${{ steps.engine.outputs.battle_release == '' || steps.engine.outputs.icon_release == '' }}
         env:
           GH_TOKEN: ${{ github.token }}
           BATTLE_STATE: ${{ steps.engine.outputs.battle_state }}
@@ -125,4 +162,12 @@ jobs:
             --base main \
             --head "$branch" \
             --title "docs: promote released engine features" \
-            --body "Updates README compatibility, the mod's exact minimum engine range, and the metadata-only index handoff after verifying both upstream merges and the first official Gen1Recomp releases that contain them. The experimental flag remains unchanged until the separate physical Android and private ROM-backed acceptance gate passes. After review, copy index/MaxTomahawk@savestates into the mod-index fork and open or update its upstream PR."
+            --body "Updates the public feature status after verifying upstream merge/release state. Stable promotion remains pending until one official Gen1Recomp release contains both #1077 and #1079; at that point the fail-closed automation selects the exact minimum, removes experimental, and publishes v0.1.0 after green gates."
+
+      - name: Merge verified stable promotion and dispatch release
+        if: ${{ steps.engine.outputs.battle_release != '' && steps.engine.outputs.icon_release != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROMOTION_BRANCH: automation/engine-feature-status-${{ steps.engine.outputs.battle_state }}-${{ steps.engine.outputs.battle_release }}-${{ steps.engine.outputs.icon_state }}-${{ steps.engine.outputs.icon_release }}
+          STABLE_TAG: v0.1.0
+        run: bash tools/auto_promote_stable.sh

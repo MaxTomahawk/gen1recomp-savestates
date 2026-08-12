@@ -47,9 +47,9 @@ evidence.
 Gen1Recomp v0.1.79 contains the complete core storage/checkpoint, title-resume,
 scripted-battle, date/time, and battle-settling contracts. An experimental
 0.1.0 prerelease may therefore be packaged and listed honestly against that exact
-minimum. The stable release remains prohibited until #1077 and #1079 ship in an
-official engine release and the private ROM-backed/physical-device acceptance
-matrix passes.
+minimum. Physical Android acceptance of the complete development stack has now
+been supplied by the project owner. Stable promotion waits only until #1077 and
+#1079 ship together in an official engine release.
 
 For the stable release:
 
@@ -100,14 +100,20 @@ versions normally need no index PR because the index follows GitHub Releases.
 The scheduled `engine-feature-status.yml` workflow checks upstream PRs #1077 and
 #1079 and resolves the first official release tag containing each merge commit.
 While either feature is unreleased it updates only the marked README status.
-Once both are released it opens a reviewable Save States PR that:
+Once both are released it opens a state-specific Save States promotion PR that:
 
 - removes the pending dependency wording from the README and launcher handoff;
 - records the exact release where each feature became available;
 - raises `manifest.json`, `mod.card`, and the index handoff to the later of those
   two releases, which is the first engine release guaranteed to contain both;
-- preserves `experimental: true` until the separate physical Android and private
-  ROM-backed acceptance gate has actually passed.
+- sets `experimental: false`, based on the recorded physical Android acceptance.
+
+The workflow checks that the PR is same-repository and changes only allowlisted
+promotion files, waits for the named `stable-rom-free` PR check, and merges only after
+that check succeeds. It creates the previously absent manifest tag (`v0.1.0`) at
+the verified merge commit and explicitly dispatches the release workflow.
+Existing mismatched tags, unexpected files, failed checks, or release-resolution
+errors stop promotion without overwriting anything.
 
 The exact metadata-only index files live under
 `index/MaxTomahawk@savestates/` and are excluded from the mod ZIP. GitHub's
