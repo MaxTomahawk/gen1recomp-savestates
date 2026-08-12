@@ -487,4 +487,12 @@ Latest verification (2026-08-08):
 - Early access remains `experimental: true`; stable promotion still requires an
   official release containing #1077/#1079 plus final physical/ROM acceptance.
 - A scheduled workflow monitors merge and official release inclusion and opens a
-  reviewable README status PR; it never edits the default branch directly.
+  reviewable README status PR; it never edits the default branch directly. GitHub
+  schedules activate after this workflow lands on the repository default branch.
+- Public prerelease `v0.1.0-rc.1` targets Save States commit `cd01cd3`; its
+  `savestates-0.1.0.zip` is 69,003 bytes with SHA-256
+  `73643599a6138384c3d59a09eb28f6ecde5461954be5373c2e017eaad9ee146c`.
+  A fresh download validates and lints cleanly against v0.1.79.
+- Mod-index PR #125 is open, non-draft, and GitHub-mergeable at head `dd0bffa`.
+  Targeted validation reports 1 entry and 0 warnings; the release-aware build
+  resolves `v0.1.0-rc.1` with `update_check: ok`.

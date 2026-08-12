@@ -36,8 +36,8 @@ Status vocabulary:
 | ROM-free CI, tests, lint, reproducible package | Verified | Fresh combined integration proves 152/152 engine and 12/12 modkit suites. Save States proves 1029/1029 Lua checks, 7/7 Python checks, validate/lint, byte-identical 35-file ZIP builds plus pack manifest, and clean extracted-install validation. |
 | Exact released-engine compatibility | Verified for early access | `make check` passes against exact official tag v0.1.79; manifest and card require `>=0.1.79 <1.0.0`. Stable release remains experimental pending final gates. |
 | Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
-| Installable GitHub prerelease | In progress | Exact v0.1.79 package gate is green; public early-access asset is the current publication task. |
-| Mod-index listing | Prepared | Submit experimental metadata only after the early-access asset resolves; stable promotion waits for final gates. |
+| Installable GitHub prerelease | Verified | `v0.1.0-rc.1` is public; the downloaded ZIP revalidates/lints on v0.1.79 and has SHA-256 `73643599a6138384c3d59a09eb28f6ecde5461954be5373c2e017eaad9ee146c`. |
+| Mod-index listing | Open for review | Upstream index PR #125 is non-draft and mergeable; targeted validation has 0 warnings and the release-aware builder resolves the prerelease with `update_check: ok`. |
 
 ## External release gates
 

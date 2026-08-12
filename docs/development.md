@@ -91,6 +91,6 @@ node scripts/validate.mjs mods/MaxTomahawk@savestates
 node scripts/build-index.mjs
 ```
 
-An experimental index entry may follow an installable prerelease when its
-`experimental` field and description match the package. Subsequent mod
+The experimental 0.1.0 entry is submitted as upstream index PR #125 after its
+installable prerelease resolved successfully. Subsequent mod
 versions normally need no index PR because the index follows GitHub Releases.
