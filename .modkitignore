@@ -14,6 +14,7 @@ docs/superpowers/specs/2026-08-08-cross-mod-checkpoint-compatibility-design.md
 docs/superpowers/plans/2026-08-08-cross-mod-checkpoint-compatibility.md
 docs/superpowers/specs/2026-08-09-rich-checkpoint-previews-design.md
 docs/superpowers/plans/2026-08-09-rich-checkpoint-previews.md
+docs/superpowers/plans/2026-08-11-battle-boundary-native-hud-fixes.md
 tests/autosave_controller_test.lua
 tests/composition_test.lua
 tests/deduplicator_test.lua
@@ -36,5 +37,7 @@ tests/title_menu_test.lua
 tests/ui_screens_test.lua
 tests/history_view_test.lua
 tests/release_gate_test.py
+tests/engine_feature_status_test.py
 tools/package_gate.py
 tools/release_gate.py
+tools/update_engine_feature_status.py

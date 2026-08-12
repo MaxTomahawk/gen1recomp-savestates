@@ -25,7 +25,7 @@ class ReleaseGateTests(unittest.TestCase):
         manifest = {
             "version": "1.0.0",
             "experimental": False,
-            "game_version": ">=0.1.76 <1.0.0",
+            "game_version": ">=0.1.79 <1.0.0",
         }
         manifest.update(overrides)
         return manifest
@@ -33,7 +33,7 @@ class ReleaseGateTests(unittest.TestCase):
     def test_emits_exact_minimum_engine_release_ref(self):
         result = self.run_gate(self.release_manifest(), "v1.0.0")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout, "engine_ref=v0.1.76\n")
+        self.assertEqual(result.stdout, "engine_ref=v0.1.79\n")
 
     def test_rejects_tag_that_does_not_match_manifest(self):
         result = self.run_gate(self.release_manifest(), "v1.0.1")

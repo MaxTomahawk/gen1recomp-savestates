@@ -3,14 +3,17 @@
 Status: refreshed after merged Level A, Level B, packaging, and cross-mod
 lifecycle contributions
 
-Audited: 2026-08-10
+Audited: 2026-08-12
 
-Engine: `bryanthaboi/gen1recomp` `dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca`
+Engine: `bryanthaboi/gen1recomp` `dev` at `49d094b14d9e3986313a1f02126db08ac0dc43e9`
+
+Official compatibility baseline: `v0.1.79` at
+`04490c9b9ad03b814f297793dd7a950dad7c3adf`
 
 Wiki: `bryanthaboi/gen1recomp.wiki` at `635e1e87d2e3b2e71c2276a60327aee7a24e57c9`
 
 Index: `bryanthaboi/gen1recomp-mod-index` `main` at
-`6f7eb4ad249bb6ca3080ce485be6a8053861a624`
+`47f94004f36f18d915c16e9b349d30cd5891d96c`
 
 This document distinguishes documented public API from private engine capability.
 Absence statements apply to the pinned commits and must be rechecked after an
@@ -212,10 +215,10 @@ Independent storage/options remain unchanged. Full user/mod-author rules are in
 
 ## Manifest, packaging, and index corrections
 
-- The manifest should be regenerated from the current scaffold and then changed to
-  category `TOOL`, `github: "MaxTomahawk/gen1recomp-savestates"`, and
-  `experimental: true` until user validation. The final engine range must be based
-  on the first released upstream seams, not today's dev placeholder.
+- The early-access manifest uses category `TOOL`, GitHub update metadata,
+  `experimental: true`, and the verified official range `>=0.1.79 <1.0.0`.
+  Stable promotion remains gated on final ROM/device acceptance and released
+  #1077/#1079 enhancements.
 - A `filesystem` permission is unnecessary if the planned scoped-storage seam
   lands; `engine_internals` is never acceptable for the distributable mod.
 - The index folder is `mods/MaxTomahawk@savestates/` and contains metadata only.
@@ -234,12 +237,12 @@ Independent storage/options remain unchanged. Full user/mod-author rules are in
 | `SAVESTATES-SP-04` | Rebindable quick actions | GB-button injection only | core `Input`/`BindingsMenu` fixed action list | Additive mod action registry integrated with bindings UI | keyboard/pad/rebind/conflict/no-mod tests |
 | `SAVESTATES-SP-05` | Deterministic battle restore | **Merged:** ordinary wild/trainer decision-menu `mod.checkpoints` with engine-owned RNG | `BattleState` mutable fields; global random use | Implemented as opaque battle safe-point/RNG extension in PR #986 | differential/RNG/rollback suites plus current 139/139 engine and 7/7 modkit baseline |
 | `SAVESTATES-SP-07` | Let another mod reconcile progress-derived runtime state after restore | **Merged:** success-only `checkpoint.restored`; restore rebinds `mod.save` | `Checkpoint.restore` suppresses ordinary load/map/battle events; runtime caches remain private | Implemented without storage rewind or checkpoint payload | 46/46 public cross-mod checks; current upstream ROM-free integration 150/150 engine and 10/10 modkit suites |
-| `SAVESTATES-SP-08` | Title-safe selected storage, first-state normal anchor, and checkpoint resume | **Review branch:** non-allocating selected context, verified `ensureNormalSave`, validated resume | title fresh skeleton cannot safely resolve existing storage or bootstrap runtime | Narrow selected-playthrough facade; no enumeration, hidden SAVE simulation, or raw paths | 40/40 focused title checks, two-process cold restart, 149/149 engine and 10/10 modkit suites |
-| `SAVESTATES-SP-09` | START tool entry at a safe battle decision | **Review branch:** `battle.menu_auxiliary` | ordinary battle command loop privately owns START | Composable semantic auxiliary action sharing checkpoint safety predicate | 10/10 focused checks, 150/150 engine and 9/9 modkit suites |
-| `SAVESTATES-SP-10` | Safe scripted trainer/story battle checkpoint | **Review branch:** semantic `script_battle` origin | runner is coroutine-backed but known built-in command boundary is reconstructable | Persist script id/pc/context and one-use result, never coroutine/stack | 20/20 standalone checks; real-intro integration 24/24; 150/150 standalone engine and 9/9 modkit suites; combined stack 152/152 and 12/12 |
-| `SAVESTATES-SP-11` | Render detached checkpoint party previews through the same icon composition as Party UI | **Review PR #1079:** `mod.ui.PokemonIcon.draw` | `PartyMenu.drawIcon` already owns content icons, asset overrides, and `pokemon.icon` hook composition | Validate `{species,hp,maxHp}` and delegate presentation only | 14/14 public API checks; 149/149 engine and 10/10 modkit suites; GitHub CI green |
-| `SAVESTATES-SP-12` | Consistent device/fallback date-time presentation across engine and mods | **Review PR #1080:** global preferences plus read-only `mod.datetime` | options are engine-owned and must remain current across restore; Lua exposes process locale only where platform supplies it | DEVICE/process-locale formatter with DMY/24-hour fallback and explicit DMY/MDY/YMD + 12/24h overrides | 11/11 engine and 8/8 public API checks; 150/150 engine and 10/10 modkit suites; GitHub CI green |
-| `SAVESTATES-SP-13` | Make real completed battle intros satisfy the existing safe-decision contract | **Review PR #1087:** clears completed `afterQueue`/insert/wait/intro markers on transition to menu | real wild/trainer intros retained non-semantic completed markers although the action queue and presentation had drained | Normalize only completed transition state; keep the strict shared `BattleSafety` predicate unchanged | 18/18 focused real-intro checks; 149/149 engine and 9/9 modkit suites; GitHub CI green |
+| `SAVESTATES-SP-08` | Title-safe selected storage, first-state normal anchor, and checkpoint resume | **Released in v0.1.79:** PR #1076 | title fresh skeleton cannot safely resolve existing storage or bootstrap runtime | Narrow selected-playthrough facade; no enumeration, hidden SAVE simulation, or raw paths | 40/40 focused title checks, two-process cold restart, full quick suite |
+| `SAVESTATES-SP-09` | START tool entry at a safe battle decision | **Open PR #1077:** `battle.menu_auxiliary` | ordinary battle command loop privately owns START | Composable semantic auxiliary action sharing checkpoint safety predicate | 13/13 focused checks, 158/158 engine and 14/14 modkit suites; GitHub CI green |
+| `SAVESTATES-SP-10` | Safe scripted trainer/story battle checkpoint | **Released in v0.1.79:** PR #1078 | runner is coroutine-backed but known built-in command boundary is reconstructable | Persist script id/pc/context and one-use result, never coroutine/stack | focused and full integration suites green |
+| `SAVESTATES-SP-11` | Render detached checkpoint party previews through the same icon composition as Party UI | **Open PR #1079:** `mod.ui.PokemonIcon.draw` | `PartyMenu.drawIcon` already owns content icons, asset overrides, and `pokemon.icon` hook composition | Validate `{species,hp,maxHp}` and delegate presentation only | 14/14 public API checks; 157/157 engine and 15/15 modkit suites; GitHub CI green |
+| `SAVESTATES-SP-12` | Consistent device/fallback date-time presentation across engine and mods | **Released in v0.1.79:** PR #1080 | options are engine-owned and must remain current across restore; Lua exposes process locale only where platform supplies it | DEVICE/process-locale formatter with DMY/24-hour fallback and explicit DMY/MDY/YMD + 12/24h overrides | focused and full integration suites green |
+| `SAVESTATES-SP-13` | Make real completed battle intros satisfy the existing safe-decision contract | **Released in v0.1.79:** PR #1087 | real wild/trainer intros retained non-semantic completed markers although the action queue and presentation had drained | Normalize only completed transition state; keep the strict shared `BattleSafety` predicate unchanged | 18/18 focused real-intro checks and full integration suite green |
 
 The table records both landed and remaining seams. Optional custom actions remain
 a future candidate; Level A, Level B, packaging, and the cross-mod lifecycle are
@@ -265,7 +268,6 @@ merged public behavior.
   `SOURCE_DATE_EPOCH`, rejects invalid epochs before writing, and proves
   byte-identical archives.
 
-Merged `dev` is still not a released compatibility target. The manifest remains
-experimental until the title-resume, battle auxiliary, and scripted-battle contracts, together with
-the complete public APIs, ship in an upstream release and the final range can name
-that version honestly.
+Official tag v0.1.79 is the early-access compatibility target. The manifest stays
+experimental until #1077/#1079 reach an official release and final ROM-backed and
+physical-device acceptance passes.

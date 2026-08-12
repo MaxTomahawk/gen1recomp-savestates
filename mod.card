@@ -4,19 +4,24 @@ return {
   contact = "https://github.com/MaxTomahawk/gen1recomp-savestates",
   tags = { "quality-of-life", "ui", "tool" },
   differences = {
-    changed = {},
+    changed = {
+      "title CONTINUE can resume the newest valid normal save or savestate when enabled",
+    },
     added = {
       "rolling quick and automatic checkpoints",
       "ten permanent state slots",
       "one-level undo-load recovery",
+      "title browsing and deterministic battle safe-point restoration",
     },
     known = {
-      "the current technical preview is not an installable product release",
+      "early access: final ROM-backed and physical-device acceptance is pending",
+      "battle START-menu access awaits an engine release containing upstream PR #1077",
+      "Party icons in state details await an engine release containing upstream PR #1079; text remains available",
       "only runtime boundaries proven safe by the engine are supported",
     },
   },
   credits = {
     { who = "Gen1Recomp contributors", for_ = "the native runtime and public mod API" },
   },
-  compat = { engine = ">=0.0.0-dev <1.0.0", modApi = 2 },
+  compat = { engine = ">=0.1.79 <1.0.0", modApi = 2 },
 }

@@ -1,22 +1,24 @@
 # Review-ready upstream contribution handoffs
 
-Prepared: 2026-08-11
+Prepared: 2026-08-12
 
 SSH git pushed all Gen1Recomp branches to `MaxTomahawk/gen1recomp`. Rechecking
 the execution history showed that earlier successful contributions used the
 root user's authenticated GitHub CLI, not the cross-repository GitHub app. The
 same `gh pr create` path opened the contributions on 2026-08-11. GitHub reports
-each non-draft PR mergeable and clean; current checks are recorded per PR.
+the two remaining non-draft PRs mergeable and clean; current checks are recorded
+per PR. The other Save States engine prerequisites are merged and released in
+Gen1Recomp v0.1.79.
 
 ## Gen1Recomp: title checkpoint resume
 
 | Field | Value |
 | --- | --- |
 | Fork branch | `MaxTomahawk/gen1recomp:feat/mod-title-checkpoint-resume` |
-| Head | `4db97164bb6a48f0de10d1ebc841dc42b1a6d0cf` |
-| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
+| Merge | `3aaaf9936e67d4fac1c48c20d10af7313f57a40b` |
+| Released | Gen1Recomp `v0.1.79` |
 | Title | `feat(mods): resume selected checkpoints from title` |
-| PR | [#1076](https://github.com/bryanthaboi/gen1recomp/pull/1076) — open, non-draft, mergeable/clean, 15/15 checks |
+| PR | [#1076](https://github.com/bryanthaboi/gen1recomp/pull/1076) — merged |
 
 ```markdown
 ## Summary
@@ -55,8 +57,8 @@ exactly once after the same final verification boundary as live restore.
 | Field | Value |
 | --- | --- |
 | Fork branch | `MaxTomahawk/gen1recomp:feat/battle-menu-auxiliary` |
-| Head | `59725c0ead3c761b7e6c4fbf977e15531819f285` |
-| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
+| Head | `238af263d6b345c627b3b9e1489b85734f8e899e` |
+| Base | `bryanthaboi/gen1recomp:dev` at `49d094b14d9e3986313a1f02126db08ac0dc43e9` |
 | Title | `feat(mods): add battle menu auxiliary action` |
 | PR | [#1077](https://github.com/bryanthaboi/gen1recomp/pull/1077) — open, non-draft, mergeable/clean, 15/15 checks |
 
@@ -64,7 +66,8 @@ exactly once after the same final verification boundary as live restore.
 ## Summary
 
 Adds public `battle.menu_auxiliary`, a generic semantic tool action invoked by
-START only at an already-settled ordinary wild/trainer player-decision boundary.
+START only at an already-settled supported player-decision boundary, including
+the validated built-in scripted origins from RFC 0005.
 
 - Reuses the same public battle safety predicate as persistent checkpoints.
 - Returns to native input when no handler accepts the action, preserving no-mod
@@ -76,17 +79,16 @@ START only at an already-settled ordinary wild/trainer player-decision boundary.
 This is a reusable boundary for tool mods; it contains no Save States policy or
 serialization behavior.
 
-PR #1087 should merge first. It fixes the pre-existing real-runtime settling
-defect which otherwise leaves completed intro markers on the command menu; this
-API deliberately shares the unchanged checkpoint-safety predicate.
+Merged PR #1087 supplies the real-runtime settling fix; this API deliberately
+shares the unchanged checkpoint-safety predicate.
 
 ## Verification
 
-- `luajit tests/engine/battle_menu_auxiliary.lua` — 10/10.
+- `luajit tests/engine/battle_menu_auxiliary.lua` — 13/13.
 - Integration with PR #1087: real wild/trainer intros reach the safe boundary
   and START dispatches without consuming a command or advancing RNG.
 - `luajit tests/modkit/cases/checkpoints.lua` — 58/58.
-- `./scripts/test.sh --quick` — 150/150 engine suites, 9/9 modkit suites.
+- `./scripts/test.sh --quick` — 158/158 engine suites, 14/14 modkit suites.
 - ROM-derived Tier 3 is skipped because no generated/imported game data is in
   the public worktree.
 ```
@@ -96,10 +98,10 @@ API deliberately shares the unchanged checkpoint-safety predicate.
 | Field | Value |
 | --- | --- |
 | Fork branch | `MaxTomahawk/gen1recomp:fix/battle-decision-settling` |
-| Head | `41f02ecfbca4d12ed3f5ee380c8038b348810f5a` |
-| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
+| Merge | `20e0692486c7a63a91d3dd90774163aff126da8e` |
+| Released | Gen1Recomp `v0.1.79` |
 | Title | `fix: settle real battle checkpoint decisions` |
-| PR | [#1087](https://github.com/bryanthaboi/gen1recomp/pull/1087) — open, non-draft, mergeable/clean, CI green |
+| PR | [#1087](https://github.com/bryanthaboi/gen1recomp/pull/1087) — merged |
 
 Real wild/trainer intros drained their action queue but retained completed
 `afterQueue`, insertion, wait, and intro-slide markers. The existing strict
@@ -111,17 +113,17 @@ The patch normalizes only completed markers during the existing transition into
 the command menu. It does not weaken any active-animation, queue, forced-choice,
 origin, or script exclusion. Focused real-intro boundary checks pass 18/18;
 `./scripts/test.sh --quick` passes 149/149 engine and 9/9 modkit suites; GitHub
-CI is green. This repair should merge before #1077 and #1078.
+CI is green. This repair merged before the dependent integration was refreshed.
 
 ## Gen1Recomp: scripted battle checkpoints
 
 | Field | Value |
 | --- | --- |
 | Fork branch | `MaxTomahawk/gen1recomp:feat/scripted-battle-checkpoints` |
-| Head | `882763cfe1dc42714908b5d16018811f00a64b70` |
-| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
+| Merge | `af33c6e810c31f5dce3aadda41c7e1de11f0f5ca` |
+| Released | Gen1Recomp `v0.1.79` |
 | Title | `feat(mods): checkpoint scripted battle decisions` |
-| PR | [#1078](https://github.com/bryanthaboi/gen1recomp/pull/1078) — open, non-draft, mergeable/clean, 15/15 checks |
+| PR | [#1078](https://github.com/bryanthaboi/gen1recomp/pull/1078) — merged |
 
 ```markdown
 ## Summary
@@ -154,8 +156,8 @@ commands at the existing settled player-decision boundary.
 | Field | Value |
 | --- | --- |
 | Fork branch | `MaxTomahawk/gen1recomp:feat/mod-pokemon-icon` |
-| Head | `ccb5358aad517f67b1cbe9726ef591db15ce6997` |
-| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
+| Head | `29a2b9a1232eff4517f6764417f2e09c9c47735a` |
+| Base | `bryanthaboi/gen1recomp:dev` at `49d094b14d9e3986313a1f02126db08ac0dc43e9` |
 | Title | `feat(mods): expose canonical Pokémon icon presentation` |
 | PR | [#1079](https://github.com/bryanthaboi/gen1recomp/pull/1079) — open, non-draft, mergeable/clean, CI green |
 
@@ -163,18 +165,19 @@ The public `mod.ui.PokemonIcon.draw` accepts only detached
 `{species,hp,maxHp}` data plus presentation flags and delegates to the native
 Party icon resolver. Content icon registrations, sprite assets, and
 `pokemon.icon` hooks therefore compose without exposing PartyMenu or live
-Pokémon records. `./scripts/test.sh --quick` passes 149/149 engine and 10/10
-modkit suites; ROM-derived Tier 3 is unavailable.
+Pokémon records. Focused checks pass 14/14; `./scripts/test.sh --quick` passes
+157/157 engine and 15/15 modkit suites after current-dev conflict resolution;
+GitHub CI is green and ROM-derived Tier 3 is unavailable.
 
 ## Gen1Recomp: shared local date and time
 
 | Field | Value |
 | --- | --- |
 | Fork branch | `MaxTomahawk/gen1recomp:feat/device-date-time` |
-| Head | `2c8c80058419594d778b9b42346c253a2db7c54f` |
-| Base | `bryanthaboi/gen1recomp:dev` at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca` |
+| Merge | `e8eccfd4df73beec8f88b3454f1265e55b902f17` |
+| Released | Gen1Recomp `v0.1.79` |
 | Title | `feat(mods): add shared local date and time formatting` |
-| PR | [#1080](https://github.com/bryanthaboi/gen1recomp/pull/1080) — open, non-draft, mergeable/clean, CI green |
+| PR | [#1080](https://github.com/bryanthaboi/gen1recomp/pull/1080) — merged |
 
 Global DEVICE/DMY/MDY/YMD and DEVICE/12h/24h choices live in `options.lua`,
 so checkpoint restore never rewinds them. The read-only `mod.datetime` facade

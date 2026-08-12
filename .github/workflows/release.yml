@@ -25,10 +25,9 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: python3 tools/release_gate.py manifest.json "$TAG" >> "$GITHUB_OUTPUT"
 
-      # Release verification deliberately targets the exact official minimum
-      # declared by the manifest, not dev or a moving branch. The workflow must
-      # stay red until that released tag contains mod.storage and both
-      # overworld and battle forms of mod.checkpoints.
+      # Stable release verification deliberately targets the exact official
+      # minimum declared by the manifest, not dev or a moving branch. Early
+      # access remains a manually published prerelease while experimental=true.
       - name: Checkout official Gen1Recomp
         uses: actions/checkout@v6
         with:

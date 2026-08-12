@@ -1,9 +1,8 @@
 # Save States Living Project Plan
 
-Status: active execution; Level A, Level B, and cross-mod restore lifecycle
-merged upstream; mobile preview/history/native-HUD pass verified; required title,
-battle-entry, scripted-battle, icon, date/time, and real battle-settling contributions
-are in review
+Status: active early-access publication; core storage/checkpoint/title/scripted
+battle/date-time/settling contracts are released in Gen1Recomp v0.1.79; optional
+battle START entry and detached Party icons remain in review
 
 Updated: 2026-08-11
 
@@ -29,8 +28,8 @@ commits named there. Key conclusions:
   notifications are available publicly now.
 - Current public UI lacked only two small presentation contracts needed by the
   approved mobile UX: canonical detached Party icons and shared local timestamp
-  formatting. Focused review-ready PRs #1079 and #1080 now provide them without
-  checkpoint/storage authority.
+  formatting. Shared formatting is released in v0.1.79; open PR #1079 provides
+  optional icon composition without checkpoint/storage authority.
 - `mod.save` cannot be the savestate store without coupling quicksaves to vanilla
   SAVE and recursively embedding the history; merged `mod.storage` is the
   independent playthrough-scoped public store selected for the product.
@@ -193,15 +192,17 @@ test, documentation, or packaging task that remains valid.
 | Generic complete-playthrough transfer | NON-BLOCKING FUTURE WORK | Fresh review found no competing PR; issue #949 is raw `.sav`, #977 is Android sync permissions; not part of Save States 0.1.0 |
 | HUD notifications | VERIFIED capability | implemented in the mod through public screen-space `render.hud`; no upstream request |
 | Core event triggers | VERIFIED PRODUCT SUPPORT | `map.entered`, ordinary trainer/wild `battle.started`, and optional `battle.ended` defer to matching safe kinds; enabled `player.warped` captures immediately before transition and never defers into the destination |
-| `SAVESTATES-SP-11` detached Party icon presentation | REVIEW-READY | PR #1079 (`ccb5358`), public `mod.ui.PokemonIcon`, 149/149 engine + 10/10 modkit suites and green CI |
-| `SAVESTATES-SP-12` shared date/time presentation | REVIEW-READY | PR #1080 (`2c8c800`), global device/DMY/MDY/YMD + 12/24h options and read-only `mod.datetime`; 150/150 engine + 10/10 modkit suites and green CI |
-| `SAVESTATES-SP-13` real battle decision settling | REVIEW-READY | PR #1087 (`41f02ec`), clears completed intro/queue markers before the existing strict checkpoint predicate; 18/18 focused boundary checks, 149/149 engine + 9/9 modkit suites, mergeable/clean with green CI |
+| `SAVESTATES-SP-11` detached Party icon presentation | OPEN, MERGEABLE | PR #1079 at `29a2b9a`; public `mod.ui.PokemonIcon`; full quick suite and GitHub CI green after current-dev conflict resolution |
+| `SAVESTATES-SP-12` shared date/time presentation | RELEASED | PR #1080 merged as `e8eccfd4` and ships in v0.1.79 |
+| `SAVESTATES-SP-13` real battle decision settling | RELEASED | PR #1087 merged as `20e06924` and ships in v0.1.79 |
 
 ## Current execution boundary
 
 The active product goal authorizes autonomous implementation. Official upstream
-`dev` is pinned at `79ed37699ebb9dd5de5e839d23bd12b2719e4cca`; index `main` is
-pinned at `6f7eb4ad249bb6ca3080ce485be6a8053861a624`. Level A
+`dev` is pinned at `49d094b14d9e3986313a1f02126db08ac0dc43e9`; index `main` is
+pinned at `47f94004f36f18d915c16e9b349d30cd5891d96c`. Official tag v0.1.79
+contains title resume (#1076), scripted battles (#1078), shared date/time (#1080),
+and battle settling (#1087), in addition to Level A
 storage/overworld checkpoints, Level B battle/RNG checkpoints, and reproducible
 modkit packages are merged through PRs #952, #986, and #959. The distributable mod
 composes its Level A services entirely through `mod:read`, `mod.storage`,
@@ -211,10 +212,9 @@ Gate D and its merged Level B implementation are recorded in
 `docs/battle-state-map.md`. The focused cross-mod audit is complete in
 `docs/cross-mod-compatibility.md`; its minimal lifecycle seam is branch
 `feat/checkpoint-restore-event` at `aa3b2a1`, merged as `ee891fb8` through PR #993.
-The mod test workflow now uses the merged public contract. The remaining
-external product gate is review, merge, and official release of the complete
-checkpoint contract; the release workflow stays fail-closed against that exact
-future tag.
+The mod test workflow now uses the merged public contract. Early-access packaging
+is verified against exact tag v0.1.79. Stable promotion stays fail-closed until
+#1077/#1079 are released and private ROM-backed/device acceptance passes.
 
 ### Historical title/resume investigation — 2026-08-10
 
@@ -283,7 +283,7 @@ successfully committed checkpoint now requests one engine-validated ordinary
 progress anchor only when the playthrough has never had a Pokémon SAVE; later
 savestates do not rewrite it.
 
-### Current integration branches — 2026-08-11
+### Historical integration branches — 2026-08-11
 
 - Save States `feat/initial-savestates` carries the verified mobile UX commits
   `5fae204` and `46eb95e` plus synchronized product documentation on top of
@@ -474,5 +474,17 @@ Latest verification (2026-08-08):
   warnings. Current index `main` is `6f7eb4a`; the staging branch must be rebased
   and refreshed from the final release manifest, then submitted only after an
   installable release exists.
-- The newest official engine tag remains `v0.1.75`, which predates the merged
-  checkpoint APIs. Preview metadata and publication therefore remain fail-closed.
+- Historical note: that pass used v0.1.75 before the required APIs were released.
+
+### Early-access publication baseline — 2026-08-12
+
+- Official engine `dev`: `49d094b14d9e3986313a1f02126db08ac0dc43e9`.
+- Official release baseline: v0.1.79 at
+  `04490c9b9ad03b814f297793dd7a950dad7c3adf`.
+- Save States core passes the complete ROM-free gate against exact v0.1.79.
+- PR #1077 head `238af263` and PR #1079 head `29a2b9a` are open, non-draft,
+  mergeable/clean, and have green GitHub CI after current-dev conflict resolution.
+- Early access remains `experimental: true`; stable promotion still requires an
+  official release containing #1077/#1079 plus final physical/ROM acceptance.
+- A scheduled workflow monitors merge and official release inclusion and opens a
+  reviewable README status PR; it never edits the default branch directly.

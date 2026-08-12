@@ -39,7 +39,7 @@ def main(argv):
     if not minimum or "dev" in game_range:
         return fail(
             "game_version must begin with an exact released minimum such as "
-            "'>=0.1.76'"
+            "'>=0.1.79'"
         )
 
     print("engine_ref=v" + minimum.group(1))

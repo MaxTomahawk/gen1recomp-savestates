@@ -5,14 +5,11 @@
 The distributable mod lives in this repository and may use only the public mod
 object. Generic engine work stays in separate Gen1Recomp worktrees:
 
-- official `dev` — merged scoped storage, settled-overworld checkpoints, battle
-  safe points/RNG restoration, source-date reproducible modkit packaging, and
-  the success-only cross-mod restore lifecycle from PR #993;
-- `feat/mod-title-checkpoint-resume`, `feat/battle-menu-auxiliary`,
-  `feat/scripted-battle-checkpoints`, `feat/mod-pokemon-icon`,
-  `feat/device-date-time`, and `fix/battle-decision-settling` —
-  review-ready generic contracts required only by the development title/battle
-  manager flows until they are merged and released.
+- official v0.1.79 — scoped storage, overworld/battle checkpoints, deterministic
+  RNG, title resume, scripted battle continuations, shared date/time, real battle
+  settling, reproducible packaging, and success-only restore lifecycle;
+- `feat/battle-menu-auxiliary` and `feat/mod-pokemon-icon` — remaining open,
+  generic, independently reviewable enhancements tracked by PRs #1077 and #1079.
 
 Never copy private engine modules into the mod. Never add a ROM, generated import,
 user save, extracted asset, credential, or ROM-derived screenshot.
@@ -47,12 +44,14 @@ evidence.
 
 ## Release gate
 
-A public tag remains prohibited until the title-resume, battle auxiliary,
-scripted-battle, detached-icon, shared-date/time, and real-battle-settling
-contracts, together with the complete checkpoint API, are included in an official
-Gen1Recomp release. The cross-mod lifecycle, Level A, Level B, and the
-source-date modkit fix are already merged into `dev`.
-Then:
+Gen1Recomp v0.1.79 contains the complete core storage/checkpoint, title-resume,
+scripted-battle, date/time, and battle-settling contracts. An experimental
+0.1.0 prerelease may therefore be packaged and listed honestly against that exact
+minimum. The stable release remains prohibited until #1077 and #1079 ship in an
+official engine release and the private ROM-backed/physical-device acceptance
+matrix passes.
+
+For the stable release:
 
 1. Rebase/adapt against current official upstream and rerun its complete relevant
    test tiers.
@@ -92,5 +91,6 @@ node scripts/validate.mjs mods/MaxTomahawk@savestates
 node scripts/build-index.mjs
 ```
 
-Open the index PR only after the release ZIP is installable. Subsequent mod
+An experimental index entry may follow an installable prerelease when its
+`experimental` field and description match the package. Subsequent mod
 versions normally need no index PR because the index follows GitHub Releases.

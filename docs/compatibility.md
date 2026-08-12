@@ -2,21 +2,24 @@
 
 ## Required engine capability
 
-The development package uses the additive Level A APIs merged by upstream PR
+Save States 0.1.0 requires **Gen1Recomp v0.1.79 or newer**. That official
+release contains the additive Level A APIs merged by upstream PR
 [`bryanthaboi/gen1recomp#952`](https://github.com/bryanthaboi/gen1recomp/pull/952)
 plus the merged Level B battle/RNG extension in upstream PR
 [`bryanthaboi/gen1recomp#986`](https://github.com/bryanthaboi/gen1recomp/pull/986).
 The focused cross-mod audit proved the need for the success-only
 `checkpoint.restored` lifecycle, now merged through upstream PR
 [`bryanthaboi/gen1recomp#993`](https://github.com/bryanthaboi/gen1recomp/pull/993).
-Title browsing/resume additionally depends on the unpublished generic
-selected-playthrough/title-checkpoint contract under review. The Party-style
-preview and global locale preference additionally use the focused
-public contracts in upstream PRs #1079 and #1080. Older development hosts retain
-text-only icons and deterministic DMY/24-hour fallback, but the final supported
-release floor will include these presentation contracts. It is
-not a supported player release until every required public contract ships in an
-official engine release and `manifest.json` can name that release as its minimum.
+The same release contains title browsing/resume (#1076), semantic scripted battle
+checkpoints (#1078), shared date/time formatting (#1080), and real battle-decision
+settling (#1087).
+
+Two conditional enhancements remain under review. PR #1077 adds START-menu entry
+at an already-supported battle safe point; without it, battle-start autosaves and
+battle-state loading still work but the manager cannot open from the command menu.
+PR #1079 adds canonical Party icons to detached details; without it, the complete
+captured party remains readable as text. Neither is required to decode or restore
+snapshot format 1.
 
 ## Supported now
 
@@ -54,10 +57,10 @@ The manager closes its known native widget chain before a load or live slot save
 Manual requests made through exports while a phase is unsafe return a structured
 reason and leave runtime/storage untouched.
 
-There is no public rebindable mod action. The development battle manager uses the
-review-ready generic `battle.menu_auxiliary` branch to open from START only at
-supported ordinary player-decision boundaries; it is not yet an official release
-compatibility promise. Default battle-start autosaves remain available without it.
+There is no public rebindable mod action. When an engine release contains #1077,
+the manager uses generic `battle.menu_auxiliary` to open from START only at
+supported player-decision boundaries. Default battle-start autosaves remain
+available without it.
 
 ## Autosave trigger support
 

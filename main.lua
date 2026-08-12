@@ -222,9 +222,9 @@ return function(mod)
   mod.exports.gen1ModernUi = core.modernUi:contract()
   core.modernUi:register()
   mod.hooks:wrap("battle.menu_auxiliary", function(next, game, context)
-    -- This generic engine hook is emitted only at a settled ordinary
-    -- wild/trainer decision. Re-inspection makes a stale/re-entrant request
-    -- fail closed before pushing source-owned UI.
+    -- This generic engine hook is emitted only at a settled supported battle
+    -- decision, including validated built-in scripted origins. Re-inspection
+    -- makes a stale/re-entrant request fail closed before pushing source-owned UI.
     local capability = mod.checkpoints:inspect(game)
     if capability and capability.canCapture and capability.kind == "battle" then
       mod.ui.push(game, core.screenIds.root, { context = "battle", kind = context and context.kind })

@@ -3,7 +3,7 @@
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version headings match `manifest.json`.
 
-## Unreleased
+## [0.1.0] - 2026-08-12
 
 ### Added
 
@@ -67,7 +67,3 @@ Version headings match `manifest.json`.
   the first safe trainer/wild command boundary cannot be missed.
 - Native notices use a centered logical top banner and no longer show the current
   Quick Save count.
-
-## 0.1.0
-
-Reserved for the first verified technical MVP; not yet released.

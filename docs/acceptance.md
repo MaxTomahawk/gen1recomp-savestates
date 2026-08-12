@@ -29,23 +29,21 @@ Status vocabulary:
 | Settled overworld restoration | Verified and merged upstream | Public facade differential recapture includes coordinates/facing, party, inventory/PC items/boxes, money, Pokédex, flags, trainers, and object toggles; upstream PR #952 is merged. |
 | Deterministic supported battle restoration | Verified and merged upstream | Ordinary wild/trainer player-decision reconstruction, switched/fainted party fidelity, rollback, and exact damage/crit/accuracy/AI/escape/encounter RNG replay; PR #986 is merged. |
 | Cross-mod canonical progress remains consistent | Verified on merged upstream `dev` | Real shiny implementation audit plus public fake/cooperating mods: core progress, `mod.save`, and shiny-style Pokémon metadata rewind in overworld/battle; independent storage/options do not; subscriber cache rebuilds after verified restore. |
-| Safe scripted trainer/story battle checkpoints | Prepared on review branch | Built-in battle commands reconstruct from a validated data-only `script_battle` descriptor; 20/20 focused checks and combined-stack tests pass without coroutine serialization. Opaque/unsafe scripts remain rejected. |
+| Safe scripted trainer/story battle checkpoints | Verified and released upstream | Gen1Recomp v0.1.79 contains #1078: built-in battle commands reconstruct from a validated data-only `script_battle` descriptor without coroutine serialization. Opaque/unsafe scripts remain rejected. |
 | Unsafe scripts/transitions/menus/animations/battle phases rejected | Verified | Public checkpoint capability and exclusion tests; compatibility docs name every supported boundary and the narrow semantic scripted-battle exception. |
-| Manual battle quicksave UX | Prepared on review branches | Generic `battle.menu_auxiliary` provides START entry only at proven decision boundaries. PR #1087 fixes the real completed-intro settling defect without relaxing safety; focused real wild/trainer/scripted integration and 152/152 ROM-free engine suites pass. Official release remains gated on merge/release. |
+| Manual battle quicksave UX | Prepared on review PR #1077 | Generic `battle.menu_auxiliary` provides START entry only at proven decision boundaries. #1087 is released in v0.1.79; #1077 is mergeable/clean with green CI but still needs merge and an official release. |
 | No private engine dependency in distributed mod | Verified | Source boundary inspection found no private `src.*` require, raw filesystem, state-stack, process, package, or debug access; sibling source loads use public `mod:read`, and real modkit load/lint passes. |
 | ROM-free CI, tests, lint, reproducible package | Verified | Fresh combined integration proves 152/152 engine and 12/12 modkit suites. Save States proves 1029/1029 Lua checks, 7/7 Python checks, validate/lint, byte-identical 35-file ZIP builds plus pack manifest, and clean extracted-install validation. |
-| Exact released-engine compatibility | Prepared | Release gate derives/checks out the manifest's exact minimum official tag. Manifest intentionally remains experimental/dev until upstream APIs ship. |
+| Exact released-engine compatibility | Verified for early access | `make check` passes against exact official tag v0.1.79; manifest and card require `>=0.1.79 <1.0.0`. Stable release remains experimental pending final gates. |
 | Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
-| Installable GitHub Release | Blocked externally | Tag workflow intentionally refuses preview metadata; requires official upstream API release and final manifest range. |
-| Mod-index listing | Prepared, submission blocked | Local staging branch `prep/savestates-index` at `37321c5` passes targeted validation with zero warnings and remains intentionally unpushed; policy requires an installable GitHub Release first. |
+| Installable GitHub prerelease | In progress | Exact v0.1.79 package gate is green; public early-access asset is the current publication task. |
+| Mod-index listing | Prepared | Submit experimental metadata only after the early-access asset resolves; stable promotion waits for final gates. |
 
 ## External release gates
 
-1. Merge and official release of the title-resume, battle auxiliary,
-   scripted-battle, detached-icon, shared-date/time, and real-battle-settling
-   contracts.
-   The cross-mod lifecycle (#993), Level A, Level B, and source-date modkit fix
-   are already merged into `dev`.
+1. Merge and official release of battle auxiliary #1077 and detached Party-icon
+   #1079 for the complete presentation/input feature set. Core dependencies are
+   already released in v0.1.79.
 2. Private clean-runtime acceptance using legally imported game data.
 3. Final non-experimental manifest/version range, reviewed merge, tag, release
    asset verification, then index PR.
