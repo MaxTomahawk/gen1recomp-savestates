@@ -75,7 +75,9 @@ def _stable_readme(text, minimum):
         note,
         text,
     )
-    if count != 1:
+    if count == 0 and note.strip() not in text:
+        raise ValueError("README must contain one early-access or stable notice")
+    if count > 1:
         raise ValueError("README must contain exactly one early-access notice")
     return re.sub(
         r"(?m)^- This early-access release remains `experimental`[^\n]*\n"
@@ -92,7 +94,10 @@ def _stable_index_description(text, minimum):
         f"This stable release requires **Gen1Recomp {minimum} or newer**.",
         text,
     )
-    if count != 1:
+    stable = f"This stable release requires **Gen1Recomp {minimum} or newer**."
+    if count == 0 and stable not in text:
+        raise ValueError("index description must contain one early-access or stable notice")
+    if count > 1:
         raise ValueError("index description must contain one early-access notice")
     return text.replace(
         "Keep using the normal Pokémon SAVE as a conventional backup while this "
