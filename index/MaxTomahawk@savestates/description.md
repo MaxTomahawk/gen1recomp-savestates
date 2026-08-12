@@ -3,7 +3,7 @@
 Save States adds native rolling quicksaves, event-based autosaves and permanent
 save slots to Gen1Recomp without replacing the normal Pokémon save system.
 
-This is an experimental early-access release for **Gen1Recomp v0.1.79 or newer**.
+This stable release requires **Gen1Recomp v0.1.80 or newer**.
 
 ## What it adds
 
@@ -40,17 +40,13 @@ forced decisions, link/Safari/ghost/demo battles, opaque scripts and other unsaf
 phases are rejected instead of partially serialized.
 
 <!-- battle-feature-note:start -->
-Battle-start autosaves and explicit battle-state loading work on v0.1.79. Opening
-the manager with START from the battle command menu additionally awaits upstream
-PR #1077 and an official Gen1Recomp release containing it.
+Battle START-menu access is included in Gen1Recomp **v0.1.80 and newer** at supported decision points.
 <!-- battle-feature-note:end -->
 
 ## Details and settings
 
 <!-- icon-feature-note:start -->
-Party details are readable as text on v0.1.79. Shared Party-screen icons await
-upstream PR #1079 and an official release containing it; icon availability never
-changes restore correctness.
+Party icons in state details are included in Gen1Recomp **v0.1.80 and newer** through the public Party presentation contract.
 <!-- icon-feature-note:end -->
 
 | Setting | Default | Choices / effect |
@@ -79,8 +75,8 @@ content and runtime capability before mutation, and Save States verifies durable
 recovery before loading. Another mod's canonical progress rewinds with the game;
 independent tool storage, current options and arbitrary runtime memory do not.
 
-Keep using the normal Pokémon SAVE as a conventional backup while this version
-remains experimental. The package contains no ROM or extracted game assets.
+The normal Pokémon SAVE remains an independent conventional backup. The package
+contains no ROM or extracted game assets.
 
 ## License
 

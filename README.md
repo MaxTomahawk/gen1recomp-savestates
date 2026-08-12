@@ -3,19 +3,15 @@
 Save States adds native rolling quicksaves, event-based autosaves and permanent
 save slots to Gen1Recomp without replacing the normal Pokémon save system.
 
-> **Early access 0.1.0:** the core mod is installable on **Gen1Recomp v0.1.79
-> or newer**. It remains marked experimental until the final physical Android
-> and private ROM-backed acceptance pass is complete. Saves are versioned and
-> validated, but keep using the normal Pokémon `SAVE` command for a conventional
-> backup as well.
+> **Save States 0.1.0:** requires **Gen1Recomp v0.1.80 or newer**. The ordinary Pokémon `SAVE` remains an independent conventional backup.
 
 <!-- engine-feature-status:start -->
 ### Engine feature availability
 
-Save States requires **Gen1Recomp v0.1.79 or newer**.
+Save States requires **Gen1Recomp v0.1.80 or newer**.
 
-- **Battle START menu:** awaiting merge of [#1077](https://github.com/bryanthaboi/gen1recomp/pull/1077) and a subsequent official Gen1Recomp release.
-- **Party icons in state details:** awaiting merge of [#1079](https://github.com/bryanthaboi/gen1recomp/pull/1079) and a subsequent official Gen1Recomp release. Text-only party details remain available while icon support is pending.
+- **Battle START menu:** available in **v0.1.80 and newer**.
+- **Party icons in state details:** available in **v0.1.80 and newer**. Text-only party details remain available while icon support is pending.
 <!-- engine-feature-status:end -->
 
 ## Features
@@ -36,7 +32,7 @@ Save States requires **Gen1Recomp v0.1.79 or newer**.
 
 ## Installation
 
-1. Update Gen1Recomp to **v0.1.79 or newer**.
+1. Update Gen1Recomp to **v0.1.80 or newer**.
 2. Download `savestates-0.1.0.zip` from this repository's Releases page. Do not
    extract it.
 3. In Gen1Recomp, open **MODS**, choose **Import mod .zip**, select the file and
@@ -115,10 +111,7 @@ built-in scripted trainer/story battles. Restoring also restores the gameplay RN
 so repeating the same choice produces the same random sequence.
 
 <!-- battle-feature-note:start -->
-The pending engine PR #1077 adds START-menu access at those same safe battle
-decisions. Until an official release contains it, battle-start autosaves and
-loading battle states still work, but the Save States manager cannot be opened
-from the battle command menu itself.
+Battle START-menu access is included in Gen1Recomp **v0.1.80 and newer** at the same safe decision boundaries used by battle checkpoints.
 <!-- battle-feature-note:end -->
 
 ## Save Slots
@@ -137,9 +130,7 @@ captured name, level and HP. These previews come from capture-time data and neve
 substitute current live values.
 
 <!-- icon-feature-note:start -->
-On v0.1.79, party rows are fully readable as text. Pending PR #1079 adds the same
-public icon composition used by the Party screen; once released, compatible icon
-mods can affect the preview through that shared public contract.
+Party icons in state details are included in Gen1Recomp **v0.1.80 and newer** through the same public composition path as the Party screen.
 <!-- icon-feature-note:end -->
 
 Missing preview data in older states degrades gracefully and never makes the
@@ -204,8 +195,6 @@ engine's crash-recovery witnesses; normal playthrough states are usually smaller
   table near the top of this README.
 - Arbitrary-frame emulator snapshots and suspended-coroutine restoration are not
   claimed.
-- This early-access release remains `experimental` until final ROM-backed and
-  physical-device acceptance is complete.
 
 ## Development
 
