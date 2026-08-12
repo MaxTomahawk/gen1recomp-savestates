@@ -4,8 +4,8 @@ Save States adds native rolling quicksaves, event-based autosaves and permanent
 save slots to Gen1Recomp without replacing the normal Pokémon save system.
 
 > **Early access 0.1.0:** the core mod is installable on **Gen1Recomp v0.1.79
-> or newer**. It remains marked experimental while two optional presentation and
-> battle-menu improvements finish upstream review. Saves are versioned and
+> or newer**. It remains marked experimental until the final physical Android
+> and private ROM-backed acceptance pass is complete. Saves are versioned and
 > validated, but keep using the normal Pokémon `SAVE` command for a conventional
 > backup as well.
 
@@ -114,10 +114,12 @@ states are settled single-player wild/trainer decision menus, including validate
 built-in scripted trainer/story battles. Restoring also restores the gameplay RNG,
 so repeating the same choice produces the same random sequence.
 
+<!-- battle-feature-note:start -->
 The pending engine PR #1077 adds START-menu access at those same safe battle
 decisions. Until an official release contains it, battle-start autosaves and
 loading battle states still work, but the Save States manager cannot be opened
 from the battle command menu itself.
+<!-- battle-feature-note:end -->
 
 ## Save Slots
 
@@ -134,11 +136,14 @@ checkpoint kind, compatibility, play time, badges and up to six Pokémon with
 captured name, level and HP. These previews come from capture-time data and never
 substitute current live values.
 
+<!-- icon-feature-note:start -->
 On v0.1.79, party rows are fully readable as text. Pending PR #1079 adds the same
 public icon composition used by the Party screen; once released, compatible icon
-mods can affect the preview through that shared public contract. Missing preview
-data in older states degrades gracefully and never makes the restore payload
-corrupt.
+mods can affect the preview through that shared public contract.
+<!-- icon-feature-note:end -->
+
+Missing preview data in older states degrades gracefully and never makes the
+restore payload corrupt.
 
 ## Undo Last Load
 
@@ -195,9 +200,8 @@ engine's crash-recovery witnesses; normal playthrough states are usually smaller
 
 ## Known Limitations
 
-- The Battle START manager awaits an official release containing #1077.
-- Party icons in details await an official release containing #1079; text details
-  already work.
+- Battle START and Party-icon availability are recorded in the engine feature
+  table near the top of this README.
 - Arbitrary-frame emulator snapshots and suspended-coroutine restoration are not
   claimed.
 - This early-access release remains `experimental` until final ROM-backed and

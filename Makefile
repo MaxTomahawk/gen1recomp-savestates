@@ -49,6 +49,7 @@ package-check: pack
 	@test "$$(unzip -Z1 $(PACKAGE) | grep -c '^docs/cross-mod-compatibility.md$$')" -eq 1
 	@test "$$(unzip -Z1 $(PACKAGE) | grep -Ec '^(AGENTS.md|Makefile|docs/project-plan.md)$$')" -eq 0
 	@test "$$(unzip -Z1 $(PACKAGE) | grep -c '^docs/superpowers/')" -eq 0
+	@test "$$(unzip -Z1 $(PACKAGE) | grep -c '^index/')" -eq 0
 	@echo "Verified installable archive root: $(PACKAGE)"
 
 clean-install-check: package-check

@@ -1,6 +1,6 @@
 # Save States Living Project Plan
 
-Status: active early-access publication; core storage/checkpoint/title/scripted
+Status: early-access source merged to main; core storage/checkpoint/title/scripted
 battle/date-time/settling contracts are released in Gen1Recomp v0.1.79; optional
 battle START entry and detached Party icons remain in review
 
@@ -489,6 +489,8 @@ Latest verification (2026-08-08):
 - A scheduled workflow monitors merge and official release inclusion and opens a
   reviewable README status PR; it never edits the default branch directly. GitHub
   schedules activate after this workflow lands on the repository default branch.
+- Save States PR #1 merged to `main` as `d4d3c325846660eff63710fc2421a58e5340d11c`.
+  The status workflow is therefore active on the default branch.
 - Public prerelease `v0.1.0-rc.1` targets Save States commit `cd01cd3`; its
   `savestates-0.1.0.zip` is 69,003 bytes with SHA-256
   `73643599a6138384c3d59a09eb28f6ecde5461954be5373c2e017eaad9ee146c`.
@@ -496,3 +498,8 @@ Latest verification (2026-08-08):
 - Mod-index PR #125 is open, non-draft, and GitHub-mergeable at head `dd0bffa`.
   Targeted validation reports 1 entry and 0 warnings; the release-aware build
   resolves `v0.1.0-rc.1` with `update_check: ok`.
+- The follow-up promotion workflow retains exact index metadata under `index/`
+  outside the distributable ZIP. When #1077 and #1079 are both released, it
+  updates README, manifest/card, and the index handoff to the later first-release
+  tag. It deliberately leaves `experimental` unchanged until physical Android
+  and private ROM-backed acceptance is recorded.
