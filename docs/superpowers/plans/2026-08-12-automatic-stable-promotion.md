@@ -45,7 +45,7 @@
 - Modify: `.github/workflows/release.yml`
 
 **Interfaces:**
-- Consumes: the generated state-specific promotion PR and GitHub `rom-free` check.
+- Consumes: the generated state-specific promotion PR and GitHub `stable-rom-free` check.
 - Produces: merged stable metadata at `main`, immutable `v0.1.0`, and an explicit release workflow dispatch.
 
 - [ ] Add a static workflow contract test for allowlisted files, same-repository PR validation, named successful CI requirement, collision refusal, recovery, and explicit dispatch.
@@ -69,4 +69,3 @@
 - [ ] Validate the exact index handoff through the real index validator/builder.
 - [ ] Commit, push, open a non-draft PR, wait for GitHub CI, and merge only when green and conflict-free.
 - [ ] Dispatch the watcher once on `main`; with #1077/#1079 unreleased it must make no promotion.
-

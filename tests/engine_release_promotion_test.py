@@ -92,6 +92,13 @@ This is an experimental early-access release.
             self.assertIn("included in Gen1Recomp **v0.1.82", description)
             self.assertNotIn("pending battle", description)
 
+            self.assertEqual(
+                promotion.promote(
+                    root, battle_release="v0.1.80", icon_release="v0.1.82"
+                ),
+                False,
+            )
+
     def test_partial_release_keeps_the_installable_core_minimum(self):
         self.assertIsNone(promotion.minimum_release("v0.1.80", None))
 

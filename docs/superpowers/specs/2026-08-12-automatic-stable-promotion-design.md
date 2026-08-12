@@ -13,7 +13,7 @@ as the minimum, removes pending-feature wording, tags the promoted merge as
 The scheduled engine-feature workflow remains fail-closed. It may promote only
 when both PR merge commits are ancestors of official `vX.Y.Z` tags and chooses
 the later first-containing release. Before merging its generated PR it requires
-the repository's `rom-free` pull-request check to complete successfully. It
+the repository's `stable-rom-free` pull-request check to complete successfully. It
 must never overwrite an existing tag, merge a PR with unexpected changed files,
 or publish when the manifest remains experimental.
 
@@ -62,4 +62,3 @@ scoped cross-repository token; no broad token is introduced in this change.
   explicit release dispatch, and interrupted-run recovery.
 - Full `make check` against the current released baseline before merge.
 - GitHub Actions run on the feature PR before merging this automation.
-

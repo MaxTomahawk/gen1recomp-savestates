@@ -41,7 +41,10 @@ tests/history_view_test.lua
 tests/release_gate_test.py
 tests/engine_feature_status_test.py
 tests/engine_release_promotion_test.py
+tests/stable_promotion_workflow_test.py
 tools/package_gate.py
 tools/release_gate.py
 tools/update_engine_feature_status.py
 tools/promote_engine_features.py
+tools/stable_promotion_gate.py
+tools/auto_promote_stable.sh

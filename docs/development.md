@@ -109,7 +109,7 @@ Once both are released it opens a state-specific Save States promotion PR that:
 - sets `experimental: false`, based on the recorded physical Android acceptance.
 
 The workflow checks that the PR is same-repository and changes only allowlisted
-promotion files, waits for the named `rom-free` PR check, and merges only after
+promotion files, waits for the named `stable-rom-free` PR check, and merges only after
 that check succeeds. It creates the previously absent manifest tag (`v0.1.0`) at
 the verified merge commit and explicitly dispatches the release workflow.
 Existing mismatched tags, unexpected files, failed checks, or release-resolution
