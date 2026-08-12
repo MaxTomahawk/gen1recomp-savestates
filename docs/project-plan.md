@@ -484,8 +484,9 @@ Latest verification (2026-08-08):
 - Save States core passes the complete ROM-free gate against exact v0.1.79.
 - PR #1077 head `238af263` and PR #1079 head `29a2b9a` are open, non-draft,
   mergeable/clean, and have green GitHub CI after current-dev conflict resolution.
-- Early access remains `experimental: true`; stable promotion still requires an
-  official release containing #1077/#1079 plus final physical/ROM acceptance.
+- Physical Android acceptance of the complete development stack has been
+  supplied by the project owner. Early access remains `experimental: true` only
+  until an official release contains both #1077 and #1079.
 - A scheduled workflow monitors merge and official release inclusion and opens a
   reviewable README status PR; it never edits the default branch directly. GitHub
   schedules activate after this workflow lands on the repository default branch.
@@ -501,5 +502,5 @@ Latest verification (2026-08-08):
 - The follow-up promotion workflow retains exact index metadata under `index/`
   outside the distributable ZIP. When #1077 and #1079 are both released, it
   updates README, manifest/card, and the index handoff to the later first-release
-  tag. It deliberately leaves `experimental` unchanged until physical Android
-  and private ROM-backed acceptance is recorded.
+  tag. The recorded physical acceptance allows that same verified promotion to
+  set `experimental: false`, merge after green CI, and publish tag `v0.1.0`.

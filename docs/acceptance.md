@@ -34,8 +34,8 @@ Status vocabulary:
 | Manual battle quicksave UX | Prepared on review PR #1077 | Generic `battle.menu_auxiliary` provides START entry only at proven decision boundaries. #1087 is released in v0.1.79; #1077 is mergeable/clean with green CI but still needs merge and an official release. |
 | No private engine dependency in distributed mod | Verified | Source boundary inspection found no private `src.*` require, raw filesystem, state-stack, process, package, or debug access; sibling source loads use public `mod:read`, and real modkit load/lint passes. |
 | ROM-free CI, tests, lint, reproducible package | Verified | Fresh combined integration proves 152/152 engine and 12/12 modkit suites. Save States proves 1029/1029 Lua checks, 7/7 Python checks, validate/lint, byte-identical 35-file ZIP builds plus pack manifest, and clean extracted-install validation. |
-| Exact released-engine compatibility | Verified for early access | `make check` passes against exact official tag v0.1.79; manifest and card require `>=0.1.79 <1.0.0`. Stable release remains experimental pending final gates. |
-| Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
+| Exact released-engine compatibility | Verified for early access | `make check` passes against exact official tag v0.1.79; stable promotion will select the first official release containing both #1077 and #1079 and re-run the exact-minimum gate. |
+| Physical Android/ROM-backed player acceptance | Accepted on development stack | The project owner reports the complete feature stack works after #1077/#1079. No ROM/generated data is committed; the final official package remains protected by exact-minimum ROM-free gates. |
 | Installable GitHub prerelease | Verified | `v0.1.0-rc.1` is public; the downloaded ZIP revalidates/lints on v0.1.79 and has SHA-256 `73643599a6138384c3d59a09eb28f6ecde5461954be5373c2e017eaad9ee146c`. |
 | Mod-index listing | Open for review | Upstream index PR #125 is non-draft and mergeable; targeted validation has 0 warnings and the release-aware builder resolves the prerelease with `update_check: ok`. |
 | Default-branch source | Verified | Save States PR #1 merged to `main` as `d4d3c325`; public README, source, tests, and scheduled feature-release tracking now live on the default branch. |
@@ -45,9 +45,8 @@ Status vocabulary:
 1. Merge and official release of battle auxiliary #1077 and detached Party-icon
    #1079 for the complete presentation/input feature set. Core dependencies are
    already released in v0.1.79.
-2. Private clean-runtime acceptance using legally imported game data.
-3. Final non-experimental manifest/version range, reviewed merge, tag, release
-   asset verification, then index PR.
+2. Automated non-experimental manifest/version promotion, green exact-minimum
+   gate, immutable tag, release asset verification, then index PR update.
 
 These gates do not reduce the product scope. Every independent distributable-mod,
 test, documentation, and packaging component remains active work until this matrix
