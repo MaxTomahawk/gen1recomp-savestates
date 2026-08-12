@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Save States
+        uses: actions/checkout@v6
+
+      - name: Verify release identity
+        id: release
+        env:
+          TAG: ${{ github.ref_name }}
+        run: python3 tools/release_gate.py manifest.json "$TAG" >> "$GITHUB_OUTPUT"
+
+      # Stable release verification deliberately targets the exact official
+      # minimum declared by the manifest, not dev or a moving branch. Early
+      # access remains a manually published prerelease while experimental=true.
+      - name: Checkout official Gen1Recomp
+        uses: actions/checkout@v6
+        with:
+          repository: bryanthaboi/gen1recomp
+          ref: ${{ steps.release.outputs.engine_ref }}
+          path: .upstream
+
+      - name: Install ROM-free toolchain
+        run: sudo apt-get update && sudo apt-get install -y luajit unzip
+
+      - name: Test, validate, lint, and clean-install package
+        run: make check GEN1RECOMP=.upstream
+
+      - name: Create checksums
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp .artifacts/savestates-*.zip dist/
+          (cd dist && sha256sum savestates-*.zip > sha256sums.txt)
+          cat dist/sha256sums.txt
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "${TAG#v}" \
+            --generate-notes \
+            dist/savestates-*.zip \
+            dist/sha256sums.txt

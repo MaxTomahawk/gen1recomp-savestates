@@ -1,0 +1,113 @@
+name: Track engine feature releases
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 6 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Save States
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Checkout Gen1Recomp release history
+        uses: actions/checkout@v6
+        with:
+          repository: bryanthaboi/gen1recomp
+          ref: main
+          fetch-depth: 0
+          path: .engine
+
+      - name: Resolve merged and released feature status
+        id: engine
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          first_release() {
+            local commit="$1"
+            if [ -z "$commit" ]; then return 0; fi
+            while IFS= read -r tag; do
+              if git -C .engine merge-base --is-ancestor "$commit" "$tag"; then
+                printf '%s\n' "$tag"
+                return 0
+              fi
+            done < <(git -C .engine tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=v:refname)
+          }
+
+          resolve_pr() {
+            local number="$1" prefix="$2" merged_at commit state release
+            merged_at="$(gh api "repos/bryanthaboi/gen1recomp/pulls/$number" --jq '.merged_at // ""')"
+            commit="$(gh api "repos/bryanthaboi/gen1recomp/pulls/$number" --jq '.merge_commit_sha // ""')"
+            state=open
+            release=
+            if [ -n "$merged_at" ]; then
+              state=merged
+              if ! git -C .engine cat-file -e "$commit^{commit}" 2>/dev/null; then
+                git -C .engine fetch origin "$commit"
+              fi
+              release="$(first_release "$commit")"
+            fi
+            printf '%s_state=%s\n' "$prefix" "$state" >> "$GITHUB_OUTPUT"
+            printf '%s_release=%s\n' "$prefix" "$release" >> "$GITHUB_OUTPUT"
+            printf '%s: state=%s release=%s\n' "$prefix" "$state" "${release:-pending}" >> "$GITHUB_STEP_SUMMARY"
+          }
+
+          resolve_pr 1077 battle
+          resolve_pr 1079 icon
+
+      - name: Update the marked README status block
+        env:
+          BATTLE_STATE: ${{ steps.engine.outputs.battle_state }}
+          BATTLE_RELEASE: ${{ steps.engine.outputs.battle_release }}
+          ICON_STATE: ${{ steps.engine.outputs.icon_state }}
+          ICON_RELEASE: ${{ steps.engine.outputs.icon_release }}
+        run: |
+          args=(
+            README.md
+            --minimum v0.1.79
+            --battle-state "$BATTLE_STATE"
+            --icon-state "$ICON_STATE"
+          )
+          if [ -n "$BATTLE_RELEASE" ]; then
+            args+=(--battle-release "$BATTLE_RELEASE")
+          fi
+          if [ -n "$ICON_RELEASE" ]; then
+            args+=(--icon-release "$ICON_RELEASE")
+          fi
+          python3 tools/update_engine_feature_status.py "${args[@]}"
+
+      - name: Open or refresh a reviewable documentation PR
+        if: ${{ hashFiles('README.md') != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: automation/engine-feature-status
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- README.md; then
+            echo "README already matches the released engine features."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "$BRANCH"
+          git add README.md
+          git commit -m "docs: update released engine feature status"
+          git fetch origin "$BRANCH:refs/remotes/origin/$BRANCH" || true
+          git push --force-with-lease origin "HEAD:refs/heads/$BRANCH"
+          if ! gh pr view "$BRANCH" --json url >/dev/null 2>&1; then
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "docs: update released engine feature status" \
+              --body "Updates the marked compatibility block after verifying the upstream PR merge and the first official Gen1Recomp release tag that contains it."
+          fi

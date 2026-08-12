@@ -1,0 +1,31 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rom-free:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Save States
+        uses: actions/checkout@v6
+
+      # CI validates the published public baseline. Development-only title and
+      # battle branches are integration-tested locally and must not pin CI to
+      # an obsolete PR head.
+      - name: Checkout current upstream Gen1Recomp development baseline
+        uses: actions/checkout@v6
+        with:
+          repository: bryanthaboi/gen1recomp
+          ref: dev
+          path: .upstream
+
+      - name: Install ROM-free toolchain
+        run: sudo apt-get update && sudo apt-get install -y luajit unzip
+
+      - name: Test, validate, lint, and package
+        run: make check GEN1RECOMP=.upstream

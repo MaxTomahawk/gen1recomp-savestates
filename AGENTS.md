@@ -54,9 +54,19 @@ tests in `tests/`, and legally distributable authored assets in `assets/`. Adapt
 module layout to the real loader and test harness rather than forcing the initial
 proposal's tree.
 
-Canonical commands will be added to a small reproducible entry point once the mod
-shell exists. At minimum it must expose formatting/static checks, focused tests,
-the complete ROM-free check, modkit validation/lint, and package verification.
+Canonical commands use `Makefile`. Set `GEN1RECOMP` to a current upstream checkout
+that contains the public APIs required by the active milestone (the default is the
+sibling `../gen1recomp`):
+
+- `make test` — all repository Lua behavior tests.
+- `make validate` — current modkit loader validation against the ROM-free fixture.
+- `make lint` — ROM-derived-content and distribution-policy lint.
+- `make package-check` — strict modkit package plus archive-root inspection.
+- `make check` — the complete ROM-free local gate.
+
+The package output lives under hidden `.artifacts/`, which modkit excludes from
+subsequent package inputs. Run imported-base validation only in a private checkout
+that already has legally obtained generated data; never add that data here.
 
 ## Reporting
 
