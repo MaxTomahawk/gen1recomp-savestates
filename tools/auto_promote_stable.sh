@@ -22,8 +22,10 @@ find_pr() {
 
 finish_release() {
   local merge_sha="$1" existing decision
-  existing="$(gh api "repos/$repo/git/ref/tags/$STABLE_TAG" \
-    --jq '.object.sha' 2>/dev/null || true)"
+  if ! existing="$(gh api "repos/$repo/git/ref/tags/$STABLE_TAG" \
+      --jq '.object.sha' 2>/dev/null)"; then
+    existing=
+  fi
   decision="$(python3 tools/stable_promotion_gate.py tag-decision \
     "$existing" "$merge_sha")"
   if [ "$decision" = create ]; then
