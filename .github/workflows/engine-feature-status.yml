@@ -65,49 +65,64 @@ jobs:
           resolve_pr 1077 battle
           resolve_pr 1079 icon
 
-      - name: Update the marked README status block
+      - name: Update compatibility and prepare the index handoff
         env:
           BATTLE_STATE: ${{ steps.engine.outputs.battle_state }}
           BATTLE_RELEASE: ${{ steps.engine.outputs.battle_release }}
           ICON_STATE: ${{ steps.engine.outputs.icon_state }}
           ICON_RELEASE: ${{ steps.engine.outputs.icon_release }}
         run: |
-          args=(
-            README.md
-            --minimum v0.1.79
-            --battle-state "$BATTLE_STATE"
-            --icon-state "$ICON_STATE"
-          )
-          if [ -n "$BATTLE_RELEASE" ]; then
-            args+=(--battle-release "$BATTLE_RELEASE")
+          set -euo pipefail
+          if [ -n "$BATTLE_RELEASE" ] && [ -n "$ICON_RELEASE" ]; then
+            python3 tools/promote_engine_features.py . \
+              --battle-release "$BATTLE_RELEASE" \
+              --icon-release "$ICON_RELEASE"
+          else
+            minimum="v$(python3 -c 'import json; print(json.load(open("manifest.json"))["game_version"].split()[0][2:])')"
+            args=(
+              README.md
+              --minimum "$minimum"
+              --battle-state "$BATTLE_STATE"
+              --icon-state "$ICON_STATE"
+            )
+            if [ -n "$BATTLE_RELEASE" ]; then
+              args+=(--battle-release "$BATTLE_RELEASE")
+            fi
+            if [ -n "$ICON_RELEASE" ]; then
+              args+=(--icon-release "$ICON_RELEASE")
+            fi
+            python3 tools/update_engine_feature_status.py "${args[@]}"
           fi
-          if [ -n "$ICON_RELEASE" ]; then
-            args+=(--icon-release "$ICON_RELEASE")
-          fi
-          python3 tools/update_engine_feature_status.py "${args[@]}"
 
       - name: Open or refresh a reviewable documentation PR
         if: ${{ hashFiles('README.md') != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          BRANCH: automation/engine-feature-status
+          BATTLE_STATE: ${{ steps.engine.outputs.battle_state }}
+          BATTLE_RELEASE: ${{ steps.engine.outputs.battle_release }}
+          ICON_STATE: ${{ steps.engine.outputs.icon_state }}
+          ICON_RELEASE: ${{ steps.engine.outputs.icon_release }}
         run: |
           set -euo pipefail
-          if git diff --quiet -- README.md; then
-            echo "README already matches the released engine features."
+          paths=(README.md manifest.json mod.card index/MaxTomahawk@savestates)
+          if git diff --quiet -- "${paths[@]}"; then
+            echo "Compatibility and index handoff already match released features."
+            exit 0
+          fi
+          suffix="${BATTLE_STATE}-${BATTLE_RELEASE:-pending}-${ICON_STATE}-${ICON_RELEASE:-pending}"
+          branch="automation/engine-feature-status-${suffix}"
+          if [ "$(gh pr list --head "$branch" --state open --json number --jq 'length')" -gt 0 ]; then
+            echo "A reviewable PR for this exact upstream state is already open."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -C "$BRANCH"
-          git add README.md
-          git commit -m "docs: update released engine feature status"
-          git fetch origin "$BRANCH:refs/remotes/origin/$BRANCH" || true
-          git push --force-with-lease origin "HEAD:refs/heads/$BRANCH"
-          if ! gh pr view "$BRANCH" --json url >/dev/null 2>&1; then
-            gh pr create \
-              --base main \
-              --head "$BRANCH" \
-              --title "docs: update released engine feature status" \
-              --body "Updates the marked compatibility block after verifying the upstream PR merge and the first official Gen1Recomp release tag that contains it."
-          fi
+          git switch -c "$branch"
+          git add "${paths[@]}"
+          git commit -m "docs: promote released engine features"
+          git push -u origin "$branch"
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "docs: promote released engine features" \
+            --body "Updates README compatibility, the mod's exact minimum engine range, and the metadata-only index handoff after verifying both upstream merges and the first official Gen1Recomp releases that contain them. The experimental flag remains unchanged until the separate physical Android and private ROM-backed acceptance gate passes. After review, copy index/MaxTomahawk@savestates into the mod-index fork and open or update its upstream PR."

@@ -38,6 +38,7 @@ Status vocabulary:
 | Clean ROM-backed player acceptance | Blocked externally/private-data gate | No ROM/generated data is committed or available here. Run the documented private imported-base/runtime matrix before public stable release. |
 | Installable GitHub prerelease | Verified | `v0.1.0-rc.1` is public; the downloaded ZIP revalidates/lints on v0.1.79 and has SHA-256 `73643599a6138384c3d59a09eb28f6ecde5461954be5373c2e017eaad9ee146c`. |
 | Mod-index listing | Open for review | Upstream index PR #125 is non-draft and mergeable; targeted validation has 0 warnings and the release-aware builder resolves the prerelease with `update_check: ok`. |
+| Default-branch source | Verified | Save States PR #1 merged to `main` as `d4d3c325`; public README, source, tests, and scheduled feature-release tracking now live on the default branch. |
 
 ## External release gates
 

@@ -94,3 +94,25 @@ node scripts/build-index.mjs
 The experimental 0.1.0 entry is submitted as upstream index PR #125 after its
 installable prerelease resolved successfully. Subsequent mod
 versions normally need no index PR because the index follows GitHub Releases.
+
+## Engine feature release tracking
+
+The scheduled `engine-feature-status.yml` workflow checks upstream PRs #1077 and
+#1079 and resolves the first official release tag containing each merge commit.
+While either feature is unreleased it updates only the marked README status.
+Once both are released it opens a reviewable Save States PR that:
+
+- removes the pending dependency wording from the README and launcher handoff;
+- records the exact release where each feature became available;
+- raises `manifest.json`, `mod.card`, and the index handoff to the later of those
+  two releases, which is the first engine release guaranteed to contain both;
+- preserves `experimental: true` until the separate physical Android and private
+  ROM-backed acceptance gate has actually passed.
+
+The exact metadata-only index files live under
+`index/MaxTomahawk@savestates/` and are excluded from the mod ZIP. GitHub's
+repository-scoped workflow token cannot safely write to a different upstream
+repository. After reviewing the generated promotion PR, copy those two files to
+the index fork and update/open its upstream PR. A dedicated fine-grained
+cross-repository token could automate that final hop, but no broad personal token
+is stored or silently granted by this project.
